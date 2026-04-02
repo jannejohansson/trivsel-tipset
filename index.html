@@ -116,20 +116,20 @@
 <!-- Countdown Timer -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
 <div class="bg-surface-container-low/40 backdrop-blur-md p-6 rounded-xl border border-outline-variant/10">
-<div class="text-4xl md:text-5xl font-headline font-bold text-primary" style="">342</div>
-<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2" style="">Days</div>
+<div id="days" class="text-4xl md:text-5xl font-headline font-bold text-primary">0</div>
+<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2">Days</div>
 </div>
 <div class="bg-surface-container-low/40 backdrop-blur-md p-6 rounded-xl border border-outline-variant/10">
-<div class="text-4xl md:text-5xl font-headline font-bold text-primary" style="">14</div>
-<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2" style="">Hours</div>
+<div id="hours" class="text-4xl md:text-5xl font-headline font-bold text-primary">0</div>
+<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2">Hours</div>
 </div>
 <div class="bg-surface-container-low/40 backdrop-blur-md p-6 rounded-xl border border-outline-variant/10">
-<div class="text-4xl md:text-5xl font-headline font-bold text-primary" style="">56</div>
-<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2" style="">Minutes</div>
+<div id="minutes" class="text-4xl md:text-5xl font-headline font-bold text-primary">0</div>
+<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2">Minutes</div>
 </div>
 <div class="bg-surface-container-low/40 backdrop-blur-md p-6 rounded-xl border border-outline-variant/10">
-<div class="text-4xl md:text-5xl font-headline font-bold text-primary" style="">22</div>
-<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2" style="">Seconds</div>
+<div id="seconds" class="text-4xl md:text-5xl font-headline font-bold text-primary">0</div>
+<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2">Seconds</div>
 </div>
 </div>
 <!-- Signup Form -->
@@ -151,4 +151,48 @@
 </div>
 </div>
 </footer>
+
+<script>
+  (function () {
+    const targetDate = new Date('June 11 2026 18:00:00 UTC');
+    const dEl = document.getElementById('days');
+    const hEl = document.getElementById('hours');
+    const mEl = document.getElementById('minutes');
+    const sEl = document.getElementById('seconds');
+
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+
+    function updateTimer() {
+      const now = new Date();
+      const diff = targetDate.getTime() - now.getTime();
+      if (diff <= 0) {
+        dEl.textContent = '00';
+        hEl.textContent = '00';
+        mEl.textContent = '00';
+        sEl.textContent = '00';
+        clearInterval(intervalId);
+        return;
+      }
+      const second = 1000;
+      const minute = 60 * second;
+      const hour = 60 * minute;
+      const day = 24 * hour;
+
+      const days = Math.floor(diff / day);
+      const hours = Math.floor((diff % day) / hour);
+      const minutes = Math.floor((diff % hour) / minute);
+      const seconds = Math.floor((diff % minute) / second);
+
+      dEl.textContent = pad(days);
+      hEl.textContent = pad(hours);
+      mEl.textContent = pad(minutes);
+      sEl.textContent = pad(seconds);
+    }
+
+    updateTimer();
+    const intervalId = setInterval(updateTimer, 1000);
+  })();
+</script>
 </body></html>

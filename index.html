@@ -3,22 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trivsel Tipset</title>
+    <title>Trivseltipset | FIFA World Cup 2026</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            text-align: center;
+        :root {
+            --bg: #050d25;
+            --panel: #0f1f42;
+            --text: #f0f4ff;
+            --muted: #b2c7ea;
+            --accent: #f8c823;
+            --accent-strong: #ffea76;
+            --border: rgba(255, 255, 255, 0.16);
         }
-        h1 {
-            color: #333;
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #050d25;
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 2.5rem 1rem 3rem;
+        }
+        .hero {
+            padding: 5rem 1rem 4rem;
+            text-align: center;
+            background: #0e1f45;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
+        }
+        .hero h1 {
+            margin: 0;
+            font-size: clamp(3rem, 5vw, 4.5rem);
+            letter-spacing: 0.02em;
+            color: var(--accent-strong);
+            text-transform: uppercase;
+        }
+        .hero p {
+            margin-top: 1.2rem;
+            color: var(--muted);
+            font-size: 1.2rem;
+            max-width: 640px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .features,
+        .card,
+        .btn,
+        .glow-strip {
+            display: none;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.35rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+        }
+        .card h3 {
+            margin: 0 0 0.55rem 0;
+            color: #f0f5ff;
+            font-size: 1.15rem;
+        }
+        .card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.99rem;
+        }
+        .footer {
+            margin-top: 2.5rem;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.96rem;
+        }
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1rem 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .top-bar .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text);
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            font-size: 1.1rem;
+        }
+        .top-bar .logo span {
+            color: var(--accent);
+            font-size: 0.95rem;
+            font-weight: 900;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to Trivsel Tipset</h1>
-    <p>This is a simple static web app for prediction competitions.</p>
-    <p>Coming soon: Trivia prediction features!</p>
+    <header class="top-bar">
+        <div class="logo"><span>VM</span>tipset</div>
+        <nav style="display: flex; gap: 1rem; font-size: 0.92rem; color: var(--muted);">
+            <a href="#" style="color: var(--muted); text-decoration: none;">Hem</a>
+            <a href="#" style="color: var(--muted); text-decoration: none;">Tippa</a>
+            <a href="#" style="color: var(--muted); text-decoration: none;">Ställning</a>
+            <a href="#" style="color: var(--muted); text-decoration: none;">Kontakt</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h1>VM Tipset 2026</h1>
+            <p>Torsdagsklubben presenterar...</p>
+            <h2>Trivseltipset</h2>
+            <p>Den kompletta plattformen för VM-tipset 2026 är på väg. Lansering snart.</p>
+        </section>
+
+        <footer class="footer">
+            © 2026 Torsdagsklubben.
+        </footer>
+    </main>
 </body>
 </html></content>
 <parameter name="filePath">c:\dev\repos\trivsel-tipset\index.html

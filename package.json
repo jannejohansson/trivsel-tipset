@@ -1,11 +1,16 @@
 {
+  "name": "trivsel-tipset",
+  "version": "1.0.0",
+  "description": "A small static web app",
   "engines": {
     "node": "24.x"
   },
   "scripts": {
     "build:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --minify",
-    "watch:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch",
-    "build": "npm run build:css"
+    "build:copy": "mkdir -p dist/assets && cp src/index.html dist/ && cp src/favicon.ico dist/ && cp -r src/assets/* dist/assets/ 2>/dev/null || true",
+    "build": "npm run build:copy && npm run build:css",    
+    "dev": "npm run build:copy && npm run watch",
+    "watch": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.2",

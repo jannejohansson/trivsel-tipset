@@ -1,4 +1,7 @@
 {
+  "engines": {
+  "node": "24.x"
+  },
   "scripts": {
     "build:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --minify",
     "watch:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch"

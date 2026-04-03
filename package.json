@@ -4,7 +4,8 @@
   },
   "scripts": {
     "build:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --minify",
-    "watch:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch"
+    "watch:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch",
+    "build": "npm run build"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.2",

@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+  background-color: #131313;
+  color: #e5e2e1;
+}
+
+.hero {
+  background-color: rgba(10, 21, 43, 0.82);
+  border: 1px solid rgba(137, 170, 226, 0.2);
+  border-radius: 1rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}

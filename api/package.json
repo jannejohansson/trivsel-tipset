@@ -1,0 +1,16 @@
+{
+  "name": "trivseltipset-api",
+  "version": "1.0.0",
+  "description": "Azure Functions API for Trivseltipset",
+  "type": "commonjs",
+  "scripts": {
+    "start": "func start",
+    "seed": "node seed/seedMatches.js"
+  },
+  "dependencies": {
+    "@azure/communication-email": "^1.0.0",
+    "@azure/cosmos": "^4.0.0",
+    "@azure/functions": "^4.0.0",
+    "jsonwebtoken": "^9.0.0"
+  }
+}

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html class="dark" lang="sv">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Logga in | Trivseltipset</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "on-primary": "#003909", "on-error-container": "#ffdad6", "on-primary-fixed": "#002204",
+          "inverse-on-surface": "#313030", "on-tertiary-fixed": "#001945", "background": "#131313",
+          "surface-container-low": "#1c1b1b", "on-surface-variant": "#c0c9bb", "surface-tint": "#88d982",
+          "tertiary-fixed-dim": "#b0c6ff", "surface-bright": "#393939", "outline": "#8a9386",
+          "primary": "#88d982", "on-tertiary-fixed-variant": "#00429c", "secondary": "#e9c349",
+          "error-container": "#93000a", "on-tertiary-container": "#adc4ff", "inverse-surface": "#e5e2e1",
+          "on-background": "#e5e2e1", "primary-fixed-dim": "#88d982", "on-tertiary": "#002d6f",
+          "surface-container-lowest": "#0e0e0e", "surface-container-highest": "#353534",
+          "tertiary-fixed": "#d9e2ff", "on-secondary": "#3c2f00", "on-secondary-fixed-variant": "#574500",
+          "tertiary-container": "#184da7", "surface-dim": "#131313", "on-error": "#690005",
+          "surface-variant": "#353534", "primary-fixed": "#a3f69c", "outline-variant": "#41493e",
+          "surface-container-high": "#2a2a2a", "secondary-container": "#af8d11", "error": "#ffb4ab",
+          "secondary-fixed": "#ffe088", "secondary-fixed-dim": "#e9c349", "surface-container": "#201f1f",
+          "on-primary-fixed-variant": "#005312", "on-secondary-fixed": "#241a00",
+          "on-secondary-container": "#342800", "primary-container": "#065f18", "tertiary": "#b0c6ff",
+          "inverse-primary": "#1b6d24", "surface": "#131313", "on-primary-container": "#86d881",
+          "on-surface": "#e5e2e1"
+        },
+        fontFamily: { "headline": ["Lexend"], "body": ["Plus Jakarta Sans"], "label": ["Plus Jakarta Sans"] },
+        borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+      },
+    },
+  }
+</script>
+<style>
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  .state { display: none; }
+  .state.active { display: block; }
+</style>
+</head>
+<body class="bg-background text-on-surface font-body min-h-screen flex flex-col">
+
+<!-- Nav -->
+<nav class="bg-[#131313]/60 backdrop-blur-xl top-0 sticky z-50">
+  <div class="flex justify-between items-center w-full px-6 py-4 max-w-screen-2xl mx-auto">
+    <a href="index.html" class="text-2xl font-black italic tracking-tighter text-secondary font-headline">Trivseltipset</a>
+    <div class="hidden md:flex gap-8 items-center font-headline tracking-tight">
+      <a class="text-on-surface hover:text-primary transition-colors duration-300" href="matches.html">MATCHER</a>
+      <a class="text-on-surface hover:text-primary transition-colors duration-300" href="leaderboard.html">LEADERBOARD</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Main -->
+<main class="flex-1 flex items-center justify-center px-4 py-16">
+  <div class="w-full max-w-md">
+    <!-- Wordmark -->
+    <div class="text-center mb-8">
+      <span class="text-secondary font-headline font-bold tracking-[0.3em] uppercase text-xs block mb-2">Torsdagsklubben</span>
+      <h1 class="font-headline text-4xl font-black italic tracking-tighter text-on-surface">VM-Tipset 2026</h1>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-surface-container-low border border-outline-variant rounded-xl p-8">
+
+      <!-- State: email -->
+      <div id="state-email" class="state active">
+        <h2 class="font-headline text-xl font-bold text-on-surface mb-2">Logga in</h2>
+        <p class="text-on-surface/60 text-sm mb-6">Skriv din e-postadress så skickar vi en inloggningslänk.</p>
+        <form id="email-form" novalidate>
+          <label class="block text-xs uppercase tracking-widest text-on-surface/50 mb-2" for="email-input">E-postadress</label>
+          <input
+            id="email-input"
+            type="email"
+            autocomplete="email"
+            inputmode="email"
+            placeholder="du@example.com"
+            class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-3 text-on-surface placeholder-on-surface/30 focus:outline-none focus:border-primary transition-colors"
+          />
+          <div id="email-error" class="text-error text-sm mt-2 hidden"></div>
+          <button
+            type="submit"
+            id="email-submit"
+            class="mt-4 w-full bg-primary-container text-on-primary-container font-bold tracking-widest uppercase text-sm py-3 rounded-lg hover:opacity-80 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            <span id="email-submit-text">Skicka länk</span>
+            <span id="email-submit-spinner" class="material-symbols-outlined text-base hidden animate-spin">progress_activity</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- State: request access -->
+      <div id="state-request" class="state">
+        <h2 class="font-headline text-xl font-bold text-on-surface mb-2">Inte på listan</h2>
+        <p class="text-on-surface/60 text-sm mb-6">Din e-postadress är inte registrerad. Vill du begära åtkomst?</p>
+        <p id="request-email-display" class="text-primary text-sm font-bold mb-6 break-all"></p>
+        <button
+          id="request-btn"
+          class="w-full bg-primary-container text-on-primary-container font-bold tracking-widest uppercase text-sm py-3 rounded-lg hover:opacity-80 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <span id="request-btn-text">Begär åtkomst</span>
+          <span id="request-btn-spinner" class="material-symbols-outlined text-base hidden animate-spin">progress_activity</span>
+        </button>
+        <div id="request-error" class="text-error text-sm mt-3 hidden"></div>
+        <button id="back-to-email" class="mt-4 w-full text-on-surface/40 hover:text-on-surface/70 text-sm transition-colors">
+          ← Ange annan e-post
+        </button>
+      </div>
+
+      <!-- State: request sent -->
+      <div id="state-requested" class="state">
+        <div class="text-center">
+          <span class="material-symbols-outlined text-5xl text-primary mb-4 block" style="font-variation-settings:'FILL' 1">hourglass_top</span>
+          <h2 class="font-headline text-xl font-bold text-on-surface mb-2">Förfrågan skickad!</h2>
+          <p class="text-on-surface/60 text-sm">Din begäran har skickats till admin. Du får ett mail med en inloggningslänk om du godkänns.</p>
+        </div>
+      </div>
+
+      <!-- State: email sent -->
+      <div id="state-sent" class="state">
+        <div class="text-center">
+          <span class="material-symbols-outlined text-5xl text-primary mb-4 block" style="font-variation-settings:'FILL' 1">mark_email_read</span>
+          <h2 class="font-headline text-xl font-bold text-on-surface mb-2">Kolla din inkorg!</h2>
+          <p class="text-on-surface/60 text-sm mb-6">Vi har skickat en inloggningslänk till <strong id="sent-email" class="text-on-surface"></strong></p>
+          <p class="text-on-surface/40 text-xs">Länken är giltig i 15 minuter. Kolla skräpposten om du inte hittar mailet.</p>
+          <button id="resend-btn" class="mt-6 text-primary/70 hover:text-primary text-sm underline transition-colors">Skicka igen</button>
+        </div>
+      </div>
+
+      <!-- State: verifying token -->
+      <div id="state-verifying" class="state">
+        <div class="text-center">
+          <span class="material-symbols-outlined text-5xl text-primary mb-4 block animate-spin">progress_activity</span>
+          <h2 class="font-headline text-xl font-bold text-on-surface mb-2">Verifierar...</h2>
+          <p class="text-on-surface/60 text-sm">Ett ögonblick, vi loggar in dig.</p>
+        </div>
+      </div>
+
+      <!-- State: token error -->
+      <div id="state-token-error" class="state">
+        <div class="text-center">
+          <span class="material-symbols-outlined text-5xl text-error mb-4 block">error</span>
+          <h2 class="font-headline text-xl font-bold text-on-surface mb-2">Länken är ogiltig</h2>
+          <p id="token-error-msg" class="text-on-surface/60 text-sm mb-6">Länken har gått ut eller används redan. Begär en ny länk.</p>
+          <button id="try-again-btn" class="w-full bg-primary-container text-on-primary-container font-bold tracking-widest uppercase text-sm py-3 rounded-lg hover:opacity-80 active:scale-95 transition-all duration-200">
+            Logga in igen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-[#131313] py-8 border-t border-outline-variant/20">
+  <div class="flex justify-center px-8">
+    <p class="text-xs uppercase tracking-widest text-on-surface/40">© 2026 Torsdagsklubben</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // --- State machine ---
+  function showState(id) {
+    document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // --- Check if already logged in ---
+  if (localStorage.getItem('auth_token')) {
+    window.location.href = 'matches.html';
+    return;
+  }
+
+  // --- Check for magic link token in URL ---
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get('token');
+
+  if (urlToken) {
+    showState('state-verifying');
+    verifyToken(urlToken);
+    return;
+  }
+
+  // --- Email form ---
+  let lastEmail = '';
+
+  const emailForm = document.getElementById('email-form');
+  const emailInput = document.getElementById('email-input');
+  const emailError = document.getElementById('email-error');
+  const emailSubmitText = document.getElementById('email-submit-text');
+  const emailSubmitSpinner = document.getElementById('email-submit-spinner');
+  const emailSubmit = document.getElementById('email-submit');
+
+  emailForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = emailInput.value.trim().toLowerCase();
+    if (!email) {
+      showError(emailError, 'Ange en e-postadress.');
+      return;
+    }
+    lastEmail = email;
+    setLoading(emailSubmit, emailSubmitText, emailSubmitSpinner, true);
+    hideError(emailError);
+
+    try {
+      const res = await fetch('/api/auth/send-magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        document.getElementById('sent-email').textContent = email;
+        showState('state-sent');
+      } else if (res.status === 403 && data.error === 'not_allowed') {
+        document.getElementById('request-email-display').textContent = email;
+        showState('state-request');
+      } else {
+        showError(emailError, data.error || 'Något gick fel. Försök igen.');
+      }
+    } catch {
+      showError(emailError, 'Nätverksfel. Kontrollera din anslutning.');
+    } finally {
+      setLoading(emailSubmit, emailSubmitText, emailSubmitSpinner, false);
+    }
+  });
+
+  // --- Request access ---
+  const requestBtn = document.getElementById('request-btn');
+  const requestBtnText = document.getElementById('request-btn-text');
+  const requestBtnSpinner = document.getElementById('request-btn-spinner');
+  const requestError = document.getElementById('request-error');
+
+  requestBtn.addEventListener('click', async () => {
+    setLoading(requestBtn, requestBtnText, requestBtnSpinner, true);
+    hideError(requestError);
+
+    try {
+      const res = await fetch('/api/auth/request-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: lastEmail }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showState('state-requested');
+      } else if (data.error === 'already_allowed') {
+        // Edge case: email got added to list while on page
+        document.getElementById('sent-email').textContent = lastEmail;
+        // Re-send magic link
+        await fetch('/api/auth/send-magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: lastEmail }),
+        });
+        showState('state-sent');
+      } else if (data.error === 'already_requested') {
+        showError(requestError, 'En förfrågan från denna adress finns redan.');
+      } else if (data.error === 'already_approved') {
+        // Already approved — just send magic link
+        document.getElementById('sent-email').textContent = lastEmail;
+        await fetch('/api/auth/send-magic-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: lastEmail }),
+        });
+        showState('state-sent');
+      } else {
+        showError(requestError, data.error || 'Något gick fel. Försök igen.');
+      }
+    } catch {
+      showError(requestError, 'Nätverksfel. Kontrollera din anslutning.');
+    } finally {
+      setLoading(requestBtn, requestBtnText, requestBtnSpinner, false);
+    }
+  });
+
+  document.getElementById('back-to-email').addEventListener('click', () => showState('state-email'));
+
+  // --- Resend ---
+  document.getElementById('resend-btn').addEventListener('click', async () => {
+    if (!lastEmail) { showState('state-email'); return; }
+    await fetch('/api/auth/send-magic-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: lastEmail }),
+    });
+    // Just show confirmation again (already on state-sent)
+  });
+
+  // --- Try again after token error ---
+  document.getElementById('try-again-btn').addEventListener('click', () => {
+    window.history.replaceState({}, '', '/login.html');
+    showState('state-email');
+  });
+
+  // --- Token verification ---
+  async function verifyToken(token) {
+    try {
+      const res = await fetch('/api/auth/verify-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.jwt) {
+        localStorage.setItem('auth_token', data.jwt);
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
+        window.location.href = 'matches.html';
+      } else {
+        document.getElementById('token-error-msg').textContent =
+          data.error || 'Länken är ogiltig eller har gått ut.';
+        showState('state-token-error');
+      }
+    } catch {
+      document.getElementById('token-error-msg').textContent = 'Nätverksfel. Kontrollera din anslutning.';
+      showState('state-token-error');
+    }
+  }
+
+  // --- Helpers ---
+  function showError(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
+  function hideError(el) { el.classList.add('hidden'); }
+  function setLoading(btn, textEl, spinnerEl, loading) {
+    btn.disabled = loading;
+    textEl.textContent = loading ? 'Väntar...' : textEl.dataset.original || textEl.textContent;
+    if (loading) { textEl.dataset.original = textEl.textContent; spinnerEl.classList.remove('hidden'); }
+    else { spinnerEl.classList.add('hidden'); }
+  }
+})();
+</script>
+</body>
+</html>

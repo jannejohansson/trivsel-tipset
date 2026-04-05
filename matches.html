@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html class="dark" lang="sv">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matcher | Trivseltipset</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "on-primary": "#003909", "on-error-container": "#ffdad6", "on-primary-fixed": "#002204",
+          "inverse-on-surface": "#313030", "on-tertiary-fixed": "#001945", "background": "#131313",
+          "surface-container-low": "#1c1b1b", "on-surface-variant": "#c0c9bb", "surface-tint": "#88d982",
+          "tertiary-fixed-dim": "#b0c6ff", "surface-bright": "#393939", "outline": "#8a9386",
+          "primary": "#88d982", "on-tertiary-fixed-variant": "#00429c", "secondary": "#e9c349",
+          "error-container": "#93000a", "on-tertiary-container": "#adc4ff", "inverse-surface": "#e5e2e1",
+          "on-background": "#e5e2e1", "primary-fixed-dim": "#88d982", "on-tertiary": "#002d6f",
+          "surface-container-lowest": "#0e0e0e", "surface-container-highest": "#353534",
+          "tertiary-fixed": "#d9e2ff", "on-secondary": "#3c2f00", "on-secondary-fixed-variant": "#574500",
+          "tertiary-container": "#184da7", "surface-dim": "#131313", "on-error": "#690005",
+          "surface-variant": "#353534", "primary-fixed": "#a3f69c", "outline-variant": "#41493e",
+          "surface-container-high": "#2a2a2a", "secondary-container": "#af8d11", "error": "#ffb4ab",
+          "secondary-fixed": "#ffe088", "secondary-fixed-dim": "#e9c349", "surface-container": "#201f1f",
+          "on-primary-fixed-variant": "#005312", "on-secondary-fixed": "#241a00",
+          "on-secondary-container": "#342800", "primary-container": "#065f18", "tertiary": "#b0c6ff",
+          "inverse-primary": "#1b6d24", "surface": "#131313", "on-primary-container": "#86d881",
+          "on-surface": "#e5e2e1"
+        },
+        fontFamily: { "headline": ["Lexend"], "body": ["Plus Jakarta Sans"], "label": ["Plus Jakarta Sans"] },
+        borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+      },
+    },
+  }
+</script>
+<style>
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  /* Hide number input spinners */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+  /* Tab scroll */
+  #group-tabs { scrollbar-width: none; }
+  #group-tabs::-webkit-scrollbar { display: none; }
+  /* Toast animation */
+  #toast { transition: opacity 0.3s ease, transform 0.3s ease; }
+  #toast.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
+</style>
+</head>
+<body class="bg-background text-on-surface font-body min-h-screen flex flex-col">
+
+<!-- Nav -->
+<nav class="bg-[#131313]/80 backdrop-blur-xl top-0 sticky z-50 border-b border-outline-variant/20">
+  <div class="flex justify-between items-center w-full px-4 md:px-6 py-4 max-w-screen-2xl mx-auto">
+    <a href="index.html" class="text-xl font-black italic tracking-tighter text-secondary font-headline">Trivseltipset</a>
+    <div class="hidden md:flex gap-8 items-center font-headline tracking-tight text-sm">
+      <a class="text-primary font-bold" href="matches.html">MATCHER</a>
+      <a class="text-on-surface/60 hover:text-primary transition-colors duration-300" href="leaderboard.html">LEADERBOARD</a>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="user-display" class="text-on-surface/50 text-xs uppercase tracking-widest hidden md:block"></span>
+      <button id="logout-btn" class="text-on-surface/40 hover:text-error text-xs uppercase tracking-widest transition-colors duration-200">
+        Logga ut
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Lock banner -->
+<div id="lock-banner" class="hidden bg-error-container text-on-error-container text-center py-3 px-4 text-sm font-bold tracking-wide">
+  <span class="material-symbols-outlined text-base align-middle mr-1">lock</span>
+  Tipsen är låsta — VM har startat!
+</div>
+
+<!-- Loading state -->
+<div id="loading-state" class="flex-1 flex items-center justify-center">
+  <div class="text-center">
+    <span class="material-symbols-outlined text-5xl text-primary animate-spin block mb-4">progress_activity</span>
+    <p class="text-on-surface/40 text-sm">Laddar matcher...</p>
+  </div>
+</div>
+
+<!-- Error state -->
+<div id="error-state" class="hidden flex-1 flex items-center justify-center px-4">
+  <div class="text-center max-w-sm">
+    <span class="material-symbols-outlined text-5xl text-error block mb-4">error</span>
+    <h2 class="font-headline text-xl font-bold mb-2">Kunde inte ladda matcher</h2>
+    <p class="text-on-surface/60 text-sm mb-6">Kontrollera din anslutning och försök igen.</p>
+    <button onclick="location.reload()" class="bg-primary-container text-on-primary-container px-6 py-2 rounded-lg text-sm font-bold hover:opacity-80 transition-all">Försök igen</button>
+  </div>
+</div>
+
+<!-- Main content (shown after load) -->
+<main id="main-content" class="hidden flex-1 flex flex-col max-w-screen-lg mx-auto w-full">
+
+  <!-- Group tabs -->
+  <div class="sticky top-[65px] z-40 bg-background/95 backdrop-blur-sm border-b border-outline-variant/20 px-2 pt-3 pb-0">
+    <div id="group-tabs" class="flex gap-1 overflow-x-auto pb-3 px-2">
+      <!-- Tabs injected by JS -->
+    </div>
+  </div>
+
+  <!-- Match list -->
+  <div id="match-list" class="flex-1 px-4 md:px-6 py-6 space-y-3">
+    <!-- Cards injected by JS -->
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden flex items-center gap-2 bg-primary-container text-on-primary-container px-4 py-3 rounded-xl text-sm font-bold shadow-lg">
+  <span class="material-symbols-outlined text-base" style="font-variation-settings:'FILL' 1">check_circle</span>
+  <span id="toast-msg">Sparat</span>
+</div>
+
+<script>
+(function () {
+  // --- Auth guard ---
+  const token = localStorage.getItem('auth_token');
+  const userRaw = localStorage.getItem('auth_user');
+  if (!token) { window.location.href = 'login.html'; return; }
+
+  let currentUser = null;
+  try { currentUser = JSON.parse(userRaw); } catch {}
+
+  if (currentUser && currentUser.displayName) {
+    document.getElementById('user-display').textContent = currentUser.displayName;
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    window.location.href = 'login.html';
+  });
+
+  // --- State ---
+  let allMatches = [];
+  let locked = false;
+  let activeGroup = 'A';
+  let saveTimers = {};
+
+  // --- Load matches ---
+  async function loadMatches() {
+    try {
+      const res = await fetch('/api/matches', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      if (!res.ok) throw new Error('Failed to load');
+
+      const data = await res.json();
+      allMatches = data.matches || [];
+      locked = data.locked || false;
+
+      if (locked) {
+        document.getElementById('lock-banner').classList.remove('hidden');
+      }
+
+      renderTabs();
+      renderMatches(activeGroup);
+
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+    } catch (err) {
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('error-state').classList.remove('hidden');
+    }
+  }
+
+  // --- Tabs ---
+  const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+
+  function renderTabs() {
+    const container = document.getElementById('group-tabs');
+    container.innerHTML = '';
+    GROUPS.forEach(g => {
+      const btn = document.createElement('button');
+      const hasAll = allMatches.filter(m => m.group === g).every(m => m.prediction !== null && m.prediction !== undefined);
+      btn.className = [
+        'flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-200',
+        g === activeGroup
+          ? 'bg-primary-container text-on-primary-container'
+          : 'text-on-surface/50 hover:text-on-surface hover:bg-surface-container'
+      ].join(' ');
+      btn.textContent = `Grupp ${g}`;
+      if (hasAll && !locked) {
+        btn.textContent += ' ✓';
+      }
+      btn.addEventListener('click', () => {
+        activeGroup = g;
+        renderTabs();
+        renderMatches(g);
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  // --- Match cards ---
+  function renderMatches(group) {
+    const container = document.getElementById('match-list');
+    container.innerHTML = '';
+    const groupMatches = allMatches
+      .filter(m => m.group === group)
+      .sort((a, b) => a.matchday - b.matchday || new Date(a.kickoffUtc) - new Date(b.kickoffUtc));
+
+    if (!groupMatches.length) {
+      container.innerHTML = '<p class="text-on-surface/40 text-sm text-center py-12">Inga matcher hittades.</p>';
+      return;
+    }
+
+    let lastMatchday = null;
+    groupMatches.forEach(match => {
+      if (match.matchday !== lastMatchday) {
+        lastMatchday = match.matchday;
+        const divider = document.createElement('div');
+        divider.className = 'text-xs uppercase tracking-widest text-on-surface/30 pt-2 pb-1 px-1';
+        divider.textContent = `Omgång ${match.matchday}`;
+        container.appendChild(divider);
+      }
+      container.appendChild(buildMatchCard(match));
+    });
+  }
+
+  function buildMatchCard(match) {
+    const kickoff = new Date(match.kickoffUtc);
+    const dateStr = kickoff.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', timeZone: 'Europe/Stockholm' });
+    const timeStr = kickoff.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' });
+
+    const pred = match.prediction || {};
+    const homeVal = pred.homeScore !== undefined ? pred.homeScore : '';
+    const awayVal = pred.awayScore !== undefined ? pred.awayScore : '';
+
+    const card = document.createElement('div');
+    card.className = 'bg-surface-container rounded-xl border border-outline-variant/20 px-4 py-4';
+    card.dataset.matchId = match.id;
+
+    const inputAttrs = locked
+      ? 'disabled class="score-input w-12 h-12 bg-surface border border-outline-variant/30 rounded-lg text-center text-xl font-headline font-bold text-on-surface/30 opacity-40 cursor-not-allowed"'
+      : 'class="score-input w-12 h-12 bg-surface border border-outline-variant rounded-lg text-center text-xl font-headline font-bold text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"';
+
+    card.innerHTML = `
+      <div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/30 mb-3 flex items-center gap-2">
+        <span>${dateStr} ${timeStr}</span>
+        <span class="text-outline-variant">•</span>
+        <span class="truncate">${match.venue}</span>
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <!-- Home team -->
+        <div class="flex items-center gap-2 flex-1 min-w-0">
+          <img src="https://flagcdn.com/32x24/${match.homeFlag}.png" alt="${match.homeTeam}" class="w-8 h-6 object-cover rounded-sm flex-shrink-0" onerror="this.style.display='none'"/>
+          <span class="font-headline font-bold text-on-surface text-sm md:text-base truncate">${match.homeTeam}</span>
+        </div>
+        <!-- Score inputs -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <input type="number" min="0" max="20" value="${homeVal}" placeholder="–" data-side="home" ${inputAttrs}/>
+          <span class="text-on-surface/30 font-headline font-bold text-lg">–</span>
+          <input type="number" min="0" max="20" value="${awayVal}" placeholder="–" data-side="away" ${inputAttrs}/>
+        </div>
+        <!-- Away team -->
+        <div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
+          <span class="font-headline font-bold text-on-surface text-sm md:text-base truncate text-right">${match.awayTeam}</span>
+          <img src="https://flagcdn.com/32x24/${match.awayFlag}.png" alt="${match.awayTeam}" class="w-8 h-6 object-cover rounded-sm flex-shrink-0" onerror="this.style.display='none'"/>
+        </div>
+      </div>
+      <div class="save-status text-[10px] text-on-surface/30 text-right mt-2 h-3"></div>
+    `;
+
+    if (!locked) {
+      card.querySelectorAll('.score-input').forEach(input => {
+        input.addEventListener('input', () => scheduleSave(match.id, card));
+      });
+    }
+
+    return card;
+  }
+
+  // --- Auto-save with debounce ---
+  function scheduleSave(matchId, card) {
+    clearTimeout(saveTimers[matchId]);
+    const status = card.querySelector('.save-status');
+    status.textContent = '...';
+
+    saveTimers[matchId] = setTimeout(() => savePrediction(matchId, card), 800);
+  }
+
+  async function savePrediction(matchId, card) {
+    const inputs = card.querySelectorAll('.score-input');
+    const homeVal = inputs[0].value;
+    const awayVal = inputs[1].value;
+
+    if (homeVal === '' || awayVal === '') return;
+
+    const homeScore = parseInt(homeVal, 10);
+    const awayScore = parseInt(awayVal, 10);
+
+    if (isNaN(homeScore) || isNaN(awayScore)) return;
+
+    const status = card.querySelector('.save-status');
+    status.textContent = 'Sparar...';
+
+    try {
+      const res = await fetch('/api/predictions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ matchId, homeScore, awayScore }),
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      if (res.ok) {
+        // Update local state
+        const match = allMatches.find(m => m.id === matchId);
+        if (match) match.prediction = { homeScore, awayScore };
+
+        status.textContent = '';
+        showToast('Sparat ✓');
+        renderTabs(); // Update tab checkmarks
+      } else {
+        const data = await res.json();
+        status.textContent = data.error || 'Fel vid sparande';
+        showToast('Kunde inte spara', true);
+      }
+    } catch {
+      status.textContent = 'Nätverksfel';
+      showToast('Nätverksfel', true);
+    }
+  }
+
+  // --- Toast ---
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    toastMsg.textContent = msg;
+    toast.classList.remove('hidden', 'bg-primary-container', 'text-on-primary-container', 'bg-error-container', 'text-on-error-container');
+    if (isError) {
+      toast.classList.add('bg-error-container', 'text-on-error-container');
+    } else {
+      toast.classList.add('bg-primary-container', 'text-on-primary-container');
+    }
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.add('hidden'), 2500);
+  }
+
+  // --- Init ---
+  loadMatches();
+})();
+</script>
+</body>
+</html>

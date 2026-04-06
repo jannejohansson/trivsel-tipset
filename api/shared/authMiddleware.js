@@ -20,8 +20,8 @@ function verifyAuth(request) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     return { userId: payload.userId, email: payload.email };
-  } catch {
-    const err = new Error('Invalid or expired token');
+  } catch (verifyError) {
+    const err = new Error('Invalid or expired token: ' + verifyError.message);
     err.status = 401;
     throw err;
   }

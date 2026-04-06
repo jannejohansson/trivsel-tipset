@@ -75,11 +75,20 @@ app.http('verifyToken', {
       process.env.JWT_SECRET
     );
 
+    // Diagnostic: verify the token we just signed to catch secret mismatch early
+    let selfVerifyError = null;
+    try {
+      jwt.verify(sessionToken, process.env.JWT_SECRET);
+    } catch (e) {
+      selfVerifyError = e.message;
+    }
+
     return {
       status: 200,
       jsonBody: {
         jwt: sessionToken,
         user: { userId: user.id, email: user.email, displayName: user.displayName },
+        _debug_selfVerify: selfVerifyError === null ? 'ok' : 'FAILED: ' + selfVerifyError,
       },
     };
   },

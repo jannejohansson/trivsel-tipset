@@ -320,9 +320,8 @@
       });
 
       if (res.status === 401) {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
-        window.location.href = 'login.html';
+        status.textContent = 'Ej behörig';
+        showToast('Sessionsfel — försök ladda om sidan', true);
         return;
       }
 

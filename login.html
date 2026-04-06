@@ -172,19 +172,19 @@
     document.getElementById(id).classList.add('active');
   }
 
-  // --- Check if already logged in ---
-  if (localStorage.getItem('auth_token')) {
-    window.location.href = 'matches.html';
-    return;
-  }
-
-  // --- Check for magic link token in URL ---
+  // --- Check for magic link token in URL (takes priority over existing session) ---
   const params = new URLSearchParams(window.location.search);
   const urlToken = params.get('token');
 
   if (urlToken) {
     showState('state-verifying');
     verifyToken(urlToken);
+    return;
+  }
+
+  // --- Check if already logged in ---
+  if (localStorage.getItem('auth_token')) {
+    window.location.href = 'matches.html';
     return;
   }
 

@@ -23,7 +23,8 @@ function verifyAuth(request) {
     return { userId: payload.userId, email: payload.email };
   } catch (verifyError) {
     const secretHash = crypto.createHash('sha256').update(process.env.JWT_SECRET || '').digest('hex').slice(0, 8);
-    const err = new Error('Invalid or expired token: ' + verifyError.message + ' [secretHash:' + secretHash + ']');
+    const tokenHash = crypto.createHash('sha256').update(token || '').digest('hex').slice(0, 8);
+    const err = new Error('Invalid or expired token: ' + verifyError.message + ' [secretHash:' + secretHash + '] [tokenHash:' + tokenHash + '] [tokenLen:' + (token || '').length + ']');
     err.status = 401;
     throw err;
   }

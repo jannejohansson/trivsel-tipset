@@ -75,6 +75,8 @@ app.http('verifyToken', {
       process.env.JWT_SECRET
     );
 
+    const secretHash = crypto.createHash('sha256').update(process.env.JWT_SECRET || '').digest('hex').slice(0, 8);
+
     // Diagnostic: verify the token we just signed to catch secret mismatch early
     let selfVerifyError = null;
     try {
@@ -88,6 +90,7 @@ app.http('verifyToken', {
       jsonBody: {
         jwt: sessionToken,
         user: { userId: user.id, email: user.email, displayName: user.displayName },
+        _debug_secretHash: secretHash,
         _debug_selfVerify: selfVerifyError === null ? 'ok' : 'FAILED: ' + selfVerifyError,
       },
     };

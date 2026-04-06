@@ -316,6 +316,7 @@
       if (res.ok && data.jwt) {
         localStorage.setItem('auth_token', data.jwt);
         localStorage.setItem('auth_user', JSON.stringify(data.user));
+        localStorage.setItem('_debug_verify', JSON.stringify({ secretHash: data._debug_secretHash, selfVerify: data._debug_selfVerify }));
         window.location.href = 'matches.html';
       } else {
         document.getElementById('token-error-msg').textContent =

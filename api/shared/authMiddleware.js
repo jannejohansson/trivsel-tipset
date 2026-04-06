@@ -9,10 +9,11 @@ const crypto = require('crypto');
  * Throws an error with status 401 on failure.
  */
 function verifyAuth(request) {
-  // Azure SWA injects its own Authorization header which gets concatenated with
-  // the client's header via ", " — take only the first value.
-  const firstAuth = (request.headers.get('authorization') || '').split(',')[0].trim();
-  const token = firstAuth.startsWith('Bearer ') ? firstAuth.slice(7).trim() : null;
+  const authHeader = request.headers.get('authorization') || '';
+  // Extract the JWT by pattern — Azure SWA may inject additional content into
+  // the Authorization header, so we match the JWT directly instead of parsing Bearer.
+  const jwtMatch = authHeader.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+  const token = jwtMatch ? jwtMatch[0] : null;
 
   if (!token) {
     const err = new Error('Missing authorization token');

@@ -1,200 +1,300 @@
 <!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Trivseltipset | FIFA World Cup 2026</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivseltipset — VM 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              "on-primary": "#003909",
-              "on-error-container": "#ffdad6",
-              "on-primary-fixed": "#002204",
-              "inverse-on-surface": "#313030",
-              "on-tertiary-fixed": "#001945",
-              "background": "#131313",
-              "surface-container-low": "#1c1b1b",
-              "on-surface-variant": "#c0c9bb",
-              "surface-tint": "#88d982",
-              "tertiary-fixed-dim": "#b0c6ff",
-              "surface-bright": "#393939",
-              "outline": "#8a9386",
-              "primary": "#88d982",
-              "on-tertiary-fixed-variant": "#00429c",
-              "secondary": "#e9c349",
-              "error-container": "#93000a",
-              "on-tertiary-container": "#adc4ff",
-              "inverse-surface": "#e5e2e1",
-              "on-background": "#e5e2e1",
-              "primary-fixed-dim": "#88d982",
-              "on-tertiary": "#002d6f",
-              "surface-container-lowest": "#0e0e0e",
-              "surface-container-highest": "#353534",
-              "tertiary-fixed": "#d9e2ff",
-              "on-secondary": "#3c2f00",
-              "on-secondary-fixed-variant": "#574500",
-              "tertiary-container": "#184da7",
-              "surface-dim": "#131313",
-              "on-error": "#690005",
-              "surface-variant": "#353534",
-              "primary-fixed": "#a3f69c",
-              "outline-variant": "#41493e",
-              "surface-container-high": "#2a2a2a",
-              "secondary-container": "#af8d11",
-              "error": "#ffb4ab",
-              "secondary-fixed": "#ffe088",
-              "secondary-fixed-dim": "#e9c349",
-              "surface-container": "#201f1f",
-              "on-primary-fixed-variant": "#005312",
-              "on-secondary-fixed": "#241a00",
-              "on-secondary-container": "#342800",
-              "primary-container": "#065f18",
-              "tertiary": "#b0c6ff",
-              "inverse-primary": "#1b6d24",
-              "surface": "#131313",
-              "on-primary-container": "#86d881",
-              "on-surface": "#e5e2e1"
-            },
-            fontFamily: {
-              "headline": ["Lexend"],
-              "body": ["Plus Jakarta Sans"],
-              "label": ["Plus Jakarta Sans"]
-            },
-            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
-          },
-        },
-      }
-    </script>
+
 <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .stadium-overlay {
-            background: linear-gradient(to bottom, rgba(19, 19, 19, 0.7) 0%, rgba(19, 19, 19, 0.95) 100%);
-        }
-        .hero-text-glow {
-            text-shadow: 0 0 30px rgba(136, 217, 130, 0.3);
-        }
-    </style>
+  :root {
+    --bg:        #0d1117;
+    --card:      #161b25;
+    --border:    #222b3a;
+    --fg:        #f0f2f5;
+    --fg-dim:    #6b7a90;
+    --gold:      #e8b84b;
+    --gold-soft: rgba(232,184,75,0.12);
+    --green:     #3ecf74;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: safe center;
+    min-height: 100vh;
+    padding: 60px 24px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+    width: 100%;
+    text-align: center;
+    animation: rise 0.9s cubic-bezier(.22,1,.36,1) both;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(32px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .presenter {
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    font-weight: 400;
+    margin-bottom: 20px;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--gold-soft);
+    border: 1px solid rgba(232,184,75,0.25);
+    border-radius: 100px;
+    padding: 5px 14px 5px 10px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--gold);
+    margin-bottom: 28px;
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 12vw, 88px);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    color: var(--fg);
+    margin-bottom: 20px;
+  }
+  h1 span { color: var(--gold); }
+
+  .sub {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--fg-dim);
+    line-height: 1.7;
+    margin-bottom: 48px;
+    text-wrap: pretty;
+  }
+
+  .countdown {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 52px;
+  }
+  .cd-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .cd-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(38px, 8vw, 58px);
+    line-height: 1;
+    color: var(--fg);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: clamp(72px, 18vw, 96px);
+    text-align: center;
+    padding: 14px 0 10px;
+  }
+  .cd-lbl {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .cd-sep {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    line-height: 1;
+    color: var(--border);
+    padding-bottom: 26px;
+    align-self: flex-end;
+  }
+
+  .signup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 420px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .signup input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--fg);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .signup input::placeholder { color: var(--fg-dim); }
+  .signup input:focus { border-color: rgba(232,184,75,0.5); }
+  .signup button {
+    background: var(--gold);
+    color: #1a1200;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 26px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .signup button:hover  { opacity: 0.88; transform: scale(1.02); }
+  .signup button:active { transform: scale(0.97); }
+  .signup-success {
+    display: none;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--green);
+  }
+
+  footer {
+    font-size: 12px;
+    color: #5a6375;
+    letter-spacing: 0.04em;
+  }
+</style>
 </head>
-<body class="bg-background text-on-surface font-body selection:bg-primary selection:text-on-primary">
-<!-- Top Navigation -->
-<nav class="bg-[#131313]/60 backdrop-blur-xl docked full-width top-0 sticky z-50">
-<div class="flex justify-between items-center w-full px-6 py-4 max-w-screen-2xl mx-auto">
-<div class="text-2xl font-black italic tracking-tighter text-[#e9c349] font-headline" style="">Trivseltipset</div>
-<div class="hidden md:flex gap-8 items-center font-lexend tracking-tight">
-<a class="text-[#e5e2e1] hover:text-[#88d982] transition-colors hover:opacity-80 transition-all duration-300" href="matches.html">MATCHER</a>
-<a class="text-[#e5e2e1] hover:text-[#88d982] transition-colors hover:opacity-80 transition-all duration-300" href="matches.html">TIPS</a>
-<a class="text-[#e5e2e1] hover:text-[#88d982] transition-colors hover:opacity-80 transition-all duration-300" href="leaderboard.html">LEADERBOARD</a>
+<body>
+
+<div class="page">
+
+  <div class="presenter">Torsdagsklubben presenterar</div>
+
+  <div class="status">
+    <div class="status-dot"></div>
+    Lanseras inför VM 2026
+  </div>
+
+  <h1>VM-Tipset <span>2026</span></h1>
+
+  <p class="sub">Tippa matchresultat, klättra på topplistan och utmana dina vänner — allt automatiskt.</p>
+
+  <div class="countdown">
+    <div class="cd-unit">
+      <div class="cd-val" id="cd-days">--</div>
+      <div class="cd-lbl">Dagar</div>
+    </div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit">
+      <div class="cd-val" id="cd-hours">--</div>
+      <div class="cd-lbl">Timmar</div>
+    </div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit">
+      <div class="cd-val" id="cd-mins">--</div>
+      <div class="cd-lbl">Minuter</div>
+    </div>
+    <div class="cd-sep">:</div>
+    <div class="cd-unit">
+      <div class="cd-val" id="cd-secs">--</div>
+      <div class="cd-lbl">Sekunder</div>
+    </div>
+  </div>
+
+  <div class="signup">
+    <div class="input-row" id="signup-row">
+      <input type="email" id="email-input" placeholder="din@epost.se" autocomplete="email">
+      <button onclick="handleSignup()">Håll mig uppdaterad</button>
+    </div>
+    <div class="signup-success" id="signup-success">
+      <span style="font-size:18px">✓</span> Du är med på listan!
+    </div>
+  </div>
+
+  <footer>© 2026 Trivseltipset &nbsp;·&nbsp; VM startar 11 juni 2026</footer>
+
 </div>
-<a href="login.html" class="bg-primary-container text-on-primary-container px-6 py-2 rounded-sm text-sm font-bold tracking-widest hover:opacity-80 transition-all duration-300 active:scale-95 duration-200">Registrera tips</a>
-</div>
-</nav>
-<!-- Main Content -->
-<main class="relative min-h-[921px] flex flex-col items-center justify-center overflow-hidden">
-<!-- Hero Background Image -->
-<div class="absolute inset-0 z-0">
-<img alt="World Cup Stadium" class="w-full h-full object-cover" data-alt="cinematic wide shot of a futuristic floodlit soccer stadium at night with a light mist and atmospheric green glow" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzLYBxOhCp7PrUXrsb8QCBA3UGall4v2C5OruRE9_3TUOHYlU1DuqFyq8cwBGjmsf9eGkexFHyD1G_RDFl5PQ75NC3BXbmZuVwrM3oc1auIUvgDSjnpQsJn8bKSPWYZEt8nObZIhH4kYH1MxfNED3R86ERA-p_6K9knCS_2Dm6v4M8LRBSTrw5yeNl0JN-5A02KQpTHuGGl3f5qpbcAdb8lYpmAEPHMad85kgXoszsfcN_awg7MLdgmprTbYHklt-WzMem89UxfeUL" style=""/>
-<div class="absolute inset-0 stadium-overlay"></div>
-</div>
-<!-- Content Canvas -->
-<div class="relative z-10 w-full max-w-4xl px-6 py-20 text-center flex flex-col items-center gap-12">
-<!-- Headline Section -->
-<div class="space-y-4">
-<span class="text-secondary font-headline font-bold tracking-[0.3em] uppercase text-sm block mb-4" style="">Torsdagsklubben presenterar</span>
-<h1 class="font-headline text-6xl md:text-8xl font-black italic tracking-tighter text-on-surface leading-none hero-text-glow" style="">
-                    VM-Tipset 2026</h1>
-<p class="font-body text-xl md:text-2xl text-on-surface/70 max-w-2xl mx-auto mt-6" style=""></p>
-</div>
-<!-- Countdown Timer -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
-<div class="bg-surface-container-low/40 backdrop-blur-md p-6 rounded-xl border border-outline-variant/10">
-<div id="days" class="text-4xl md:text-5xl font-headline font-bold text-primary">0</div>
-<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2">Days</div>
-</div>
-<div class="bg-surface-container-low/40 backdrop-blur-md p-6 rounded-xl border border-outline-variant/10">
-<div id="hours" class="text-4xl md:text-5xl font-headline font-bold text-primary">0</div>
-<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2">Hours</div>
-</div>
-<div class="bg-surface-container-low/40 backdrop-blur-md p-6 rounded-xl border border-outline-variant/10">
-<div id="minutes" class="text-4xl md:text-5xl font-headline font-bold text-primary">0</div>
-<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2">Minutes</div>
-</div>
-<div class="bg-surface-container-low/40 backdrop-blur-md p-6 rounded-xl border border-outline-variant/10">
-<div id="seconds" class="text-4xl md:text-5xl font-headline font-bold text-primary">0</div>
-<div class="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 mt-2">Seconds</div>
-</div>
-</div>
-<!-- Signup Form -->
-<div class="w-full max-w-md space-y-6">
-<p class="font-body text-xl md:text-2xl text-on-surface/70 max-w-2xl mx-auto mt-6" style="">Coming soon...</p>
-</div>
-<!-- Features Bento-Lite -->
-</div>
-</main>
-<!-- Footer -->
-<footer class="bg-[#131313] full-width py-12 border-t border-[#41493e]/20 tonal-transition-from-surface-to-lowest">
-<div class="flex flex-col md:flex-row justify-between items-center px-8 w-full gap-8 max-w-screen-2xl mx-auto">
-<div class="text-lg font-plus-jakarta text-xs uppercase tracking-widest text-[#e5e2e1]/60" style=""><br/>© 2026 Torsdagsklubben</div>
-<div class="text-center font-plus-jakarta text-xs uppercase tracking-widest text-[#e5e2e1]/60" style="">
-</div>
-<div class="flex gap-8 font-plus-jakarta text-xs uppercase tracking-widest">
-<a class="text-[#e5e2e1]/40 hover:text-[#e9c349] transition-colors" href="#" style="">PRIVACY</a>
-<a class="text-[#e5e2e1]/40 hover:text-[#e9c349] transition-colors" href="#" style="">TERMS</a>
-<a class="text-[#e5e2e1]/40 hover:text-[#e9c349] transition-colors" href="#" style="">RULES</a>
-</div>
-</div>
-</footer>
 
 <script>
-  (function () {
-    const targetDate = new Date('June 11 2026 18:00:00 UTC');
-    const dEl = document.getElementById('days');
-    const hEl = document.getElementById('hours');
-    const mEl = document.getElementById('minutes');
-    const sEl = document.getElementById('seconds');
+function tick() {
+  const target = new Date('2026-06-11T18:00:00Z');
+  const diff = target - Date.now();
+  if (diff <= 0) return;
+  const pad = n => String(Math.floor(n)).padStart(2, '0');
+  document.getElementById('cd-days').textContent  = pad(diff / 86400000);
+  document.getElementById('cd-hours').textContent = pad((diff % 86400000) / 3600000);
+  document.getElementById('cd-mins').textContent  = pad((diff % 3600000) / 60000);
+  document.getElementById('cd-secs').textContent  = pad((diff % 60000) / 1000);
+}
+tick();
+setInterval(tick, 1000);
 
-    function pad(value) {
-      return String(value).padStart(2, '0');
-    }
-
-    function updateTimer() {
-      const now = new Date();
-      const diff = targetDate.getTime() - now.getTime();
-      if (diff <= 0) {
-        dEl.textContent = '00';
-        hEl.textContent = '00';
-        mEl.textContent = '00';
-        sEl.textContent = '00';
-        clearInterval(intervalId);
-        return;
-      }
-      const second = 1000;
-      const minute = 60 * second;
-      const hour = 60 * minute;
-      const day = 24 * hour;
-
-      const days = Math.floor(diff / day);
-      const hours = Math.floor((diff % day) / hour);
-      const minutes = Math.floor((diff % hour) / minute);
-      const seconds = Math.floor((diff % minute) / second);
-
-      dEl.textContent = pad(days);
-      hEl.textContent = pad(hours);
-      mEl.textContent = pad(minutes);
-      sEl.textContent = pad(seconds);
-    }
-
-    updateTimer();
-    const intervalId = setInterval(updateTimer, 1000);
-  })();
+function handleSignup() {
+  const inp = document.getElementById('email-input');
+  if (!inp.value.trim().includes('@')) {
+    inp.style.borderColor = '#e84b4b';
+    setTimeout(() => inp.style.borderColor = '', 1200);
+    return;
+  }
+  document.getElementById('signup-row').style.display = 'none';
+  document.getElementById('signup-success').style.display = 'flex';
+}
+document.getElementById('email-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleSignup();
+});
 </script>
-</body></html>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const jwt = require\\('jsonwebtoken'\\); const s = jwt.sign\\({userId:'test', exp: Math.floor\\(Date.now\\(\\)/1000\\)+3600}, 'testsecret'\\); console.log\\('sign ok:', s.substring\\(0,20\\)\\); const p = jwt.verify\\(s, 'testsecret'\\); console.log\\('verify ok:', p.userId\\);\")"
+    ]
+  }
+}

@@ -5,7 +5,7 @@ const { TableClient } = require('@azure/data-tables');
 function getTable(name) {
   const conn = process.env.TABLE_CONNECTION_STRING;
   if (!conn) throw new Error('TABLE_CONNECTION_STRING is not set');
-  return new TableClient(conn, name);
+  return TableClient.fromConnectionString(conn, name);
 }
 
 function getUsersTable() { return getTable('users'); }

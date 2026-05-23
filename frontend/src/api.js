@@ -29,4 +29,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ matchId, homeScore, awayScore }),
     }),
+  updateProfile: (displayName) =>
+    apiFetch('/auth/profile', { method: 'POST', body: JSON.stringify({ displayName }) }),
+  getLeaderboard: () => apiFetch('/leaderboard'),
 };

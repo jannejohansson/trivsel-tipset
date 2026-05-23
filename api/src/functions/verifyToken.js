@@ -52,7 +52,7 @@ app.http('verifyToken', {
       );
     } catch {
       await usersTable.upsertEntity(
-        { partitionKey: 'user', rowKey: userId, email, displayName, createdAt: now, lastLoginAt: now },
+        { partitionKey: 'user', rowKey: userId, email, displayName, displayNameConfirmed: false, createdAt: now, lastLoginAt: now },
         'Replace'
       );
     }

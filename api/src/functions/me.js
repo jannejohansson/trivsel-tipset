@@ -15,14 +15,16 @@ app.http('me', {
     }
 
     let displayName = user.email.split('@')[0];
+    let displayNameConfirmed = false;
     try {
       const entity = await getUsersTable().getEntity('user', user.userId);
       displayName = entity.displayName || displayName;
-    } catch { /* use derived displayName */ }
+      displayNameConfirmed = entity.displayNameConfirmed === true;
+    } catch { /* use defaults */ }
 
     return {
       status: 200,
-      jsonBody: { userId: user.userId, email: user.email, displayName },
+      jsonBody: { userId: user.userId, email: user.email, displayName, displayNameConfirmed },
     };
   },
 });

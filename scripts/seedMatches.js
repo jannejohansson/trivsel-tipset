@@ -12,14 +12,14 @@ if (!process.env.TABLE_CONNECTION_STRING) {
   } catch { /* running in CI with env vars set */ }
 }
 
-const { TableClient } = require('@azure/data-tables');
+const { TableClient } = require(path.join(__dirname, '../api/node_modules/@azure/data-tables'));
 const { MATCHES } = require(path.join(__dirname, '../api/src/shared/matchData'));
 
 const TABLE_NAMES = ['matches', 'users', 'magicTokens', 'predictions'];
 const conn = process.env.TABLE_CONNECTION_STRING;
 
 async function ensureTable(name) {
-  const client = new TableClient(conn, name);
+  const client = TableClient.fromConnectionString(conn, name);
   try {
     await client.createTable();
     console.log(`Created table: ${name}`);
@@ -38,7 +38,7 @@ async function seed() {
     await ensureTable(name);
   }
 
-  const matchesTable = new TableClient(conn, 'matches');
+  const matchesTable = TableClient.fromConnectionString(conn, 'matches');
   let count = 0;
   for (const match of MATCHES) {
     await matchesTable.upsertEntity(

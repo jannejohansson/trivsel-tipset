@@ -36,11 +36,15 @@ app.http('sendMagicLink', {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    const tokensTable = getTokensTable();
-    await tokensTable.upsertEntity(
-      { partitionKey: 'token', rowKey: token, email, expiresAt },
-      'Replace'
-    );
+    try {
+      const tokensTable = getTokensTable();
+      await tokensTable.upsertEntity(
+        { partitionKey: 'token', rowKey: token, email, expiresAt },
+        'Replace'
+      );
+    } catch (err) {
+      return { status: 500, jsonBody: { error: 'Token storage failed', detail: err.message } };
+    }
 
     // Magic link hits the API directly so it can set the cookie and redirect
     const magicLink = `${process.env.APP_URL}/api/auth/verify-token?token=${token}`;
@@ -51,28 +55,33 @@ app.http('sendMagicLink', {
       ? '<p style="color:#e9c349;margin-top:16px;">Notera: Tipsen är låsta – VM har startat.</p>'
       : '<p style="margin-top:16px;">Länken är giltig i 15 minuter.</p>';
 
-    await emailClient.beginSend({
-      senderAddress: process.env.ACS_SENDER_EMAIL,
-      recipients: { to: [{ address: email }] },
-      content: {
-        subject: 'Din inloggningslänk – Trivseltipset',
-        html: `
-          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#131313;color:#e5e2e1;padding:32px;border-radius:8px;">
-            <h1 style="font-size:24px;color:#88d982;margin:0 0 16px;">Trivseltipset</h1>
-            <p>Klicka på knappen nedan för att logga in:</p>
-            <a href="${magicLink}"
-               style="display:inline-block;margin:24px 0;background:#065f18;color:#86d881;padding:14px 28px;border-radius:4px;text-decoration:none;font-weight:bold;font-size:16px;">
-              Logga in nu
-            </a>
-            ${lockMessage}
-            <p style="color:#e5e2e1;opacity:0.4;font-size:12px;margin-top:32px;">
-              Om du inte begärde denna länk kan du ignorera detta mail.<br/>
-              ${magicLink}
-            </p>
-          </div>
-        `,
-      },
-    });
+    try {
+      const poller = await emailClient.beginSend({
+        senderAddress: process.env.ACS_SENDER_EMAIL,
+        recipients: { to: [{ address: email }] },
+        content: {
+          subject: 'Din inloggningslänk – Trivseltipset',
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#131313;color:#e5e2e1;padding:32px;border-radius:8px;">
+              <h1 style="font-size:24px;color:#88d982;margin:0 0 16px;">Trivseltipset</h1>
+              <p>Klicka på knappen nedan för att logga in:</p>
+              <a href="${magicLink}"
+                 style="display:inline-block;margin:24px 0;background:#065f18;color:#86d881;padding:14px 28px;border-radius:4px;text-decoration:none;font-weight:bold;font-size:16px;">
+                Logga in nu
+              </a>
+              ${lockMessage}
+              <p style="color:#e5e2e1;opacity:0.4;font-size:12px;margin-top:32px;">
+                Om du inte begärde denna länk kan du ignorera detta mail.<br/>
+                ${magicLink}
+              </p>
+            </div>
+          `,
+        },
+      });
+      await poller.pollUntilDone();
+    } catch (err) {
+      return { status: 500, jsonBody: { error: 'Email sending failed', detail: err.message } };
+    }
 
     return { status: 200, jsonBody: { message: 'Check your email' } };
   },

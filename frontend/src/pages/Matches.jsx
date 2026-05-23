@@ -68,7 +68,7 @@ export default function Matches() {
         <p style={styles.sub}>
           {locked
             ? 'Tipsen är låsta.'
-            : `Inloggad som ${user?.email} · Tips sparas automatiskt`}
+            : `Inloggad som ${user?.displayName} · Tips sparas automatiskt`}
         </p>
       </div>
 

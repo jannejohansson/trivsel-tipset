@@ -1,12 +1,4 @@
-import { useState } from 'react';
 import ScoreInput from './ScoreInput.jsx';
-
-function flagEmoji(code) {
-  if (!code) return '';
-  // Handle special codes like 'gb-eng'
-  const c = code.split('-')[0].toUpperCase();
-  return [...c].map(ch => String.fromCodePoint(0x1F1E6 + ch.charCodeAt(0) - 65)).join('');
-}
 
 function formatKickoff(utc) {
   return new Date(utc).toLocaleString('sv-SE', {
@@ -21,10 +13,12 @@ const styles = {
     background: 'var(--surface)',
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
-    padding: '16px',
+    boxShadow: 'var(--shadow-card)',
+    padding: '14px 16px',
     display: 'flex',
     flexDirection: 'column',
     gap: '10px',
+    borderLeft: '3px solid var(--green)',
   },
   header: {
     display: 'flex',
@@ -42,43 +36,65 @@ const styles = {
   team: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '10px',
     fontSize: '14px',
     fontWeight: 600,
     flex: 1,
+    color: 'var(--text)',
   },
   teamAway: {
     justifyContent: 'flex-end',
     flexDirection: 'row-reverse',
   },
-  flag: { fontSize: '20px' },
+  flag: {
+    width: '28px',
+    height: '21px',
+    borderRadius: '3px',
+    boxShadow: '0 1px 2px rgba(13,27,42,0.18)',
+    flexShrink: 0,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  },
+  matchday: {
+    background: 'var(--green-dim)',
+    color: '#0b6b32',
+    fontWeight: 700,
+    fontSize: '10px',
+    letterSpacing: '0.5px',
+    padding: '2px 8px',
+    borderRadius: '999px',
+    textTransform: 'uppercase',
+  },
 };
 
-export default function MatchCard({ match, locked }) {
-  const [prediction, setPrediction] = useState(match.prediction || null);
-
+export default function MatchCard({ match, prediction, locked, onPredictionChange }) {
   return (
     <div style={styles.card}>
       <div style={styles.header}>
+        <span style={styles.matchday}>MD{match.matchday}</span>
         <span>{formatKickoff(match.kickoffUtc)}</span>
-        <span style={{ opacity: 0.6, fontSize: '11px' }}>{match.venue}</span>
       </div>
       <div style={styles.teams}>
         <div style={styles.team}>
-          <span style={styles.flag}>{flagEmoji(match.homeFlag)}</span>
+          <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
           <span>{match.homeTeam}</span>
         </div>
         <ScoreInput
           matchId={match.id}
           initial={prediction}
           locked={locked}
-          onChange={(pred) => setPrediction(pred)}
+          onChange={onPredictionChange}
         />
         <div style={{ ...styles.team, ...styles.teamAway }}>
-          <span style={styles.flag}>{flagEmoji(match.awayFlag)}</span>
+          <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
           <span>{match.awayTeam}</span>
         </div>
       </div>
+      {match.venue && (
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.75 }}>
+          {match.venue}
+        </div>
+      )}
     </div>
   );
 }

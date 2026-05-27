@@ -43,3 +43,38 @@ input[type="number"] { font-family: inherit; }
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 input[type=number] { -moz-appearance: textfield; }
+
+/* Symmetric group selector: 12 / 6 / 4 cols */
+.group-tabs {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) {
+  .group-tabs { grid-template-columns: repeat(6, 1fr); }
+}
+@media (max-width: 500px) {
+  .group-tabs { grid-template-columns: repeat(4, 1fr); }
+}
+
+.group-tab {
+  padding: 8px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  font-family: inherit;
+}
+.group-tab:hover { color: var(--text); border-color: var(--text-muted); }
+.group-tab.active {
+  background: linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(21,163,74,0.25);
+}

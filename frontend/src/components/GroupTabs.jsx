@@ -1,29 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import MatchCard from './MatchCard.jsx';
+import GroupStandings from './GroupStandings.jsx';
 
 const styles = {
-  tabs: {
-    display: 'flex',
-    gap: '4px',
-    flexWrap: 'wrap',
-    marginBottom: '20px',
-  },
-  tab: {
-    padding: '6px 14px',
-    borderRadius: 'var(--radius)',
-    border: '1px solid var(--border)',
-    background: 'none',
-    color: 'var(--text-muted)',
-    fontSize: '13px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'background 0.15s',
-  },
-  tabActive: {
-    background: 'var(--surface-2)',
-    color: 'var(--text)',
-    borderColor: 'var(--accent)',
-  },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
@@ -41,27 +20,69 @@ export default function GroupTabs({ matches, locked }) {
     return map;
   }, [matches]);
 
+  const [predictions, setPredictions] = useState(() => {
+    const map = new Map();
+    for (const m of matches) {
+      if (m.prediction) map.set(m.id, m.prediction);
+    }
+    return map;
+  });
+
+  useEffect(() => {
+    setPredictions(prev => {
+      const next = new Map(prev);
+      for (const m of matches) {
+        if (m.prediction && !next.has(m.id)) next.set(m.id, m.prediction);
+      }
+      return next;
+    });
+  }, [matches]);
+
+  const handlePredictionChange = (matchId, pred) => {
+    setPredictions(prev => {
+      const next = new Map(prev);
+      next.set(matchId, pred);
+      return next;
+    });
+  };
+
   const groupKeys = [...groups.keys()].sort();
   const [activeGroup, setActiveGroup] = useState(groupKeys[0] || 'A');
 
-  const groupMatches = groups.get(activeGroup) || [];
+  const groupMatches = (groups.get(activeGroup) || []).slice().sort(
+    (a, b) => a.matchday - b.matchday || a.matchNumber - b.matchNumber
+  );
 
   return (
     <div>
-      <div style={styles.tabs}>
+      <div className="group-tabs">
         {groupKeys.map(g => (
           <button
             key={g}
-            style={{ ...styles.tab, ...(g === activeGroup ? styles.tabActive : {}) }}
+            className={`group-tab${g === activeGroup ? ' active' : ''}`}
             onClick={() => setActiveGroup(g)}
+            aria-label={`Grupp ${g}`}
           >
-            Grupp {g}
+            {g}
           </button>
         ))}
       </div>
+
+      <GroupStandings
+        group={activeGroup}
+        matches={groupMatches}
+        predictions={predictions}
+      />
+
       <div style={styles.grid}>
         {groupMatches.map(match => (
-          <MatchCard key={match.id} match={match} locked={locked} />
+          <MatchCard
+            key={match.id}
+            match={match}
+            prediction={predictions.get(match.id) || null}
+            locked={locked}
+            onPredictionChange={(pred) => handlePredictionChange(match.id, pred)}
+          />
         ))}
       </div>
     </div>

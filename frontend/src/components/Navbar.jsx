@@ -54,7 +54,7 @@ export default function Navbar() {
       <Link to="/" style={styles.logo}>⚽ Trivseltipset 2026</Link>
       <div style={styles.links}>
         <Link to="/matches" style={styles.link}>Tippa</Link>
-        <Link to="/leaderboard" style={styles.link}>Tabell</Link>
+        <Link to="/leaderboard" style={styles.link}>Ställning</Link>
         {!loading && (
           user
             ? <button style={styles.btn} onClick={handleLogout}>Logga ut</button>

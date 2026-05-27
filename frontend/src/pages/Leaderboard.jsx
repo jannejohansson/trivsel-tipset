@@ -8,42 +8,135 @@ function formatDate(iso) {
   });
 }
 
+const TOTAL_MATCHES = 72;
+
 const styles = {
-  page: {
-    maxWidth: '600px',
-    margin: '0 auto',
-    padding: '40px 20px',
-  },
-  header: {
+  hero: {
+    background: 'linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%)',
+    color: '#ffffff',
+    padding: '36px 20px 28px',
     textAlign: 'center',
-    marginBottom: '32px',
   },
-  icon: { fontSize: '48px', marginBottom: '12px' },
-  title: { fontSize: '24px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' },
-  count: { color: 'var(--text-muted)', fontSize: '14px' },
+  eyebrow: {
+    fontSize: '11px',
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: '8px',
+    fontWeight: 600,
+  },
+  title: {
+    fontSize: '28px',
+    fontWeight: 800,
+    letterSpacing: '-0.01em',
+    margin: 0,
+  },
+  sub: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: '14px',
+    marginTop: '8px',
+  },
+  page: {
+    maxWidth: '720px',
+    margin: '0 auto',
+    padding: '24px 20px 60px',
+  },
   list: {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    marginBottom: '32px',
+    marginBottom: '24px',
   },
   row: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: '14px',
     padding: '12px 16px',
     background: 'var(--surface)',
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
+    boxShadow: 'var(--shadow-card)',
+    borderLeft: '3px solid var(--green)',
   },
-  name: { fontWeight: 600, fontSize: '15px' },
-  date: { color: 'var(--text-muted)', fontSize: '12px' },
-  divider: {
-    borderTop: '1px solid var(--border)',
-    paddingTop: '24px',
+  rank: {
+    width: '28px',
+    height: '28px',
+    borderRadius: '999px',
+    background: 'var(--surface-2)',
+    color: 'var(--text-muted)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 800,
+    fontSize: '13px',
+    flexShrink: 0,
+    fontVariantNumeric: 'tabular-nums',
+  },
+  rankTop: {
+    background: 'linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%)',
+    color: '#ffffff',
+    boxShadow: '0 2px 6px rgba(21,163,74,0.3)',
+  },
+  middle: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  name: {
+    fontWeight: 700,
+    fontSize: '15px',
+    color: 'var(--text)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  progressTrack: {
+    height: '6px',
+    background: 'var(--surface-2)',
+    borderRadius: '999px',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    background: 'linear-gradient(90deg, #15a34a, #58c46f)',
+    borderRadius: '999px',
+    transition: 'width 0.3s',
+  },
+  right: {
+    textAlign: 'right',
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  count: {
+    fontSize: '13px',
+    fontWeight: 700,
+    color: 'var(--text)',
+  },
+  countDone: {
+    color: 'var(--green)',
+  },
+  date: {
+    color: 'var(--text-muted)',
+    fontSize: '11px',
+  },
+  empty: {
     textAlign: 'center',
     color: 'var(--text-muted)',
-    fontSize: '14px',
+    padding: '40px 20px',
+  },
+  footer: {
+    borderTop: '1px solid var(--border)',
+    paddingTop: '20px',
+    marginTop: '8px',
+    textAlign: 'center',
+    color: 'var(--text-muted)',
+    fontSize: '13px',
+    lineHeight: 1.5,
   },
 };
 
@@ -57,37 +150,63 @@ export default function Leaderboard() {
       .catch(() => setError('Kunde inte ladda deltagarlistan.'));
   }, []);
 
+  const sortedUsers = data?.users
+    ? [...data.users].sort((a, b) =>
+        (b.predictionCount || 0) - (a.predictionCount || 0)
+        || (a.displayName || '').localeCompare(b.displayName || '')
+      )
+    : [];
+
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <div style={styles.icon}>🏆</div>
-        <h1 style={styles.title}>Resultattabell</h1>
+    <>
+      <section style={styles.hero}>
+        <div style={styles.eyebrow}>Trivseltipset · FIFA World Cup 2026</div>
+        <h1 style={styles.title}>Aktuell ställning</h1>
         {data && (
-          <p style={styles.count}>{data.count} {data.count === 1 ? 'deltagare' : 'deltagare'} registrerade</p>
+          <p style={styles.sub}>{data.count} deltagare registrerade</p>
         )}
-      </div>
+      </section>
 
-      {error && <p style={{ color: 'var(--danger)', textAlign: 'center' }}>{error}</p>}
+      <div style={styles.page}>
+        {error && (
+          <p style={{ color: 'var(--danger)', textAlign: 'center', padding: '16px' }}>{error}</p>
+        )}
 
-      {data && data.users.length > 0 && (
-        <div style={styles.list}>
-          {data.users.map((u, i) => (
-            <div key={i} style={styles.row}>
-              <span style={styles.name}>{u.displayName}</span>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: u.predictionCount === 72 ? 'var(--green)' : 'var(--text)' }}>
-                  {u.predictionCount} / 72 matcher
+        {data && sortedUsers.length === 0 && (
+          <p style={styles.empty}>Inga deltagare registrerade ännu.</p>
+        )}
+
+        {sortedUsers.length > 0 && (
+          <div style={styles.list}>
+            {sortedUsers.map((u, i) => {
+              const count = u.predictionCount || 0;
+              const pct = Math.min(100, (count / TOTAL_MATCHES) * 100);
+              const isDone = count === TOTAL_MATCHES;
+              return (
+                <div key={u.displayName + i} style={styles.row}>
+                  <div style={{ ...styles.rank, ...(i < 3 ? styles.rankTop : {}) }}>{i + 1}</div>
+                  <div style={styles.middle}>
+                    <span style={styles.name}>{u.displayName}</span>
+                    <div style={styles.progressTrack}>
+                      <div style={{ ...styles.progressFill, width: `${pct}%` }} />
+                    </div>
+                  </div>
+                  <div style={styles.right}>
+                    <span style={{ ...styles.count, ...(isDone ? styles.countDone : {}) }}>
+                      {count} / {TOTAL_MATCHES}
+                    </span>
+                    <span style={styles.date}>Inloggad {formatDate(u.lastLoginAt)}</span>
+                  </div>
                 </div>
-                <div style={styles.date}>Senast inloggad {formatDate(u.lastLoginAt)}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
 
-      <div style={styles.divider}>
-        Poängtabellen öppnar efter att VM-gruppspelet startar den 11 juni 2026.
+        <div style={styles.footer}>
+          Poängställningen uppdateras löpande under VM-gruppspelet från 11 juni 2026.
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -51,7 +51,7 @@ export default function Navbar() {
 
   return (
     <nav style={styles.nav}>
-      <Link to="/" style={styles.logo}>⚽ Trivseltipset</Link>
+      <Link to="/" style={styles.logo}>⚽ Trivseltipset 2026</Link>
       <div style={styles.links}>
         <Link to="/matches" style={styles.link}>Tippa</Link>
         <Link to="/leaderboard" style={styles.link}>Tabell</Link>

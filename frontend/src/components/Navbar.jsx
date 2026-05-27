@@ -55,6 +55,7 @@ export default function Navbar() {
       <div style={styles.links}>
         <Link to="/matches" style={styles.link}>Tippa</Link>
         <Link to="/leaderboard" style={styles.link}>Ställning</Link>
+        <Link to="/regler" style={styles.link}>Regler</Link>
         {!loading && (
           user
             ? <button style={styles.btn} onClick={handleLogout}>Logga ut</button>

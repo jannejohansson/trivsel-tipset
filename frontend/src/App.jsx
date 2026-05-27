@@ -6,6 +6,7 @@ import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Matches from './pages/Matches.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
+import Regler from './pages/Regler.jsx';
 import SetupProfile from './pages/SetupProfile.jsx';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/setup" element={<AuthGuard><SetupProfile /></AuthGuard>} />
           <Route path="/matches" element={<AuthGuard><Matches /></AuthGuard>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/regler" element={<Regler />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

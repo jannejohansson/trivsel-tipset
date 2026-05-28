@@ -1,13 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api.js';
 
-function formatDate(iso) {
-  if (!iso) return '';
-  return new Date(iso).toLocaleString('sv-SE', {
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
-}
-
 const TOTAL_MATCHES = 72;
 
 const styles = {
@@ -152,7 +145,8 @@ export default function Leaderboard() {
 
   const sortedUsers = data?.users
     ? [...data.users].sort((a, b) =>
-        (b.predictionCount || 0) - (a.predictionCount || 0)
+        (b.points || 0) - (a.points || 0)
+        || (b.predictionCount || 0) - (a.predictionCount || 0)
         || (a.displayName || '').localeCompare(b.displayName || '')
       )
     : [];
@@ -181,7 +175,7 @@ export default function Leaderboard() {
             {sortedUsers.map((u, i) => {
               const count = u.predictionCount || 0;
               const pct = Math.min(100, (count / TOTAL_MATCHES) * 100);
-              const isDone = count === TOTAL_MATCHES;
+              const points = u.points || 0;
               return (
                 <div key={u.displayName + i} style={styles.row}>
                   <div style={{ ...styles.rank, ...(i < 3 ? styles.rankTop : {}) }}>{i + 1}</div>
@@ -192,10 +186,10 @@ export default function Leaderboard() {
                     </div>
                   </div>
                   <div style={styles.right}>
-                    <span style={{ ...styles.count, ...(isDone ? styles.countDone : {}) }}>
-                      {count} / {TOTAL_MATCHES}
+                    <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>
+                    <span style={styles.date}>
+                      Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
                     </span>
-                    <span style={styles.date}>Inloggad {formatDate(u.lastLoginAt)}</span>
                   </div>
                 </div>
               );

@@ -8,3 +8,7 @@ require('./src/functions/getMatches');
 require('./src/functions/savePrediction');
 require('./src/functions/getLeaderboard');
 require('./src/functions/updateProfile');
+require('./src/functions/getPlayoff');
+require('./src/functions/savePlayoffPrediction');
+require('./src/functions/getResults');
+require('./src/functions/adminSetResults');

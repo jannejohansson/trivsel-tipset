@@ -1,3 +1,5 @@
+import { computeGroupStandings } from '../lib/bracket.js';
+
 const styles = {
   wrap: {
     background: 'var(--surface)',
@@ -93,49 +95,8 @@ const styles = {
   thirdRow: { background: 'rgba(184,134,11,0.08)' },
 };
 
-function computeStandings(matches, predictions) {
-  const teams = new Map();
-
-  const seed = (name, flag) => {
-    if (!teams.has(name)) {
-      teams.set(name, { team: name, flag, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 });
-    }
-  };
-
-  for (const m of matches) {
-    seed(m.homeTeam, m.homeFlag);
-    seed(m.awayTeam, m.awayFlag);
-  }
-
-  for (const m of matches) {
-    const pred = predictions.get(m.id);
-    if (!pred) continue;
-    const hs = Number(pred.homeScore);
-    const as = Number(pred.awayScore);
-    if (!Number.isFinite(hs) || !Number.isFinite(as)) continue;
-
-    const home = teams.get(m.homeTeam);
-    const away = teams.get(m.awayTeam);
-    home.P++; away.P++;
-    home.GF += hs; home.GA += as;
-    away.GF += as; away.GA += hs;
-    if (hs > as) { home.W++; home.Pts += 3; away.L++; }
-    else if (hs < as) { away.W++; away.Pts += 3; home.L++; }
-    else { home.D++; away.D++; home.Pts += 1; away.Pts += 1; }
-  }
-
-  for (const t of teams.values()) t.GD = t.GF - t.GA;
-
-  return [...teams.values()].sort((a, b) => {
-    if (b.Pts !== a.Pts) return b.Pts - a.Pts;
-    if (b.GD !== a.GD) return b.GD - a.GD;
-    if (b.GF !== a.GF) return b.GF - a.GF;
-    return a.team.localeCompare(b.team);
-  });
-}
-
 export default function GroupStandings({ group, matches, predictions }) {
-  const rows = computeStandings(matches, predictions);
+  const rows = computeGroupStandings(matches, predictions);
   const played = rows.reduce((s, r) => s + r.P, 0) / 2;
 
   return (

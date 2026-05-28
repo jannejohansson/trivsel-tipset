@@ -33,4 +33,19 @@ function tryAuth(request) {
   }
 }
 
-module.exports = { verifyAuth, tryAuth };
+function isAdminEmail(email) {
+  const admin = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  return !!admin && !!email && email.trim().toLowerCase() === admin;
+}
+
+function verifyAdmin(request) {
+  const user = verifyAuth(request);
+  if (!isAdminEmail(user.email)) {
+    const err = new Error('Admin access required');
+    err.status = 403;
+    throw err;
+  }
+  return user;
+}
+
+module.exports = { verifyAuth, tryAuth, verifyAdmin, isAdminEmail };

@@ -80,7 +80,7 @@ export default function GroupTabs({ matches, locked }) {
             key={match.id}
             match={match}
             prediction={predictions.get(match.id) || null}
-            locked={locked}
+            locked={match.locked ?? locked}
             onPredictionChange={(pred) => handlePredictionChange(match.id, pred)}
           />
         ))}

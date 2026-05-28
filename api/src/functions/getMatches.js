@@ -4,17 +4,15 @@ const { app } = require('@azure/functions');
 const { tryAuth } = require('../shared/authMiddleware');
 const { getMatchesTable, getPredictionsTable } = require('../shared/tableClient');
 
-const LOCKOUT_TIMESTAMP = new Date('2026-06-11T18:00:00Z').getTime();
-
 app.http('getMatches', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'matches',
   handler: async (request) => {
     const user = tryAuth(request);
-    const locked = Date.now() >= LOCKOUT_TIMESTAMP;
+    const now = Date.now();
 
-    // Load all matches
+    // Load all matches; each locks individually at its own kickoff.
     const matchesTable = getMatchesTable();
     const matches = [];
     for await (const entity of matchesTable.listEntities()) {
@@ -29,9 +27,11 @@ app.http('getMatches', {
         awayFlag: entity.awayFlag,
         kickoffUtc: entity.kickoffUtc,
         venue: entity.venue,
+        locked: entity.kickoffUtc ? now >= new Date(entity.kickoffUtc).getTime() : false,
       });
     }
     matches.sort((a, b) => a.matchNumber - b.matchNumber);
+    const locked = matches.length > 0 && matches.every((m) => m.locked);
 
     // Merge in user predictions if authenticated
     if (user) {

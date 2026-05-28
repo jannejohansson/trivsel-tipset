@@ -1,25 +1,49 @@
 'use strict';
 
 const { app } = require('@azure/functions');
-const { getUsersTable, getPredictionsTable } = require('../shared/tableClient');
+const { getUsersTable, getPredictionsTable, getPlayoffTable } = require('../shared/tableClient');
+const { loadResults } = require('../shared/results');
+const { MATCHES } = require('../shared/matchData');
+const { buildBracket } = require('../shared/bracket');
+const { scoreGroupTotal, scorePlayoff } = require('../shared/scoring');
 
 app.http('getLeaderboard', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'leaderboard',
   handler: async () => {
-    // Load users and prediction counts in parallel
-    const [usersRaw, predCounts] = await Promise.all([
+    const [usersRaw, predsByUser, picksByUser, results] = await Promise.all([
       collectUsers(),
-      countPredictionsPerUser(),
+      collectByUser(getPredictionsTable(), (e) => ({ homeScore: e.homeScore, awayScore: e.awayScore })),
+      collectByUser(getPlayoffTable(), (e) => e.winner),
+      loadResults(),
     ]);
 
-    const users = usersRaw.map(u => ({
-      ...u,
-      predictionCount: predCounts.get(u.userId) || 0,
-    }));
+    // The single shared actual bracket every user's playoff picks are scored against.
+    const actualBracket = buildBracket(MATCHES, results.groupResults, results.knockoutWinners, {
+      thirdOrder: results.thirdOrder,
+    });
 
-    users.sort((a, b) => new Date(b.lastLoginAt) - new Date(a.lastLoginAt));
+    const users = usersRaw.map((u) => {
+      const preds = predsByUser.get(u.userId) || {};
+      const picks = picksByUser.get(u.userId) || {};
+      const groupPoints = scoreGroupTotal(preds, results.groupResults);
+      const predictedBracket = buildBracket(MATCHES, preds, picks);
+      const playoffPoints = scorePlayoff(predictedBracket, actualBracket).total;
+      return {
+        ...u,
+        predictionCount: Object.keys(preds).length,
+        groupPoints,
+        playoffPoints,
+        points: groupPoints + playoffPoints,
+      };
+    });
+
+    users.sort((a, b) =>
+      b.points - a.points ||
+      b.predictionCount - a.predictionCount ||
+      new Date(b.lastLoginAt) - new Date(a.lastLoginAt)
+    );
 
     return { status: 200, jsonBody: { count: users.length, users } };
   },
@@ -39,11 +63,13 @@ async function collectUsers() {
   return users;
 }
 
-async function countPredictionsPerUser() {
-  const counts = new Map();
-  for await (const entity of getPredictionsTable().listEntities()) {
+// Bucket an entire table by partitionKey (userId) into { rowKey: mapFn(entity) }.
+async function collectByUser(table, mapFn) {
+  const byUser = new Map();
+  for await (const entity of table.listEntities()) {
     const uid = entity.partitionKey;
-    counts.set(uid, (counts.get(uid) || 0) + 1);
+    if (!byUser.has(uid)) byUser.set(uid, {});
+    byUser.get(uid)[entity.rowKey] = mapFn(entity);
   }
-  return counts;
+  return byUser;
 }

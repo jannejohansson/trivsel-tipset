@@ -1,7 +1,7 @@
 'use strict';
 
 const { app } = require('@azure/functions');
-const { tryAuth } = require('../shared/authMiddleware');
+const { tryAuth, isAdminEmail } = require('../shared/authMiddleware');
 const { getUsersTable } = require('../shared/tableClient');
 
 app.http('me', {
@@ -24,7 +24,7 @@ app.http('me', {
 
     return {
       status: 200,
-      jsonBody: { userId: user.userId, email: user.email, displayName, displayNameConfirmed },
+      jsonBody: { userId: user.userId, email: user.email, displayName, displayNameConfirmed, isAdmin: isAdminEmail(user.email) },
     };
   },
 });

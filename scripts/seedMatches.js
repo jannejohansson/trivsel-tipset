@@ -15,7 +15,7 @@ if (!process.env.TABLE_CONNECTION_STRING) {
 const { TableClient } = require(path.join(__dirname, '../api/node_modules/@azure/data-tables'));
 const { MATCHES } = require(path.join(__dirname, '../api/src/shared/matchData'));
 
-const TABLE_NAMES = ['matches', 'users', 'magicTokens', 'predictions'];
+const TABLE_NAMES = ['matches', 'users', 'magicTokens', 'predictions', 'playoffPredictions', 'results'];
 const conn = process.env.TABLE_CONNECTION_STRING;
 
 async function ensureTable(name) {

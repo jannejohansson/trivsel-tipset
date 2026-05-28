@@ -4,8 +4,6 @@ const { app } = require('@azure/functions');
 const { verifyAuth } = require('../shared/authMiddleware');
 const { getPredictionsTable, getMatchesTable } = require('../shared/tableClient');
 
-const LOCKOUT_TIMESTAMP = new Date('2026-06-11T18:00:00Z').getTime();
-
 app.http('savePrediction', {
   methods: ['POST'],
   authLevel: 'anonymous',
@@ -16,10 +14,6 @@ app.http('savePrediction', {
       user = verifyAuth(request);
     } catch (err) {
       return { status: err.status || 401, jsonBody: { error: err.message } };
-    }
-
-    if (Date.now() >= LOCKOUT_TIMESTAMP) {
-      return { status: 403, jsonBody: { error: 'Predictions are locked' } };
     }
 
     let body;
@@ -40,17 +34,20 @@ app.http('savePrediction', {
       return { status: 400, jsonBody: { error: 'awayScore must be integer 0-20' } };
     }
 
-    // Verify match exists
+    // Verify match exists and is not yet locked (locks at its own kickoff)
     const matchesTable = getMatchesTable();
-    let matchFound = false;
+    let matchEntity = null;
     for await (const entity of matchesTable.listEntities({
       queryOptions: { filter: `RowKey eq '${matchId}'` },
     })) {
-      matchFound = true;
+      matchEntity = entity;
       break;
     }
-    if (!matchFound) {
+    if (!matchEntity) {
       return { status: 404, jsonBody: { error: 'Match not found' } };
+    }
+    if (matchEntity.kickoffUtc && Date.now() >= new Date(matchEntity.kickoffUtc).getTime()) {
+      return { status: 403, jsonBody: { error: 'Match is locked' } };
     }
 
     const now = new Date().toISOString();

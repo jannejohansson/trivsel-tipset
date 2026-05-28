@@ -253,6 +253,23 @@ const EXAMPLES = [
   },
 ];
 
+const ADVANCEMENT = [
+  '12 grupper med 4 lag. Etta och tvåa i varje grupp går vidare — 24 lag.',
+  'De 8 bästa grupptreorna går också vidare. Totalt 32 lag i sextondelsfinalen.',
+  'Grupptreorna rangordnas på poäng, målskillnad och gjorda mål. De 8 bästa placeras i slutspelsträdet enligt Fifas officiella schema (Annex C), så att lag från samma grupp inte kan mötas före kvartsfinal.',
+  'Ditt slutspelsträd byggs automatiskt utifrån dina gruppspelstips. I slutspelet väljer du bara vilket lag som går vidare i varje match.',
+  'Slutspelstipsen kan ändras ända fram till den sista gruppspelsmatchen — sedan låses de.',
+];
+
+const PLAYOFF_TIERS = [
+  { points: 1, name: 'Till sextondelsfinal', desc: 'Per lag du tippat rätt som tar sig vidare från gruppspelet (topp 2 eller bästa treor).' },
+  { points: 3, name: 'Till åttondelsfinal', desc: 'Per lag du tippat rätt som vinner sin sextondelsfinal.' },
+  { points: 7, name: 'Till kvartsfinal', desc: 'Per lag du tippat rätt som når kvartsfinal.' },
+  { points: 11, name: 'Till semifinal', desc: 'Per lag du tippat rätt som når semifinal.' },
+  { points: 15, name: 'Till final', desc: 'Per lag du tippat rätt som når finalen.' },
+  { points: 25, name: 'Världsmästare', desc: 'För att tippa rätt världsmästare.' },
+];
+
 function ScorePill({ score, actual }) {
   return (
     <span style={{ ...styles.scorePill, ...(actual ? styles.scorePillActual : {}) }}>
@@ -324,12 +341,47 @@ export default function Regler() {
           ))}
         </div>
 
+        <div style={styles.sectionTitle}>Avancemang till slutspel</div>
+        <div style={styles.card}>
+          <ul style={styles.bullet}>
+            {ADVANCEMENT.map((text, i) => (
+              <li key={i} style={{ ...styles.bulletItem, ...(i === ADVANCEMENT.length - 1 ? { borderBottom: 'none' } : {}) }}>
+                <span style={styles.bulletDot} />
+                <span>{text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div style={styles.sectionTitle}>Slutspelspoäng</div>
+        <div style={styles.card}>
+          <ul style={styles.pointsList}>
+            {PLAYOFF_TIERS.map((p, i) => (
+              <li key={p.name} style={{ ...styles.pointsItem, ...(i === PLAYOFF_TIERS.length - 1 ? styles.pointsItemLast : {}) }}>
+                <div style={styles.pointBadge}>
+                  <span style={styles.pointNum}>{p.points}</span>
+                  <span style={styles.pointUnit}>poäng</span>
+                </div>
+                <div style={styles.pointBody}>
+                  <div style={styles.pointName}>{p.name}</div>
+                  <div style={styles.pointDesc}>{p.desc}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div style={styles.maxBanner}>Poängen räknas ut automatiskt mot de faktiska resultaten</div>
+        </div>
+
         <div style={styles.sectionTitle}>Övrigt att veta</div>
         <div style={styles.card}>
           <ul style={styles.bullet}>
             <li style={styles.bulletItem}>
               <span style={styles.bulletDot} />
-              <span>Du kan ändra ditt tips ända fram till avspark. När matchen startar låses tipset automatiskt.</span>
+              <span>Du kan ändra ditt tips i gruppspelsmatcherna ända fram till avspark. När matchen startar låses tipset automatiskt.</span>
+            </li>
+            <li style={styles.bulletItem}>
+              <span style={styles.bulletDot} />
+              <span>Du kan ändra ditt tips på vilka lag som går vidare i slutspelet ända fram till avspark i första slutspelsomgången.</span>
             </li>
             <li style={styles.bulletItem}>
               <span style={styles.bulletDot} />
@@ -341,7 +393,7 @@ export default function Regler() {
             </li>
             <li style={{ ...styles.bulletItem, borderBottom: 'none' }}>
               <span style={styles.bulletDot} />
-              <span>Vinnaren av Trivseltipset 2026 är den med flest poäng efter sista gruppspelsmatchen den 27 juni.</span>
+              <span>Vinnaren av Trivseltipset 2026 är den med flest poäng totalt (gruppspel + slutspel) efter finalen den 19 juli.</span>
             </li>
           </ul>
         </div>

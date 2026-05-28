@@ -32,4 +32,10 @@ export const api = {
   updateProfile: (displayName) =>
     apiFetch('/auth/profile', { method: 'POST', body: JSON.stringify({ displayName }) }),
   getLeaderboard: () => apiFetch('/leaderboard'),
+  getPlayoff: () => apiFetch('/playoff'),
+  savePlayoffPick: (koMatchId, winner) =>
+    apiFetch('/playoff', { method: 'POST', body: JSON.stringify({ koMatchId, winner }) }),
+  getResults: () => apiFetch('/results'),
+  saveResults: (payload) =>
+    apiFetch('/results', { method: 'POST', body: JSON.stringify(payload) }),
 };

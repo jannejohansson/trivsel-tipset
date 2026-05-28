@@ -236,16 +236,8 @@ const EXAMPLES = [
     breakdown: 'Rätt utgång (1p) + rätt hemmamål (1p). Bortamål fel — ingen bonus.',
   },
   {
-    tip: { h: 3, a: 1 }, actual: { h: 2, a: 1 }, points: 2,
-    breakdown: 'Rätt utgång (1p) + rätt bortamål (1p). Hemmamål fel.',
-  },
-  {
     tip: { h: 2, a: 2 }, actual: { h: 2, a: 1 }, points: 1,
     breakdown: 'Hemmamål rätt (1p). Du tippade oavgjort så utgången blev fel.',
-  },
-  {
-    tip: { h: 0, a: 1 }, actual: { h: 2, a: 1 }, points: 1,
-    breakdown: 'Bortamål rätt (1p). Bortavinst blev hemmavinst — utgång fel.',
   },
   {
     tip: { h: 1, a: 2 }, actual: { h: 2, a: 1 }, points: 0,
@@ -290,13 +282,12 @@ export default function Regler() {
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={styles.intro}>
-            Du tippar ett resultat på varje match i gruppspelet. Poäng delas ut på fyra
-            sätt och staplas — du kan alltså få poäng även om du bommar utgången, så
-            länge du har rätt antal mål på något av lagen.
+            Du tippar ett resultat på varje match i gruppspelet. Grundat på dina gruppspelstips byggs 
+            sedan ett slutspelsträd automatiskt, där du väljer vilka lag som går vidare i varje match. .
           </div>
         </div>
 
-        <div style={styles.sectionTitle}>Så räknas poängen</div>
+        <div style={styles.sectionTitle}>Så räknas poängen i gruppspelet</div>
         <div style={styles.card}>
           <ul style={styles.pointsList}>
             {POINTS.map((p, i) => (
@@ -315,7 +306,7 @@ export default function Regler() {
               </li>
             ))}
           </ul>
-          <div style={styles.maxBanner}>Max 5 poäng per match</div>
+          <div style={styles.maxBanner}>Max 5 poäng per match. 360 poäng totalt.</div>
         </div>
 
         <div style={styles.sectionTitle}>Exempel</div>
@@ -369,7 +360,7 @@ export default function Regler() {
               </li>
             ))}
           </ul>
-          <div style={styles.maxBanner}>Poängen räknas ut automatiskt mot de faktiska resultaten</div>
+          <div style={styles.maxBanner}>Max 235 poäng</div>
         </div>
 
         <div style={styles.sectionTitle}>Övrigt att veta</div>

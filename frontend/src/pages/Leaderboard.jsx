@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 
 const TOTAL_MATCHES = 72;
-const TOTAL_PLAYOFF = 32;
+const TOTAL_PLAYOFF = 31; // 31 knockout matches predicted (R32→final); the bronze match isn't tipped
 
 const styles = {
   hero: {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api.js';
 
 const TOTAL_MATCHES = 72;
+const TOTAL_PLAYOFF = 32;
 
 const styles = {
   hero: {
@@ -84,6 +85,11 @@ const styles = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  },
+  meta: {
+    color: 'var(--text-muted)',
+    fontSize: '11px',
+    fontVariantNumeric: 'tabular-nums',
   },
   progressTrack: {
     height: '6px',
@@ -173,8 +179,9 @@ export default function Leaderboard() {
         {sortedUsers.length > 0 && (
           <div style={styles.list}>
             {sortedUsers.map((u, i) => {
-              const count = u.predictionCount || 0;
-              const pct = Math.min(100, (count / TOTAL_MATCHES) * 100);
+              const groupCount = u.groupPredictionCount ?? u.predictionCount ?? 0;
+              const playoffCount = u.playoffPredictionCount || 0;
+              const pct = Math.min(100, (groupCount / TOTAL_MATCHES) * 100);
               const points = u.points || 0;
               return (
                 <div key={u.displayName + i} style={styles.row}>
@@ -184,6 +191,9 @@ export default function Leaderboard() {
                     <div style={styles.progressTrack}>
                       <div style={{ ...styles.progressFill, width: `${pct}%` }} />
                     </div>
+                    <span style={styles.meta}>
+                      Gruppspel {groupCount}/{TOTAL_MATCHES} · Slutspel {playoffCount}/{TOTAL_PLAYOFF} tippade
+                    </span>
                   </div>
                   <div style={styles.right}>
                     <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>

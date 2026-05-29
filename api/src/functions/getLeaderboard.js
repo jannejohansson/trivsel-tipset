@@ -33,6 +33,8 @@ app.http('getLeaderboard', {
       return {
         ...u,
         predictionCount: Object.keys(preds).length,
+        groupPredictionCount: Object.keys(preds).length,
+        playoffPredictionCount: Object.keys(picks).length,
         groupPoints,
         playoffPoints,
         points: groupPoints + playoffPoints,

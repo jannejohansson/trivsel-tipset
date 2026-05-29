@@ -32,6 +32,8 @@ export const api = {
   updateProfile: (displayName) =>
     apiFetch('/auth/profile', { method: 'POST', body: JSON.stringify({ displayName }) }),
   getLeaderboard: () => apiFetch('/leaderboard'),
+  getUserPredictions: (userId, reveal) =>
+    apiFetch(`/users/${encodeURIComponent(userId)}/predictions${reveal ? '?reveal=1' : ''}`),
   getPlayoff: () => apiFetch('/playoff'),
   savePlayoffPick: (koMatchId, winner) =>
     apiFetch('/playoff', { method: 'POST', body: JSON.stringify({ koMatchId, winner }) }),

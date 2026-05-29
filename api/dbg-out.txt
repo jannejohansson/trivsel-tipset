@@ -1,0 +1,3 @@
+TOTAL group matches: 72
+
+user Janne: 64/72 predicted; allGroupsComplete=false; incomplete groups=[K,L]

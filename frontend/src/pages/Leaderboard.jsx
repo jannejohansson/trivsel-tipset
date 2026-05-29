@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 
 const TOTAL_MATCHES = 72;
@@ -51,6 +52,15 @@ const styles = {
     borderRadius: 'var(--radius)',
     boxShadow: 'var(--shadow-card)',
     borderLeft: '3px solid var(--green)',
+    textDecoration: 'none',
+    color: 'inherit',
+    cursor: 'pointer',
+  },
+  chevron: {
+    color: 'var(--text-muted)',
+    fontSize: '18px',
+    flexShrink: 0,
+    marginLeft: '-4px',
   },
   rank: {
     width: '28px',
@@ -184,7 +194,7 @@ export default function Leaderboard() {
               const pct = Math.min(100, (groupCount / TOTAL_MATCHES) * 100);
               const points = u.points || 0;
               return (
-                <div key={u.displayName + i} style={styles.row}>
+                <Link key={u.userId || u.displayName + i} to={`/predictions/${u.userId}`} style={styles.row}>
                   <div style={{ ...styles.rank, ...(i < 3 ? styles.rankTop : {}) }}>{i + 1}</div>
                   <div style={styles.middle}>
                     <span style={styles.name}>{u.displayName}</span>
@@ -201,7 +211,8 @@ export default function Leaderboard() {
                       Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
                     </span>
                   </div>
-                </div>
+                  <span style={styles.chevron} aria-hidden="true">›</span>
+                </Link>
               );
             })}
           </div>

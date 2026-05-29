@@ -113,7 +113,11 @@ export default function Playoff() {
         )}
         {saveError && <div style={styles.notice}>Kunde inte spara senaste valet. Kontrollera anslutningen.</div>}
 
-        <BracketTree matches={bracket.matches} locked={locked} onPick={handlePick} />
+        <div style={styles.scroller}>
+          <div style={{ minWidth: 'min-content' }}>
+            <BracketTree matches={bracket.matches} locked={locked} onPick={handlePick} />
+          </div>
+        </div>
 
         <div style={styles.champ}>
           <div style={styles.champLabel}>Din världsmästare</div>

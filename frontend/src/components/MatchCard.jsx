@@ -65,9 +65,35 @@ const styles = {
     borderRadius: '999px',
     textTransform: 'uppercase',
   },
+  hiddenScore: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    color: 'var(--text-muted)',
+    fontSize: '13px',
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+  },
+  result: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: '11px',
+    color: 'var(--text-muted)',
+  },
+  points: {
+    fontWeight: 800,
+    color: 'var(--green)',
+    fontVariantNumeric: 'tabular-nums',
+  },
 };
 
-export default function MatchCard({ match, prediction, locked, onPredictionChange }) {
+// `hidden` (read-only views) shows a lock placeholder instead of the score.
+// `points`/`actual` (read-only views) show how the prediction scored once the
+// match has an official result. The editable/autosave path is unchanged: it runs
+// whenever `hidden` is false and an `onPredictionChange` handler is provided.
+export default function MatchCard({ match, prediction, locked, onPredictionChange, hidden = false, points = null, actual = null }) {
   return (
     <div style={styles.card}>
       <div style={styles.header}>
@@ -79,17 +105,27 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
           <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
           <span>{match.homeTeam}</span>
         </div>
-        <ScoreInput
-          matchId={match.id}
-          initial={prediction}
-          locked={locked}
-          onChange={onPredictionChange}
-        />
+        {hidden ? (
+          <span style={styles.hiddenScore} title="Visas vid avspark">🔒 Dolt</span>
+        ) : (
+          <ScoreInput
+            matchId={match.id}
+            initial={prediction}
+            locked={locked}
+            onChange={onPredictionChange}
+          />
+        )}
         <div style={{ ...styles.team, ...styles.teamAway }}>
           <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
           <span>{match.awayTeam}</span>
         </div>
       </div>
+      {!hidden && actual && (
+        <div style={styles.result}>
+          <span>Facit {actual.homeScore}–{actual.awayScore}</span>
+          {points != null && <span style={styles.points}>{points} p</span>}
+        </div>
+      )}
       {match.venue && (
         <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.75 }}>
           {match.venue}

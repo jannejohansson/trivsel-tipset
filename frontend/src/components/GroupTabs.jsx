@@ -10,7 +10,7 @@ const styles = {
   },
 };
 
-export default function GroupTabs({ matches, locked }) {
+export default function GroupTabs({ matches, locked, readOnly = false }) {
   const groups = useMemo(() => {
     const map = new Map();
     for (const m of matches) {
@@ -80,8 +80,11 @@ export default function GroupTabs({ matches, locked }) {
             key={match.id}
             match={match}
             prediction={predictions.get(match.id) || null}
-            locked={match.locked ?? locked}
-            onPredictionChange={(pred) => handlePredictionChange(match.id, pred)}
+            locked={readOnly ? true : (match.locked ?? locked)}
+            onPredictionChange={readOnly ? undefined : (pred) => handlePredictionChange(match.id, pred)}
+            hidden={readOnly ? !!match.hidden : false}
+            points={readOnly ? (match.points ?? null) : null}
+            actual={readOnly ? (match.actual ?? null) : null}
           />
         ))}
       </div>

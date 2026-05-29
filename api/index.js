@@ -7,6 +7,7 @@ require('./src/functions/me');
 require('./src/functions/getMatches');
 require('./src/functions/savePrediction');
 require('./src/functions/getLeaderboard');
+require('./src/functions/getUserPredictions');
 require('./src/functions/updateProfile');
 require('./src/functions/getPlayoff');
 require('./src/functions/savePlayoffPrediction');

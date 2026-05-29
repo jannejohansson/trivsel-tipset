@@ -10,7 +10,11 @@ const styles = {
   },
 };
 
-export default function GroupTabs({ matches, locked, readOnly = false }) {
+// `predictions` + `onPredictionChange` make this a controlled component so a
+// parent (e.g. the combined Tippa page) can share the prediction map with the
+// playoff bracket. When omitted, GroupTabs keeps its own internal state.
+export default function GroupTabs({ matches, locked, readOnly = false, predictions: controlledPreds, onPredictionChange: controlledOnChange }) {
+  const isControlled = !!controlledPreds;
   const groups = useMemo(() => {
     const map = new Map();
     for (const m of matches) {
@@ -20,7 +24,7 @@ export default function GroupTabs({ matches, locked, readOnly = false }) {
     return map;
   }, [matches]);
 
-  const [predictions, setPredictions] = useState(() => {
+  const [internalPreds, setInternalPreds] = useState(() => {
     const map = new Map();
     for (const m of matches) {
       if (m.prediction) map.set(m.id, m.prediction);
@@ -29,17 +33,24 @@ export default function GroupTabs({ matches, locked, readOnly = false }) {
   });
 
   useEffect(() => {
-    setPredictions(prev => {
+    if (isControlled) return;
+    setInternalPreds(prev => {
       const next = new Map(prev);
       for (const m of matches) {
         if (m.prediction && !next.has(m.id)) next.set(m.id, m.prediction);
       }
       return next;
     });
-  }, [matches]);
+  }, [matches, isControlled]);
+
+  const predictions = controlledPreds ?? internalPreds;
 
   const handlePredictionChange = (matchId, pred) => {
-    setPredictions(prev => {
+    if (controlledOnChange) {
+      controlledOnChange(matchId, pred);
+      return;
+    }
+    setInternalPreds(prev => {
       const next = new Map(prev);
       next.set(matchId, pred);
       return next;

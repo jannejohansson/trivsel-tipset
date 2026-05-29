@@ -5,7 +5,6 @@ import AuthGuard from './components/AuthGuard.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Matches from './pages/Matches.jsx';
-import Playoff from './pages/Playoff.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
 import UserPredictions from './pages/UserPredictions.jsx';
 import Regler from './pages/Regler.jsx';
@@ -21,8 +20,8 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<AuthGuard><SetupProfile /></AuthGuard>} />
-          <Route path="/matches" element={<AuthGuard><Matches /></AuthGuard>} />
-          <Route path="/slutspel" element={<AuthGuard><Playoff /></AuthGuard>} />
+          <Route path="/matches" element={<AuthGuard><Matches view="group" /></AuthGuard>} />
+          <Route path="/slutspel" element={<AuthGuard><Matches view="playoff" /></AuthGuard>} />
           <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/predictions/:userId" element={<AuthGuard><UserPredictions /></AuthGuard>} />

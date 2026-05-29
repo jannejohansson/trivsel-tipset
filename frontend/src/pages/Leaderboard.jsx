@@ -96,10 +96,30 @@ const styles = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  meta: {
-    color: 'var(--text-muted)',
+  chips: {
+    display: 'flex',
+    gap: '6px',
+    flexWrap: 'wrap',
+  },
+  chip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
     fontSize: '11px',
+    fontWeight: 700,
+    padding: '2px 8px',
+    borderRadius: '999px',
     fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
+  },
+  chipDone: {
+    background: 'var(--green-dim)',
+    color: '#0b6b32',
+  },
+  chipWarn: {
+    background: 'rgba(184,134,11,0.14)',
+    color: 'var(--yellow)',
+    border: '1px solid rgba(184,134,11,0.35)',
   },
   progressTrack: {
     height: '6px',
@@ -167,6 +187,10 @@ export default function Leaderboard() {
       )
     : [];
 
+  // The progress bar now visualises scored points relative to the current
+  // leader, rather than how many matches a user has filled in.
+  const maxPoints = sortedUsers.reduce((m, u) => Math.max(m, u.points || 0), 0);
+
   return (
     <>
       <section style={styles.hero}>
@@ -191,19 +215,26 @@ export default function Leaderboard() {
             {sortedUsers.map((u, i) => {
               const groupCount = u.groupPredictionCount ?? u.predictionCount ?? 0;
               const playoffCount = u.playoffPredictionCount || 0;
-              const pct = Math.min(100, (groupCount / TOTAL_MATCHES) * 100);
+              const groupDone = groupCount >= TOTAL_MATCHES;
+              const playoffDone = playoffCount >= TOTAL_PLAYOFF;
               const points = u.points || 0;
+              const pct = maxPoints > 0 ? Math.min(100, (points / maxPoints) * 100) : 0;
               return (
                 <Link key={u.userId || u.displayName + i} to={`/predictions/${u.userId}`} style={styles.row}>
                   <div style={{ ...styles.rank, ...(i < 3 ? styles.rankTop : {}) }}>{i + 1}</div>
                   <div style={styles.middle}>
                     <span style={styles.name}>{u.displayName}</span>
-                    <div style={styles.progressTrack}>
+                    <div style={styles.progressTrack} title={`${points} poäng`}>
                       <div style={{ ...styles.progressFill, width: `${pct}%` }} />
                     </div>
-                    <span style={styles.meta}>
-                      Gruppspel {groupCount}/{TOTAL_MATCHES} · Slutspel {playoffCount}/{TOTAL_PLAYOFF} tippade
-                    </span>
+                    <div style={styles.chips}>
+                      <span style={{ ...styles.chip, ...(groupDone ? styles.chipDone : styles.chipWarn) }}>
+                        {groupDone ? '✓' : '⚠'} Gruppspel {groupCount}/{TOTAL_MATCHES}
+                      </span>
+                      <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
+                        {playoffDone ? '✓' : '⚠'} Slutspel {playoffCount}/{TOTAL_PLAYOFF}
+                      </span>
+                    </div>
                   </div>
                   <div style={styles.right}>
                     <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>

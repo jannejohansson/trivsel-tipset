@@ -81,8 +81,8 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* ── Knockout bracket tree ─────────────────────────────────── */
 .bracket-wrap { overflow-x: auto; padding: 4px 0 24px; }
-.bracket { display: flex; min-width: min-content; }
-.bracket-col { display: flex; flex-direction: column; flex: 0 0 auto; }
+.bracket { display: flex; min-width: min-content; align-items: stretch; }
+.bracket-col { display: flex; flex-direction: column; flex: 0 0 auto; min-width: 0; }
 .bracket-col-title {
   height: 26px;
   text-align: center;
@@ -92,15 +92,19 @@ input[type=number] { -moz-appearance: textfield; }
   text-transform: uppercase;
   color: var(--text-muted);
 }
-.bracket-round { flex: 1; display: flex; flex-direction: column; }
+.bracket-round { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .bracket-match {
   flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   position: relative;
-  min-height: 60px;
+  /* Must comfortably exceed the rendered .bracket-box height (~72px) plus the
+     12px vertical padding, otherwise the centred box overflows the cell and
+     overlaps its vertical neighbours. */
+  min-height: 96px;
   padding: 6px 16px;
 }
 .bracket-round.bk-first .bracket-match { padding-left: 0; }
@@ -109,13 +113,19 @@ input[type=number] { -moz-appearance: textfield; }
 .bracket-box {
   position: relative;
   width: 156px;
+  min-width: 156px;
+  /* Height comes from the content (number + two team rows). The parent
+     .bracket-match is a column flex, so flex-basis would size the *height* — we
+     must keep the box out of flex sizing (flex: none) or it stretches/squeezes
+     vertically and overlaps its neighbours. */
+  flex: none;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: var(--shadow-card);
   overflow: hidden;
 }
-.bracket-num { font-size: 9px; color: var(--text-muted); padding: 2px 8px 0; letter-spacing: 0.4px; }
+.bracket-num { font-size: 9px; line-height: 1.4; color: var(--text-muted); padding: 2px 8px 0; letter-spacing: 0.4px; }
 
 .bracket-row {
   display: flex;
@@ -129,6 +139,7 @@ input[type=number] { -moz-appearance: textfield; }
   text-align: left;
   font: inherit;
   font-size: 12.5px;
+  line-height: 1.25;
   font-weight: 600;
   color: var(--text);
   cursor: default;

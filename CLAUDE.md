@@ -57,8 +57,8 @@ so the CSS flex tree draws connected feeder lines — don't reorder it casually.
 ## Scoring (server-side only)
 
 [api/src/shared/scoring.js](api/src/shared/scoring.js):
-- **Group**, per match, max 5: +1 correct outcome (1/X/2), +1 home goals, +1 away goals,
-  +2 exact-score bonus.
+- **Group**, per match, max 5: +2 correct outcome (1/X/2), +1 home goals, +1 away goals,
+  +1 exact-score bonus.
 - **Playoff**: points per team correctly predicted to *reach* a round —
   R32=1, R16=3, QF=7, SF=11, F=15, CHAMP=25.
 

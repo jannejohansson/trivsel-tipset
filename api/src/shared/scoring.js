@@ -4,8 +4,8 @@
 
 // --- Group stage -----------------------------------------------------------
 // Per match, comparing a prediction to the actual score (max 5 points):
-//   +1 correct outcome (1/X/2), +1 correct home goals, +1 correct away goals,
-//   +2 bonus when the exact score is right (which also implies the three above).
+//   +2 correct outcome (1/X/2), +1 correct home goals, +1 correct away goals,
+//   +1 bonus when the exact score is right (which also implies the three above).
 function scoreGroup(prediction, actual) {
   if (!prediction || !actual) return 0;
   const ph = Number(prediction.homeScore), pa = Number(prediction.awayScore);
@@ -14,10 +14,10 @@ function scoreGroup(prediction, actual) {
 
   const sign = (h, a) => (h > a ? 1 : h < a ? -1 : 0);
   let pts = 0;
-  if (sign(ph, pa) === sign(ah, aa)) pts += 1; // outcome
+  if (sign(ph, pa) === sign(ah, aa)) pts += 2; // outcome
   if (ph === ah) pts += 1;                      // home goals
   if (pa === aa) pts += 1;                      // away goals
-  if (ph === ah && pa === aa) pts += 2;         // exact-score bonus
+  if (ph === ah && pa === aa) pts += 1;         // exact-score bonus
   return pts;
 }
 

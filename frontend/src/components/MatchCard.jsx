@@ -65,6 +65,19 @@ const styles = {
     borderRadius: '999px',
     textTransform: 'uppercase',
   },
+  lockedPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    background: 'var(--surface-2)',
+    color: 'var(--text-muted)',
+    fontWeight: 700,
+    fontSize: '10px',
+    letterSpacing: '0.5px',
+    padding: '2px 8px',
+    borderRadius: '999px',
+    textTransform: 'uppercase',
+  },
   hiddenScore: {
     display: 'flex',
     alignItems: 'center',
@@ -94,11 +107,21 @@ const styles = {
 // match has an official result. The editable/autosave path is unchanged: it runs
 // whenever `hidden` is false and an `onPredictionChange` handler is provided.
 export default function MatchCard({ match, prediction, locked, onPredictionChange, hidden = false, points = null, actual = null }) {
+  // Only mark/dim a locked card in the live editing view (where an onPredictionChange
+  // handler is wired up) — read-only views show results and shouldn't be greyed out.
+  const showLocked = locked && !!onPredictionChange;
   return (
-    <div style={styles.card}>
+    <div style={showLocked ? { ...styles.card, opacity: 0.6, borderLeftColor: 'var(--border)' } : styles.card}>
       <div style={styles.header}>
         <span style={styles.matchday}>MD{match.matchday}</span>
-        <span>{formatKickoff(match.kickoffUtc)}</span>
+        {showLocked ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{formatKickoff(match.kickoffUtc)}</span>
+            <span style={styles.lockedPill}>🔒 Låst</span>
+          </span>
+        ) : (
+          <span>{formatKickoff(match.kickoffUtc)}</span>
+        )}
       </div>
       <div style={styles.teams}>
         <div style={styles.team}>

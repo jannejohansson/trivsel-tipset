@@ -8,14 +8,13 @@
 // FIFA's published Annex C combination matrix (thirdPlaceMatrix.json). Later rounds
 // are filled by the user's winner picks.
 
-const { MATCHES } = require('./matchData');
 const THIRD_PLACE_MATRIX = require('./thirdPlaceMatrix.json');
 
 const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('');
 
-// Latest group-stage kickoff — the moment every group result is locked and a
-// user's predicted bracket becomes final, so playoff picks lock here too.
-const PLAYOFF_LOCKOUT = Math.max(...MATCHES.map((m) => new Date(m.kickoffUtc).getTime()));
+// First knockout kickoff — 28 June 2026 21:00 Swedish local time (CEST, UTC+2).
+// At this moment the predicted bracket becomes final, so playoff picks lock here.
+const PLAYOFF_LOCKOUT = new Date('2026-06-28T19:00:00Z').getTime();
 
 // Slot descriptors:
 //   { t:'1'|'2', g:'A' }      group winner / runner-up

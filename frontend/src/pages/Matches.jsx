@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import GroupTabs from '../components/GroupTabs.jsx';
 import BracketTree from '../components/BracketTree.jsx';
 import LockBanner from '../components/LockBanner.jsx';
+import LockCountdown from '../components/LockCountdown.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { buildBracket } from '../lib/bracket.js';
 
@@ -95,6 +96,7 @@ export default function Matches({ view = 'group' }) {
   const [picks, setPicks] = useState({});
   const [groupLocked, setGroupLocked] = useState(false);
   const [playoffLocked, setPlayoffLocked] = useState(false);
+  const [playoffLockoutUtc, setPlayoffLockoutUtc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saveError, setSaveError] = useState(false);
@@ -112,6 +114,7 @@ export default function Matches({ view = 'group' }) {
         for (const ko of p.matches) if (ko.pick) pk[ko.id] = ko.pick;
         setPicks(pk);
         setPlayoffLocked(p.locked);
+        setPlayoffLockoutUtc(p.lockoutUtc);
       })
       .catch(() => setError('Kunde inte ladda tipsen. Försök igen.'))
       .finally(() => setLoading(false));
@@ -197,7 +200,7 @@ export default function Matches({ view = 'group' }) {
 
         {isPlayoff ? (
           <>
-            {playoffLocked && <LockBanner />}
+            {playoffLocked ? <LockBanner /> : <LockCountdown lockoutUtc={playoffLockoutUtc} />}
             {!bracket.allComplete && (
               <div style={styles.notice}>
                 Fyll i alla gruppspelsmatcher under <strong>Gruppspel</strong> för att låsa upp hela slutspelsträdet.

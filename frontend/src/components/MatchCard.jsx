@@ -132,9 +132,9 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
     <div style={dimmed ? { ...styles.card, opacity: 0.6, borderLeftColor: 'var(--border)' } : styles.card}>
       <div style={styles.header}>
         {editable && !locked ? (
-          <span style={styles.openCue}>🔓 Kan ändras till avspark</span>
+          <span style={styles.openCue} title="Kan ändras till avspark">🔓</span>
         ) : !hidden && match.locked ? (
-          <span style={styles.lockedPill}>🔒 Låst</span>
+          <span style={styles.lockedPill} title="Låst">🔒</span>
         ) : (
           <span />
         )}

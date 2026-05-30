@@ -3,6 +3,7 @@
 const { app } = require('@azure/functions');
 const { tryAuth } = require('../shared/authMiddleware');
 const { getMatchesTable, getPredictionsTable } = require('../shared/tableClient');
+const { loadResults } = require('../shared/results');
 
 app.http('getMatches', {
   methods: ['GET'],
@@ -12,10 +13,13 @@ app.http('getMatches', {
     const user = tryAuth(request);
     const now = Date.now();
 
-    // Load all matches; each locks individually at its own kickoff.
+    // A match locks at its own kickoff, or earlier once the admin has entered a
+    // result for it (clearing the result unlocks it again, unless kickoff passed).
+    const { groupResults } = await loadResults();
     const matchesTable = getMatchesTable();
     const matches = [];
     for await (const entity of matchesTable.listEntities()) {
+      const kickedOff = entity.kickoffUtc ? now >= new Date(entity.kickoffUtc).getTime() : false;
       matches.push({
         id: entity.rowKey,
         group: entity.partitionKey,
@@ -27,7 +31,7 @@ app.http('getMatches', {
         awayFlag: entity.awayFlag,
         kickoffUtc: entity.kickoffUtc,
         venue: entity.venue,
-        locked: entity.kickoffUtc ? now >= new Date(entity.kickoffUtc).getTime() : false,
+        locked: kickedOff || !!groupResults[entity.rowKey],
       });
     }
     matches.sort((a, b) => a.matchNumber - b.matchNumber);

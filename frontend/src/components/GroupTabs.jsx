@@ -4,16 +4,36 @@ import GroupStandings from './GroupStandings.jsx';
 
 const styles = {
   grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-    gap: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
   },
+  resetRow: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: '10px',
+    marginTop: '12px',
+  },
+  resetLink: {
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    color: 'var(--text-muted)',
+    fontSize: '13px',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    textDecoration: 'underline',
+  },
+  resetError: { color: 'var(--danger)', fontSize: '13px' },
 };
 
 // `predictions` + `onPredictionChange` make this a controlled component so a
 // parent (e.g. the combined Tippa page) can share the prediction map with the
 // playoff bracket. When omitted, GroupTabs keeps its own internal state.
-export default function GroupTabs({ matches, locked, readOnly = false, predictions: controlledPreds, onPredictionChange: controlledOnChange }) {
+export default function GroupTabs({ matches, locked, readOnly = false, predictions: controlledPreds, onPredictionChange: controlledOnChange, onResetGroup }) {
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState(false);
   const isControlled = !!controlledPreds;
   const groups = useMemo(() => {
     const map = new Map();
@@ -64,6 +84,17 @@ export default function GroupTabs({ matches, locked, readOnly = false, predictio
     (a, b) => a.matchday - b.matchday || a.matchNumber - b.matchNumber
   );
 
+  const canReset = !!onResetGroup && !readOnly
+    && groupMatches.some((m) => !m.locked && predictions.has(m.id));
+
+  const doReset = () => {
+    setResetting(true);
+    setResetError(false);
+    Promise.resolve(onResetGroup(activeGroup))
+      .catch(() => setResetError(true))
+      .finally(() => setResetting(false));
+  };
+
   return (
     <div>
       <div className="group-tabs">
@@ -99,6 +130,15 @@ export default function GroupTabs({ matches, locked, readOnly = false, predictio
           />
         ))}
       </div>
+
+      {canReset && (
+        <div style={styles.resetRow}>
+          {resetError && <span style={styles.resetError}>Kunde inte rensa. Försök igen.</span>}
+          <button style={styles.resetLink} onClick={doReset} disabled={resetting}>
+            {resetting ? 'Rensar…' : 'Rensa gruppens tips'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

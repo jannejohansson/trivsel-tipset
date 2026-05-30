@@ -29,6 +29,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ matchId, homeScore, awayScore }),
     }),
+  resetGroupPredictions: (group) =>
+    apiFetch('/predictions/reset', { method: 'POST', body: JSON.stringify({ group }) }),
   updateProfile: (displayName) =>
     apiFetch('/auth/profile', { method: 'POST', body: JSON.stringify({ displayName }) }),
   getLeaderboard: () => apiFetch('/leaderboard'),

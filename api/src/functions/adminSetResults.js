@@ -43,6 +43,12 @@ app.http('adminSetResults', {
         if (!GROUP_MATCH_IDS.has(matchId)) {
           return { status: 400, jsonBody: { error: `Unknown match ${matchId}` } };
         }
+        // Empty/null score clears the result (unlocks the match for editing again).
+        const isEmpty = (v) => v == null || v === '';
+        if (r == null || isEmpty(r.homeScore) || isEmpty(r.awayScore)) {
+          await table.deleteEntity('group', matchId).catch(() => {});
+          continue;
+        }
         const hs = Number(r.homeScore), as = Number(r.awayScore);
         if (!Number.isInteger(hs) || !Number.isInteger(as) || hs < 0 || as < 0 || hs > 50 || as > 50) {
           return { status: 400, jsonBody: { error: `Bad score for ${matchId}` } };

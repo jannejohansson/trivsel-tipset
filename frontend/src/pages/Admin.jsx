@@ -26,6 +26,8 @@ const styles = {
   rank: { width: '24px', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'center' },
   qualBadge: { fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '999px', background: 'rgba(21,163,74,0.15)', color: '#0b6b32' },
   arrowBtn: { width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text)' },
+  clearBtn: { width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 },
+  clearBtnHidden: { width: '26px', flexShrink: 0, visibility: 'hidden' },
   flag: { width: '22px', height: '16px', borderRadius: '2px', backgroundSize: 'cover', backgroundPosition: 'center', display: 'inline-block', flexShrink: 0 },
   scroller: { display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '12px' },
   status: { fontSize: '12px', color: 'var(--text-muted)', minHeight: '16px' },
@@ -91,6 +93,16 @@ export default function Admin() {
       save({ groupResults: { [id]: { homeScore: r.homeScore, awayScore: r.awayScore } } });
     }
   };
+  // Clearing a result unlocks the match so users can edit predictions again
+  // (unless its kickoff has already passed).
+  const clearScore = (id) => {
+    setGroupResults((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    save({ groupResults: { [id]: { homeScore: null, awayScore: null } } });
+  };
 
   const moveThird = (i, dir) => {
     const order = thirds.map((t) => t.group);
@@ -136,6 +148,11 @@ export default function Admin() {
                 <input style={styles.input} value={r.awayScore ?? ''} onChange={(e) => setScore(m.id, 'awayScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
                 <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
                 <span style={styles.teamR}>{m.awayTeam}</span>
+                {Number.isInteger(r.homeScore) && Number.isInteger(r.awayScore) ? (
+                  <button style={styles.clearBtn} onClick={() => clearScore(m.id)} title="Rensa resultat (låser upp matchen)">✕</button>
+                ) : (
+                  <span style={styles.clearBtnHidden} aria-hidden="true" />
+                )}
               </div>
             );
           })}

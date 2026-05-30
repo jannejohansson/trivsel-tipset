@@ -79,6 +79,38 @@ input[type=number] { -moz-appearance: textfield; }
   box-shadow: 0 4px 10px rgba(21,163,74,0.25);
 }
 
+/* ── Group match rows (predictions & user predictions) ───────── */
+/* Desktop: equal flexible halves around a fixed centre, with equal reserved
+   side columns (result on the right, empty spacer on the left) so the score
+   boxes stay pinned to the card centre and line up across every row. */
+.match-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.match-side { width: 220px; flex-shrink: 0; }
+.match-side-result {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.match-half { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.match-half.home { justify-content: flex-end; }
+.match-half.away { justify-content: flex-start; }
+
+/* Mobile: the fixed 220px columns don't fit. Drop the left spacer, let the row
+   wrap, and push the result onto its own line below the teams. */
+@media (max-width: 680px) {
+  .match-row { flex-wrap: wrap; }
+  .match-side { display: none; }
+  .match-side-result { width: 100%; }
+  .match-side-result:not(:empty) {
+    border-top: 1px dashed var(--border);
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+  .match-side-result:empty { display: none; }
+}
+
 /* ── Knockout bracket tree ─────────────────────────────────── */
 .bracket-wrap { overflow-x: auto; padding: 4px 0 24px; }
 .bracket { display: flex; min-width: min-content; align-items: stretch; }

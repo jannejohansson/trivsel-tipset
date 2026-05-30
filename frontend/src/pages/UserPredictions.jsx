@@ -90,11 +90,6 @@ export default function UserPredictions() {
       <section style={styles.hero}>
         <div style={styles.eyebrow}>Deltagartips · FIFA World Cup 2026</div>
         <h1 style={styles.title}>{name}s tips</h1>
-        <p style={styles.sub}>
-          {data.revealed && !data.isSelf
-            ? 'Full visning (admin)'
-            : 'Endast låsta matcher visas'}
-        </p>
         <Link to="/leaderboard" style={styles.back}>← Tillbaka till ställningen</Link>
       </section>
 

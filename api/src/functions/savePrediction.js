@@ -2,7 +2,7 @@
 
 const { app } = require('@azure/functions');
 const { verifyAuth } = require('../shared/authMiddleware');
-const { getPredictionsTable, getMatchesTable } = require('../shared/tableClient');
+const { getPredictionsTable, getMatchesTable, getResultsTable } = require('../shared/tableClient');
 
 app.http('savePrediction', {
   methods: ['POST'],
@@ -48,6 +48,13 @@ app.http('savePrediction', {
     }
     if (matchEntity.kickoffUtc && Date.now() >= new Date(matchEntity.kickoffUtc).getTime()) {
       return { status: 403, jsonBody: { error: 'Match is locked' } };
+    }
+    // Locks early once the admin has entered a result for this match.
+    try {
+      await getResultsTable().getEntity('group', matchId);
+      return { status: 403, jsonBody: { error: 'Match is locked' } };
+    } catch (err) {
+      if (err.statusCode !== 404) throw err;
     }
 
     const now = new Date().toISOString();

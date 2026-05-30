@@ -14,10 +14,10 @@ const styles = {
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
     boxShadow: 'var(--shadow-card)',
-    padding: '14px 16px',
+    padding: '8px 16px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px',
+    gap: '4px',
     borderLeft: '3px solid var(--green)',
   },
   header: {
@@ -27,24 +27,25 @@ const styles = {
     fontSize: '12px',
     color: 'var(--text-muted)',
   },
-  teams: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    justifyContent: 'space-between',
-  },
-  team: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    fontSize: '14px',
-    fontWeight: 600,
+  // Layout for the match row (.match-row etc.) lives in index.css so a media
+  // query can collapse the fixed side columns on mobile.
+  teamName: {
     flex: 1,
+    minWidth: 0,
+    fontSize: '15px',
+    fontWeight: 600,
     color: 'var(--text)',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
-  teamAway: {
-    justifyContent: 'flex-end',
-    flexDirection: 'row-reverse',
+  center: { flexShrink: 0 },
+  openCue: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    color: 'var(--green)',
+    fontWeight: 700,
   },
   flag: {
     width: '28px',
@@ -55,9 +56,12 @@ const styles = {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   },
-  matchday: {
-    background: 'var(--green-dim)',
-    color: '#0b6b32',
+  lockedPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    background: 'var(--surface-2)',
+    color: 'var(--text-muted)',
     fontWeight: 700,
     fontSize: '10px',
     letterSpacing: '0.5px',
@@ -75,16 +79,36 @@ const styles = {
     fontWeight: 600,
     whiteSpace: 'nowrap',
   },
-  result: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    fontSize: '11px',
+  resultLabel: {
+    fontSize: '10px',
+    fontWeight: 700,
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase',
     color: 'var(--text-muted)',
   },
+  // Actual result in grey boxes the same height as the prediction boxes.
+  resultBox: {
+    width: '36px',
+    height: '34px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '16px',
+    fontWeight: 700,
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: '8px',
+    color: 'var(--text)',
+  },
+  resultDash: { color: 'var(--text-muted)', fontSize: '16px', fontWeight: 300 },
   points: {
     fontWeight: 800,
+    fontSize: '13px',
     color: 'var(--green)',
+    background: 'var(--green-dim)',
+    border: '1px solid var(--green)',
+    borderRadius: '999px',
+    padding: '3px 10px',
     fontVariantNumeric: 'tabular-nums',
   },
 };
@@ -94,43 +118,58 @@ const styles = {
 // match has an official result. The editable/autosave path is unchanged: it runs
 // whenever `hidden` is false and an `onPredictionChange` handler is provided.
 export default function MatchCard({ match, prediction, locked, onPredictionChange, hidden = false, points = null, actual = null }) {
+  // `editable` is the live /matches tipping view (a change handler is wired up);
+  // read-only views (e.g. UserPredictions) pass none and show results plainly.
+  const editable = !!onPredictionChange;
+  const dimmed = editable && locked;
+  const hasResult = !hidden && !!actual;
+
   return (
-    <div style={styles.card}>
+    <div style={dimmed ? { ...styles.card, opacity: 0.6, borderLeftColor: 'var(--border)' } : styles.card}>
       <div style={styles.header}>
-        <span style={styles.matchday}>MD{match.matchday}</span>
+        {editable && !locked ? (
+          <span style={styles.openCue}>🔓 Kan ändras till avspark</span>
+        ) : locked ? (
+          <span style={styles.lockedPill}>🔒 Låst</span>
+        ) : (
+          <span />
+        )}
         <span>{formatKickoff(match.kickoffUtc)}</span>
       </div>
-      <div style={styles.teams}>
-        <div style={styles.team}>
+      <div className="match-row">
+        <div className="match-side" />
+        <div className="match-half home">
+          <span style={{ ...styles.teamName, textAlign: 'right' }}>{match.homeTeam}</span>
           <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
-          <span>{match.homeTeam}</span>
         </div>
-        {hidden ? (
-          <span style={styles.hiddenScore} title="Visas vid avspark">🔒 Dolt</span>
-        ) : (
-          <ScoreInput
-            matchId={match.id}
-            initial={prediction}
-            locked={locked}
-            onChange={onPredictionChange}
-          />
-        )}
-        <div style={{ ...styles.team, ...styles.teamAway }}>
+        <div style={styles.center}>
+          {hidden ? (
+            <span style={styles.hiddenScore} title="Visas vid avspark">🔒 Dolt</span>
+          ) : (
+            <ScoreInput
+              matchId={match.id}
+              initial={prediction}
+              locked={locked}
+              onChange={onPredictionChange}
+            />
+          )}
+        </div>
+        <div className="match-half away">
           <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
-          <span>{match.awayTeam}</span>
+          <span style={{ ...styles.teamName, textAlign: 'left' }}>{match.awayTeam}</span>
+        </div>
+        <div className="match-side-result">
+          {hasResult && (
+            <>
+              <span style={styles.resultLabel}>Resultat</span>
+              <span style={styles.resultBox}>{actual.homeScore}</span>
+              <span style={styles.resultDash}>–</span>
+              <span style={styles.resultBox}>{actual.awayScore}</span>
+              {points != null && <span style={styles.points}>{points} p</span>}
+            </>
+          )}
         </div>
       </div>
-      {!hidden && actual && (
-        <div style={styles.result}>
-          <span>Facit {actual.homeScore}–{actual.awayScore}</span>
-          {points != null && <span style={styles.points}>{points} p</span>}
-        </div>
-      )}
-      {match.venue && (
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.75 }}>
-          {match.venue}
-        </div>
-      )}
     </div>
   );
 }

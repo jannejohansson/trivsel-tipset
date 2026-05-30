@@ -58,12 +58,55 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
+    cursor: 'pointer',
   },
   chevron: {
     color: 'var(--text-muted)',
-    fontSize: '18px',
+    fontSize: '13px',
     flexShrink: 0,
     marginLeft: '-4px',
+    width: '14px',
+    textAlign: 'center',
+  },
+  toolbar: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: '10px',
+  },
+  expandAllBtn: {
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    color: 'var(--text-muted)',
+    fontSize: '13px',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    textDecoration: 'underline',
+  },
+  nameRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '8px',
+    minWidth: 0,
+  },
+  nameLink: {
+    fontWeight: 700,
+    fontSize: '15px',
+    color: 'var(--text)',
+    textDecoration: 'none',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+    minWidth: 0,
+  },
+  visaTips: {
+    flexShrink: 0,
+    fontSize: '12px',
+    fontWeight: 600,
+    color: 'var(--green)',
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
   },
   rank: {
     width: '28px',
@@ -90,14 +133,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
-  },
-  name: {
-    fontWeight: 700,
-    fontSize: '15px',
-    color: 'var(--text)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   },
   chips: {
     display: 'flex',
@@ -324,6 +359,7 @@ function SpotlightStrip({ shared, mine }) {
 export default function Leaderboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [expanded, setExpanded] = useState(() => new Set()); // expanded userIds
 
   useEffect(() => {
     api.getLeaderboard()
@@ -342,6 +378,23 @@ export default function Leaderboard() {
   // The progress bar now visualises scored points relative to the current
   // leader, rather than how many matches a user has filled in.
   const maxPoints = sortedUsers.reduce((m, u) => Math.max(m, u.points || 0), 0);
+
+  // Whether there are any spotlight fixtures to reveal (same set for everyone).
+  const sp = data?.spotlight;
+  const hasSpotlight = !!sp && ((sp.recent?.length || 0) + (sp.inProgress?.length || 0) + (sp.next?.length || 0)) > 0;
+
+  const allExpanded = sortedUsers.length > 0 && sortedUsers.every((u) => expanded.has(u.userId));
+
+  const toggleRow = (userId) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setExpanded(allExpanded ? new Set() : new Set(sortedUsers.map((u) => u.userId)));
 
   return (
     <>
@@ -362,6 +415,14 @@ export default function Leaderboard() {
           <p style={styles.empty}>Inga deltagare registrerade ännu.</p>
         )}
 
+        {sortedUsers.length > 0 && hasSpotlight && (
+          <div style={styles.toolbar}>
+            <button type="button" style={styles.expandAllBtn} onClick={toggleAll}>
+              {allExpanded ? 'Dölj senaste & kommande tips' : 'Visa senaste & kommande tips'}
+            </button>
+          </div>
+        )}
+
         {sortedUsers.length > 0 && (
           <div style={styles.list}>
             {sortedUsers.map((u, i) => {
@@ -371,12 +432,38 @@ export default function Leaderboard() {
               const playoffDone = playoffCount >= TOTAL_PLAYOFF;
               const points = u.points || 0;
               const pct = maxPoints > 0 ? Math.min(100, (points / maxPoints) * 100) : 0;
+              const isExpanded = expanded.has(u.userId);
               return (
-                <Link key={u.userId || u.displayName + i} to={`/predictions/${u.userId}`} style={styles.row}>
-                  <div style={styles.rowTop}>
+                <div key={u.userId || u.displayName + i} style={styles.row}>
+                  <div
+                    style={styles.rowTop}
+                    role={hasSpotlight ? 'button' : undefined}
+                    tabIndex={hasSpotlight ? 0 : undefined}
+                    aria-expanded={hasSpotlight ? isExpanded : undefined}
+                    onClick={hasSpotlight ? () => toggleRow(u.userId) : undefined}
+                    onKeyDown={hasSpotlight ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRow(u.userId); }
+                    } : undefined}
+                  >
                     <div style={{ ...styles.rank, ...(i < 3 ? styles.rankTop : {}) }}>{i + 1}</div>
                     <div style={styles.middle}>
-                      <span style={styles.name}>{u.displayName}</span>
+                      <div style={styles.nameRow}>
+                        <Link
+                          to={`/predictions/${u.userId}`}
+                          style={styles.nameLink}
+                          onClick={(e) => e.stopPropagation()}
+                          title={`Visa ${u.displayName}s tips`}
+                        >
+                          {u.displayName}
+                        </Link>
+                        <Link
+                          to={`/predictions/${u.userId}`}
+                          style={styles.visaTips}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          visa tips →
+                        </Link>
+                      </div>
                       <div style={styles.progressTrack} title={`${points} poäng`}>
                         <div style={{ ...styles.progressFill, width: `${pct}%` }} />
                       </div>
@@ -395,10 +482,12 @@ export default function Leaderboard() {
                         Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
                       </span>
                     </div>
-                    <span style={styles.chevron} aria-hidden="true">›</span>
+                    {hasSpotlight && (
+                      <span style={styles.chevron} aria-hidden="true">{isExpanded ? '▴' : '▾'}</span>
+                    )}
                   </div>
-                  <SpotlightStrip shared={data.spotlight} mine={u.spotlight} />
-                </Link>
+                  {isExpanded && <SpotlightStrip shared={data.spotlight} mine={u.spotlight} />}
+                </div>
               );
             })}
           </div>

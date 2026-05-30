@@ -321,7 +321,7 @@ export default function Regler() {
               <div style={styles.exampleRow}>
                 <span style={styles.exampleLabel}>Ditt tips</span>
                 <ScorePill score={ex.tip} />
-                <span style={styles.exampleLabel}>Facit</span>
+                <span style={styles.exampleLabel}>Resultat</span>
                 <ScorePill score={ex.actual} actual />
                 <div style={styles.exampleResult}>
                   <span style={{ ...styles.pointsTag, ...(ex.points === 0 ? styles.pointsTagZero : {}) }}>

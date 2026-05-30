@@ -69,14 +69,18 @@ const styles = {
     borderRadius: '999px',
     textTransform: 'uppercase',
   },
+  // Placeholder for a prediction that can't be revealed yet (match not kicked off).
+  // Mirrors the leaderboard "spotlight" language: muted dots + "Visas vid avspark".
   hiddenScore: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '6px',
+    minWidth: '144px',
+    height: '34px',
     color: 'var(--text-muted)',
-    fontSize: '13px',
-    fontWeight: 600,
+    fontSize: '22px',
+    fontWeight: 800,
+    letterSpacing: '3px',
     whiteSpace: 'nowrap',
   },
   resultLabel: {
@@ -129,7 +133,7 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
       <div style={styles.header}>
         {editable && !locked ? (
           <span style={styles.openCue}>🔓 Kan ändras till avspark</span>
-        ) : locked ? (
+        ) : !hidden && match.locked ? (
           <span style={styles.lockedPill}>🔒 Låst</span>
         ) : (
           <span />
@@ -144,7 +148,7 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
         </div>
         <div style={styles.center}>
           {hidden ? (
-            <span style={styles.hiddenScore} title="Visas vid avspark">🔒 Dolt</span>
+            <span style={styles.hiddenScore} title="Visas vid avspark">•••</span>
           ) : (
             <ScoreInput
               matchId={match.id}

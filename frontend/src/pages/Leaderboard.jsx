@@ -30,7 +30,7 @@ const styles = {
     marginTop: '8px',
   },
   page: {
-    maxWidth: '720px',
+    maxWidth: '1100px',
     margin: '0 auto',
     padding: '24px 20px 60px',
   },
@@ -42,8 +42,8 @@ const styles = {
   },
   row: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
+    flexDirection: 'column',
+    gap: '10px',
     padding: '12px 16px',
     background: 'var(--surface)',
     border: '1px solid var(--border)',
@@ -53,6 +53,11 @@ const styles = {
     textDecoration: 'none',
     color: 'inherit',
     cursor: 'pointer',
+  },
+  rowTop: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
   },
   chevron: {
     color: 'var(--text-muted)',
@@ -165,7 +170,156 @@ const styles = {
     fontSize: '13px',
     lineHeight: 1.5,
   },
+  // ── Per-row prediction spotlight ─────────────────────────────
+  strip: {
+    display: 'flex',
+    gap: '8px',
+    overflowX: 'auto',
+    paddingBottom: '4px',
+    borderTop: '1px dashed var(--border)',
+    paddingTop: '10px',
+    WebkitOverflowScrolling: 'touch',
+  },
+  cell: {
+    flexShrink: 0,
+    minWidth: '150px',
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: '8px',
+    padding: '7px 10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
+  },
+  cellNext: {
+    background: 'transparent',
+    borderStyle: 'dashed',
+  },
+  cellLabel: {
+    fontSize: '10px',
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    whiteSpace: 'nowrap',
+  },
+  cellTeams: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+  },
+  cellFlag: {
+    width: '20px',
+    height: '14px',
+    borderRadius: '2px',
+    flexShrink: 0,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    boxShadow: '0 1px 2px rgba(13,27,42,0.15)',
+  },
+  score: {
+    fontSize: '15px',
+    fontWeight: 800,
+    color: 'var(--text)',
+    fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
+  },
+  scoreMuted: {
+    color: 'var(--text-muted)',
+    fontWeight: 700,
+  },
+  cellMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '6px',
+  },
+  actualNote: {
+    fontSize: '11px',
+    color: 'var(--text-muted)',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  pointsPill: {
+    fontSize: '11px',
+    fontWeight: 800,
+    padding: '1px 7px',
+    borderRadius: '999px',
+    background: 'var(--green-dim)',
+    color: '#0b6b32',
+    fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
+  },
+  pointsPillZero: {
+    background: 'var(--surface)',
+    color: 'var(--text-muted)',
+  },
+  hiddenScore: {
+    fontSize: '15px',
+    fontWeight: 800,
+    color: 'var(--text-muted)',
+    letterSpacing: '1px',
+  },
+  caption: {
+    fontSize: '10px',
+    color: 'var(--text-muted)',
+    fontStyle: 'italic',
+  },
 };
+
+function formatKickoff(utc) {
+  return new Date(utc).toLocaleString('sv-SE', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+// One fixture mini-block in the row's spotlight strip. Header is the kickoff date/time.
+// Read-only (no nested interactive elements) so a tap anywhere in the row follows the Link.
+//   hidden  → not kicked off yet; prediction withheld (carries no score data)
+//   actual  → completed; show predicted score, the result, and points earned
+//   else    → in progress; show predicted score, awaiting result
+function SpotlightCell({ fixture, prediction, hidden }) {
+  const actual = fixture.actual;
+  const predStr = prediction && Number.isFinite(Number(prediction.homeScore))
+    ? `${prediction.homeScore}–${prediction.awayScore}` : null;
+  const points = prediction?.points;
+  return (
+    <div style={{ ...styles.cell, ...(hidden ? styles.cellNext : {}) }}>
+      <div style={styles.cellLabel}>{formatKickoff(fixture.kickoffUtc)}</div>
+      <div style={styles.cellTeams}>
+        <span className={`fi fi-${fixture.homeFlag}`} style={styles.cellFlag} aria-hidden="true" />
+        {hidden
+          ? <span style={styles.hiddenScore}>•••</span>
+          : <span style={{ ...styles.score, ...(predStr ? {} : styles.scoreMuted) }}>{predStr || '–'}</span>}
+        <span className={`fi fi-${fixture.awayFlag}`} style={styles.cellFlag} aria-hidden="true" />
+      </div>
+      {hidden && <div style={styles.caption}>Visas vid avspark</div>}
+      {!hidden && actual && (
+        <div style={styles.cellMeta}>
+          <span style={styles.actualNote}>Resultat {actual.homeScore}–{actual.awayScore}</span>
+          <span style={{ ...styles.pointsPill, ...(points > 0 ? {} : styles.pointsPillZero) }}>
+            +{points || 0} p
+          </span>
+        </div>
+      )}
+      {!hidden && !actual && <div style={styles.caption}>Inväntar resultat</div>}
+    </div>
+  );
+}
+
+// The per-row prediction strip: up to three recently completed matches, any in-progress
+// matches, and the next (not-yet-started) fixtures. `shared` holds the public fixture
+// metadata (same for everyone); `mine` maps matchId → this user's prediction (+points).
+function SpotlightStrip({ shared, mine }) {
+  if (!shared) return null;
+  const { recent = [], inProgress = [], next = [] } = shared;
+  if (recent.length === 0 && inProgress.length === 0 && next.length === 0) return null;
+  return (
+    <div style={styles.strip}>
+      {recent.map((f) => <SpotlightCell key={f.id} fixture={f} prediction={mine?.[f.id]} />)}
+      {inProgress.map((f) => <SpotlightCell key={f.id} fixture={f} prediction={mine?.[f.id]} />)}
+      {next.map((f) => <SpotlightCell key={f.id} fixture={f} hidden />)}
+    </div>
+  );
+}
 
 export default function Leaderboard() {
   const [data, setData] = useState(null);
@@ -219,28 +373,31 @@ export default function Leaderboard() {
               const pct = maxPoints > 0 ? Math.min(100, (points / maxPoints) * 100) : 0;
               return (
                 <Link key={u.userId || u.displayName + i} to={`/predictions/${u.userId}`} style={styles.row}>
-                  <div style={{ ...styles.rank, ...(i < 3 ? styles.rankTop : {}) }}>{i + 1}</div>
-                  <div style={styles.middle}>
-                    <span style={styles.name}>{u.displayName}</span>
-                    <div style={styles.progressTrack} title={`${points} poäng`}>
-                      <div style={{ ...styles.progressFill, width: `${pct}%` }} />
+                  <div style={styles.rowTop}>
+                    <div style={{ ...styles.rank, ...(i < 3 ? styles.rankTop : {}) }}>{i + 1}</div>
+                    <div style={styles.middle}>
+                      <span style={styles.name}>{u.displayName}</span>
+                      <div style={styles.progressTrack} title={`${points} poäng`}>
+                        <div style={{ ...styles.progressFill, width: `${pct}%` }} />
+                      </div>
+                      <div style={styles.chips}>
+                        <span style={{ ...styles.chip, ...(groupDone ? styles.chipDone : styles.chipWarn) }}>
+                          {groupDone ? '✓' : '⚠'} Gruppspel {groupCount}/{TOTAL_MATCHES}
+                        </span>
+                        <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
+                          {playoffDone ? '✓' : '⚠'} Slutspel {playoffCount}/{TOTAL_PLAYOFF}
+                        </span>
+                      </div>
                     </div>
-                    <div style={styles.chips}>
-                      <span style={{ ...styles.chip, ...(groupDone ? styles.chipDone : styles.chipWarn) }}>
-                        {groupDone ? '✓' : '⚠'} Gruppspel {groupCount}/{TOTAL_MATCHES}
-                      </span>
-                      <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
-                        {playoffDone ? '✓' : '⚠'} Slutspel {playoffCount}/{TOTAL_PLAYOFF}
+                    <div style={styles.right}>
+                      <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>
+                      <span style={styles.date}>
+                        Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
                       </span>
                     </div>
+                    <span style={styles.chevron} aria-hidden="true">›</span>
                   </div>
-                  <div style={styles.right}>
-                    <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>
-                    <span style={styles.date}>
-                      Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
-                    </span>
-                  </div>
-                  <span style={styles.chevron} aria-hidden="true">›</span>
+                  <SpotlightStrip shared={data.spotlight} mine={u.spotlight} />
                 </Link>
               );
             })}

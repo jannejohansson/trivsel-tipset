@@ -52,8 +52,9 @@ app.http('sendMagicLink', {
 
     const isAfterLockout = Date.now() >= LOCKOUT_TIMESTAMP;
     const lockMessage = isAfterLockout
-      ? '<p style="color:#e9c349;margin-top:16px;">Notera: Tipsen är låsta – VM har startat.</p>'
-      : '<p style="margin-top:16px;">Länken är giltig i 15 minuter.</p>';
+      ? '<p style="margin:0 0 8px;color:#b8860b;font-weight:600;">Notera: VM har startat. Varje match låses vid avspark, så redan spelade matcher går inte längre att tippa.</p>'
+      : '';
+    const validityMessage = '<p style="margin:0 0 8px;color:#5a6877;font-size:14px;">Länken är giltig i 15 minuter och kan bara användas en gång.</p>';
 
     try {
       const poller = await emailClient.beginSend({
@@ -62,18 +63,26 @@ app.http('sendMagicLink', {
         content: {
           subject: 'Din inloggningslänk – Trivseltipset',
           html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#131313;color:#e5e2e1;padding:32px;border-radius:8px;">
-              <h1 style="font-size:24px;color:#88d982;margin:0 0 16px;">Trivseltipset</h1>
-              <p>Klicka på knappen nedan för att logga in:</p>
-              <a href="${magicLink}"
-                 style="display:inline-block;margin:24px 0;background:#065f18;color:#86d881;padding:14px 28px;border-radius:4px;text-decoration:none;font-weight:bold;font-size:16px;">
-                Logga in nu
-              </a>
-              ${lockMessage}
-              <p style="color:#e5e2e1;opacity:0.4;font-size:12px;margin-top:32px;">
-                Om du inte begärde denna länk kan du ignorera detta mail.<br/>
-                ${magicLink}
-              </p>
+            <div style="font-family:system-ui,'Segoe UI',sans-serif;background:#f6f8fb;padding:32px 16px;">
+              <div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #dde3ea;border-radius:10px;padding:32px;color:#0d1b2a;line-height:1.6;">
+                <h1 style="font-size:22px;color:#15a34a;margin:0 0 20px;">Trivseltipset</h1>
+                <p style="margin:0 0 12px;">Hej och välkommen till Trivseltipset!</p>
+                <p style="margin:0 0 12px;">Här är din personliga inloggningslänk. Tippa gruppspel och slutspel i fotbolls-VM 2026.</p>
+                <p style="margin:0 0 24px;">Klicka på knappen nedan för att logga in:</p>
+                <a href="${magicLink}"
+                   style="display:inline-block;background:#15a34a;color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">
+                  Logga in nu
+                </a>
+                <div style="margin-top:28px;padding-top:20px;border-top:1px solid #dde3ea;">
+                  ${lockMessage}
+                  ${validityMessage}
+                  <p style="margin:0 0 12px;color:#5a6877;font-size:13px;">Om du inte begärde denna länk kan du lugnt ignorera detta mail.</p>
+                  <p style="margin:0;color:#5a6877;font-size:12px;word-break:break-all;">
+                    Fungerar inte knappen? Kopiera länken:<br/>
+                    <a href="${magicLink}" style="color:#2563eb;">${magicLink}</a>
+                  </p>
+                </div>
+              </div>
             </div>
           `,
         },

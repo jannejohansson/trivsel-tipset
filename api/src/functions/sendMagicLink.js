@@ -4,8 +4,7 @@ const { app } = require('@azure/functions');
 const crypto = require('crypto');
 const { EmailClient } = require('@azure/communication-email');
 const { getTokensTable } = require('../shared/tableClient');
-
-const LOCKOUT_TIMESTAMP = new Date('2026-06-11T18:00:00Z').getTime();
+const { LOCKOUT_TIMESTAMP } = require('../shared/constants');
 
 app.http('sendMagicLink', {
   methods: ['POST'],

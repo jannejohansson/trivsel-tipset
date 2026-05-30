@@ -9,6 +9,7 @@ import Leaderboard from './pages/Leaderboard.jsx';
 import UserPredictions from './pages/UserPredictions.jsx';
 import Regler from './pages/Regler.jsx';
 import SetupProfile from './pages/SetupProfile.jsx';
+import Profile from './pages/Profile.jsx';
 import Admin from './pages/Admin.jsx';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<AuthGuard><SetupProfile /></AuthGuard>} />
+          <Route path="/profil" element={<AuthGuard><Profile /></AuthGuard>} />
           <Route path="/matches" element={<AuthGuard><Matches view="group" /></AuthGuard>} />
           <Route path="/slutspel" element={<AuthGuard><Matches view="playoff" /></AuthGuard>} />
           <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />

@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
-
-const TOTAL_MATCHES = 72;
-const TOTAL_PLAYOFF = 31; // 31 knockout matches predicted (R32→final); the bronze match isn't tipped
+import { TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 
 const styles = {
   hero: {
@@ -142,8 +140,8 @@ const styles = {
     fontVariantNumeric: 'tabular-nums',
   },
   count: {
-    fontSize: '13px',
-    fontWeight: 700,
+    fontSize: '19px',
+    fontWeight: 800,
     color: 'var(--text)',
   },
   countDone: {

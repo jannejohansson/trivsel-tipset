@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const styles = {
@@ -50,25 +50,35 @@ const styles = {
     fontWeight: 600,
     textDecoration: 'none',
   },
-  btn: {
-    background: 'none',
+  account: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '7px',
+    maxWidth: '180px',
+    padding: '6px 12px',
+    borderRadius: '999px',
+    background: 'var(--surface-2)',
     border: '1px solid var(--border)',
-    color: 'var(--text-muted)',
-    padding: '6px 14px',
-    borderRadius: 'var(--radius)',
-    fontSize: '14px',
-    cursor: 'pointer',
+    color: 'var(--text)',
+    fontWeight: 600,
+    textDecoration: 'none',
+  },
+  accountDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '999px',
+    background: 'var(--green)',
+    flexShrink: 0,
+  },
+  accountName: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
 };
 
 export default function Navbar() {
-  const { user, loading, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
+  const { user, loading } = useAuth();
 
   return (
     <nav style={styles.nav}>
@@ -84,7 +94,10 @@ export default function Navbar() {
         {!loading && user?.isAdmin && <Link to="/admin" style={styles.link}>Admin</Link>}
         {!loading && (
           user
-            ? <button style={styles.btn} onClick={handleLogout}>Logga ut</button>
+            ? <Link to="/profil" style={styles.account} title="Min profil">
+                <span style={styles.accountDot} aria-hidden="true" />
+                <span style={styles.accountName}>{user.displayName}</span>
+              </Link>
             : <Link to="/login" style={styles.link}>Logga in</Link>
         )}
       </div>

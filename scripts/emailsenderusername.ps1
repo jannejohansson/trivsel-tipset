@@ -1,0 +1,1 @@
+az communication email domain sender-username create --email-service-name "email-trivseltipset" --resource-group "trivel-tipset" --domain-name "trivseltipset.se" --sender-username "noreply" --username "noreply" --display-name "Trivseltipset"

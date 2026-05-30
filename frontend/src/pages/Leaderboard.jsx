@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
+import { useIsMobile } from '../lib/useIsMobile.js';
 
 const styles = {
   hero: {
@@ -365,6 +366,7 @@ export default function Leaderboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set()); // expanded userIds
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     api.getLeaderboard()
@@ -472,17 +474,19 @@ export default function Leaderboard() {
                       <div style={styles.progressTrack} title={`${points} poäng`}>
                         <div style={{ ...styles.progressFill, width: `${pct}%` }} />
                       </div>
-                      <div style={styles.chips}>
-                        <span style={{ ...styles.chip, ...(groupDone ? styles.chipDone : styles.chipWarn) }}>
-                          {groupDone ? '✓' : '⚠'} Gruppspel {groupCount}/{TOTAL_MATCHES}
-                        </span>
-                        <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
-                          {playoffDone ? '✓' : '⚠'} Slutspel {playoffCount}/{TOTAL_PLAYOFF}
-                        </span>
-                        <span style={{ ...styles.chip, ...(u.paid ? styles.chipDone : styles.chipUnpaid) }}>
-                          {u.paid ? '✓ Betalat' : 'Ej betalat'}
-                        </span>
-                      </div>
+                      {!isMobile && (
+                        <div style={styles.chips}>
+                          <span style={{ ...styles.chip, ...(groupDone ? styles.chipDone : styles.chipWarn) }}>
+                            {groupDone ? '✓' : '⚠'} Gruppspel {groupCount}/{TOTAL_MATCHES}
+                          </span>
+                          <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
+                            {playoffDone ? '✓' : '⚠'} Slutspel {playoffCount}/{TOTAL_PLAYOFF}
+                          </span>
+                          <span style={{ ...styles.chip, ...(u.paid ? styles.chipDone : styles.chipUnpaid) }}>
+                            {u.paid ? '✓ Betalat' : 'Ej betalat'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div style={styles.right}>
                       <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>

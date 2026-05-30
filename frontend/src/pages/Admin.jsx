@@ -6,6 +6,7 @@ import {
   buildBracket, computeAllStandings, rankThirdPlace,
 } from '../lib/bracket.js';
 import BracketTree from '../components/BracketTree.jsx';
+import { useIsMobile } from '../lib/useIsMobile.js';
 
 function formatKickoff(utc) {
   return new Date(utc).toLocaleString('sv-SE', {
@@ -25,6 +26,9 @@ const styles = {
   matchMeta: { width: '104px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '3px' },
   matchTime: { fontSize: '12px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
   groupBadge: { alignSelf: 'flex-start', fontSize: '11px', fontWeight: 800, lineHeight: 1, padding: '2px 7px', borderRadius: '999px', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' },
+  matchRowMobile: { gap: '6px' },
+  matchMetaMobile: { width: '60px' },
+  matchTimeMobile: { fontSize: '11px', whiteSpace: 'normal' },
   teamL: { flex: 1, textAlign: 'right' },
   teamR: { flex: 1, textAlign: 'left' },
   input: { width: '44px', height: '34px', textAlign: 'center', fontSize: '16px', fontWeight: 700, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)' },
@@ -50,6 +54,7 @@ const styles = {
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
+  const isMobile = useIsMobile();
   const [matches, setMatches] = useState([]);
   const [groupResults, setGroupResults] = useState({});
   const [knockoutWinners, setKnockoutWinners] = useState({});
@@ -170,18 +175,18 @@ export default function Admin() {
           {sortedMatches.map((m) => {
             const r = groupResults[m.id] || {};
             return (
-              <div key={m.id} style={styles.matchRow}>
-                <div style={styles.matchMeta}>
-                  <span style={styles.matchTime}>{formatKickoff(m.kickoffUtc)}</span>
-                  <span style={styles.groupBadge}>Grupp {m.group}</span>
+              <div key={m.id} style={{ ...styles.matchRow, ...(isMobile ? styles.matchRowMobile : {}) }}>
+                <div style={{ ...styles.matchMeta, ...(isMobile ? styles.matchMetaMobile : {}) }}>
+                  <span style={{ ...styles.matchTime, ...(isMobile ? styles.matchTimeMobile : {}) }}>{formatKickoff(m.kickoffUtc)}</span>
+                  <span style={styles.groupBadge}>{isMobile ? m.group : `Grupp ${m.group}`}</span>
                 </div>
-                <span style={styles.teamL}>{m.homeTeam}</span>
+                {!isMobile && <span style={styles.teamL}>{m.homeTeam}</span>}
                 <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
                 <input style={styles.input} value={r.homeScore ?? ''} onChange={(e) => setScore(m.id, 'homeScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
                 <span style={{ color: 'var(--text-muted)' }}>–</span>
                 <input style={styles.input} value={r.awayScore ?? ''} onChange={(e) => setScore(m.id, 'awayScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
                 <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
-                <span style={styles.teamR}>{m.awayTeam}</span>
+                {!isMobile && <span style={styles.teamR}>{m.awayTeam}</span>}
                 {Number.isInteger(r.homeScore) && Number.isInteger(r.awayScore) ? (
                   <button style={styles.clearBtn} onClick={() => clearScore(m.id)} title="Rensa resultat (låser upp matchen)">✕</button>
                 ) : (

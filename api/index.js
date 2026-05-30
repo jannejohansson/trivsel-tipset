@@ -14,3 +14,5 @@ require('./src/functions/getPlayoff');
 require('./src/functions/savePlayoffPrediction');
 require('./src/functions/getResults');
 require('./src/functions/adminSetResults');
+require('./src/functions/adminListUsers');
+require('./src/functions/adminUpdateUser');

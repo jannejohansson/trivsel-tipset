@@ -129,10 +129,12 @@ async function collectUsers() {
   for await (const entity of getUsersTable().listEntities({
     queryOptions: { filter: `PartitionKey eq 'user'` },
   })) {
+    if (entity.hidden === true) continue; // soft-removed: excluded from the public leaderboard
     users.push({
       userId: entity.rowKey,
       displayName: entity.displayName || entity.rowKey,
       lastLoginAt: entity.lastLoginAt,
+      paid: entity.paid === true,
     });
   }
   return users;

@@ -159,6 +159,11 @@ const styles = {
     color: 'var(--yellow)',
     border: '1px solid rgba(184,134,11,0.35)',
   },
+  chipUnpaid: {
+    background: 'var(--surface-2)',
+    color: 'var(--text-muted)',
+    border: '1px solid var(--border)',
+  },
   progressTrack: {
     height: '6px',
     background: 'var(--surface-2)',
@@ -473,6 +478,9 @@ export default function Leaderboard() {
                         </span>
                         <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
                           {playoffDone ? '✓' : '⚠'} Slutspel {playoffCount}/{TOTAL_PLAYOFF}
+                        </span>
+                        <span style={{ ...styles.chip, ...(u.paid ? styles.chipDone : styles.chipUnpaid) }}>
+                          {u.paid ? '✓ Betalat' : 'Ej betalat'}
                         </span>
                       </div>
                     </div>

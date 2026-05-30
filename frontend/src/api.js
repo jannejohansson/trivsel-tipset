@@ -42,4 +42,7 @@ export const api = {
   getResults: () => apiFetch('/results'),
   saveResults: (payload) =>
     apiFetch('/results', { method: 'POST', body: JSON.stringify(payload) }),
+  getUsers: () => apiFetch('/users'),
+  updateUser: (userId, patch) =>
+    apiFetch(`/users/${encodeURIComponent(userId)}`, { method: 'POST', body: JSON.stringify(patch) }),
 };

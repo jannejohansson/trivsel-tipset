@@ -31,6 +31,15 @@ const styles = {
   flag: { width: '22px', height: '16px', borderRadius: '2px', backgroundSize: 'cover', backgroundPosition: 'center', display: 'inline-block', flexShrink: 0 },
   scroller: { display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '12px' },
   status: { fontSize: '12px', color: 'var(--text-muted)', minHeight: '16px' },
+  userRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderTop: '1px solid var(--border)' },
+  userRowHidden: { opacity: 0.5 },
+  userInfo: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
+  userName: { fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' },
+  hiddenTag: { fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', background: 'var(--surface-2)', borderRadius: '999px', padding: '1px 7px' },
+  userEmail: { fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  paidLabel: { display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text)', cursor: 'pointer', flexShrink: 0, fontWeight: 600 },
+  removeBtn: { flexShrink: 0, background: 'none', border: '1px solid var(--border)', color: 'var(--danger)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  restoreBtn: { flexShrink: 0, background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
 };
 
 export default function Admin() {
@@ -40,16 +49,18 @@ export default function Admin() {
   const [knockoutWinners, setKnockoutWinners] = useState({});
   const [thirdOrder, setThirdOrder] = useState([]);
   const [activeGroup, setActiveGroup] = useState('A');
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    Promise.all([api.getMatches(), api.getResults()])
-      .then(([m, r]) => {
+    Promise.all([api.getMatches(), api.getResults(), api.getUsers().catch(() => ({ users: [] }))])
+      .then(([m, r, u]) => {
         setMatches(m.matches);
         setGroupResults(r.groupResults || {});
         setKnockoutWinners(r.knockoutWinners || {});
         setThirdOrder(r.thirdOrder || []);
+        setUsers(u.users || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -118,6 +129,25 @@ export default function Admin() {
     save({ knockoutWinners: { [koId]: winner } });
   };
 
+  // Optimistically patch a user flag (paid/hidden), reverting the row on failure.
+  const patchUser = (u, patch) => {
+    setUsers((prev) => prev.map((x) => (x.userId === u.userId ? { ...x, ...patch } : x)));
+    setStatus('Sparar...');
+    api.updateUser(u.userId, patch)
+      .then(() => setStatus('Sparat ✓'))
+      .catch(() => {
+        setStatus('Fel vid sparande');
+        const revert = Object.fromEntries(Object.keys(patch).map((k) => [k, u[k]]));
+        setUsers((prev) => prev.map((x) => (x.userId === u.userId ? { ...x, ...revert } : x)));
+      });
+  };
+
+  const togglePaid = (u) => patchUser(u, { paid: !u.paid });
+  const setHidden = (u, hidden) => {
+    if (hidden && !window.confirm(`Ta bort ${u.displayName} från ställningen? Tipsen sparas men deltagaren döljs.`)) return;
+    patchUser(u, { hidden });
+  };
+
   return (
     <>
       <section style={styles.hero}>
@@ -181,6 +211,33 @@ export default function Admin() {
           <p style={styles.hint}>Klicka på laget som faktiskt gick vidare i varje match.</p>
           {!bracket.allComplete && <p style={styles.hint}>Sextondelsfinalerna fylls i när alla gruppresultat är inlagda.</p>}
           <BracketTree matches={bracket.matches} locked={false} onPick={pickKo} />
+        </div>
+
+        {/* 4. Participants */}
+        <div style={styles.section}>
+          <h2 style={styles.h2}>4. Deltagare</h2>
+          <p style={styles.hint}>Markera betald avgift och dölj deltagare vid behov. Dolda deltagare visas inte i ställningen men behåller sina tips.</p>
+          {users.length === 0 && <p style={styles.hint}>Inga deltagare ännu.</p>}
+          {users.map((u) => (
+            <div key={u.userId} style={{ ...styles.userRow, ...(u.hidden ? styles.userRowHidden : {}) }}>
+              <div style={styles.userInfo}>
+                <span style={styles.userName}>
+                  {u.displayName}
+                  {u.hidden && <span style={styles.hiddenTag}>dold</span>}
+                </span>
+                <span style={styles.userEmail}>{u.email}</span>
+              </div>
+              <label style={styles.paidLabel}>
+                <input type="checkbox" checked={u.paid} onChange={() => togglePaid(u)} />
+                Betalat
+              </label>
+              {u.hidden ? (
+                <button style={styles.restoreBtn} onClick={() => setHidden(u, false)}>Återställ</button>
+              ) : (
+                <button style={styles.removeBtn} onClick={() => setHidden(u, true)}>Dölj</button>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </>

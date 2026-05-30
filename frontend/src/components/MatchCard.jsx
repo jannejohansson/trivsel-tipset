@@ -27,26 +27,8 @@ const styles = {
     fontSize: '12px',
     color: 'var(--text-muted)',
   },
-  // Symmetric layout: equal flexible halves around a fixed centre keep the score
-  // boxes pinned to the card's centre in EVERY row (locked, open, with/without a
-  // result), so they line up vertically. The result lives in the right reserved
-  // column; an equal-width empty column on the left preserves the symmetry.
-  row: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    width: '100%',
-  },
-  side: { width: '220px', flexShrink: 0 },
-  sideResult: {
-    width: '220px',
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: '6px',
-  },
-  half: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' },
+  // Layout for the match row (.match-row etc.) lives in index.css so a media
+  // query can collapse the fixed side columns on mobile.
   teamName: {
     flex: 1,
     minWidth: 0,
@@ -154,9 +136,9 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
         )}
         <span>{formatKickoff(match.kickoffUtc)}</span>
       </div>
-      <div style={styles.row}>
-        <div style={styles.side} />
-        <div style={{ ...styles.half, justifyContent: 'flex-end' }}>
+      <div className="match-row">
+        <div className="match-side" />
+        <div className="match-half home">
           <span style={{ ...styles.teamName, textAlign: 'right' }}>{match.homeTeam}</span>
           <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
         </div>
@@ -172,11 +154,11 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
             />
           )}
         </div>
-        <div style={{ ...styles.half, justifyContent: 'flex-start' }}>
+        <div className="match-half away">
           <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
           <span style={{ ...styles.teamName, textAlign: 'left' }}>{match.awayTeam}</span>
         </div>
-        <div style={styles.sideResult}>
+        <div className="match-side-result">
           {hasResult && (
             <>
               <span style={styles.resultLabel}>Resultat</span>

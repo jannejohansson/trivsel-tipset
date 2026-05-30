@@ -3,9 +3,15 @@ import { Navigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
-  buildBracket, computeAllStandings, rankThirdPlace, GROUP_LETTERS,
+  buildBracket, computeAllStandings, rankThirdPlace,
 } from '../lib/bracket.js';
 import BracketTree from '../components/BracketTree.jsx';
+
+function formatKickoff(utc) {
+  return new Date(utc).toLocaleString('sv-SE', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
 
 const styles = {
   hero: { background: 'linear-gradient(135deg, #0d1b2a 0%, #7a1f1f 100%)', color: '#fff', padding: '28px 20px', textAlign: 'center' },
@@ -15,10 +21,10 @@ const styles = {
   section: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px', marginBottom: '24px', boxShadow: 'var(--shadow-card)' },
   h2: { fontSize: '16px', fontWeight: 800, margin: '0 0 12px' },
   hint: { fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 14px' },
-  tabs: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' },
-  tab: { width: '34px', height: '34px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text)', cursor: 'pointer', fontWeight: 700 },
-  tabActive: { background: 'var(--green)', color: '#fff', borderColor: 'var(--green)' },
   matchRow: { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderTop: '1px solid var(--border)', fontSize: '14px' },
+  matchMeta: { width: '104px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '3px' },
+  matchTime: { fontSize: '12px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+  groupBadge: { alignSelf: 'flex-start', fontSize: '11px', fontWeight: 800, lineHeight: 1, padding: '2px 7px', borderRadius: '999px', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' },
   teamL: { flex: 1, textAlign: 'right' },
   teamR: { flex: 1, textAlign: 'left' },
   input: { width: '44px', height: '34px', textAlign: 'center', fontSize: '16px', fontWeight: 700, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)' },
@@ -48,7 +54,6 @@ export default function Admin() {
   const [groupResults, setGroupResults] = useState({});
   const [knockoutWinners, setKnockoutWinners] = useState({});
   const [thirdOrder, setThirdOrder] = useState([]);
-  const [activeGroup, setActiveGroup] = useState('A');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
@@ -87,9 +92,9 @@ export default function Admin() {
   if (!user) return <Navigate to="/login" replace />;
   if (!user.isAdmin) return <Navigate to="/" replace />;
 
-  const groupMatches = matches
-    .filter((m) => m.group === activeGroup)
-    .sort((a, b) => a.matchday - b.matchday || a.matchNumber - b.matchNumber);
+  // All group matches in true kickoff order (matchNumber is grouped by group, not chronological).
+  const sortedMatches = [...matches]
+    .sort((a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc) || a.matchNumber - b.matchNumber);
 
   const setScore = (id, side, value) => {
     const v = value.replace(/[^0-9]/g, '').slice(0, 2);
@@ -161,16 +166,15 @@ export default function Admin() {
         {/* 1. Group results */}
         <div style={styles.section}>
           <h2 style={styles.h2}>1. Gruppspelsresultat</h2>
-          <p style={styles.hint}>Faktiska slutresultat. Tabellen och slutspelsträdet uppdateras automatiskt.</p>
-          <div style={styles.tabs}>
-            {GROUP_LETTERS.map((g) => (
-              <button key={g} style={{ ...styles.tab, ...(g === activeGroup ? styles.tabActive : {}) }} onClick={() => setActiveGroup(g)}>{g}</button>
-            ))}
-          </div>
-          {groupMatches.map((m) => {
+          <p style={styles.hint}>Alla matcher i spelordning. Faktiska slutresultat — tabellen och slutspelsträdet uppdateras automatiskt.</p>
+          {sortedMatches.map((m) => {
             const r = groupResults[m.id] || {};
             return (
               <div key={m.id} style={styles.matchRow}>
+                <div style={styles.matchMeta}>
+                  <span style={styles.matchTime}>{formatKickoff(m.kickoffUtc)}</span>
+                  <span style={styles.groupBadge}>Grupp {m.group}</span>
+                </div>
                 <span style={styles.teamL}>{m.homeTeam}</span>
                 <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
                 <input style={styles.input} value={r.homeScore ?? ''} onChange={(e) => setScore(m.id, 'homeScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />

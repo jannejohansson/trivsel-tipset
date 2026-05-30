@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-
-const TARGET = new Date('2026-06-11T18:00:00Z').getTime();
+import { KICKOFF_TS } from '../lib/constants.js';
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
 function getRemaining() {
-  const diff = TARGET - Date.now();
+  const diff = KICKOFF_TS - Date.now();
   if (diff <= 0) return null;
   const days = Math.floor(diff / 86400000);
   const hours = Math.floor((diff % 86400000) / 3600000);

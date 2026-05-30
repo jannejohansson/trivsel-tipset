@@ -70,12 +70,13 @@ const styles = {
   },
   scroller: { display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '12px' },
   champ: {
-    marginTop: '24px', textAlign: 'center', padding: '18px',
+    marginBottom: '20px', padding: '10px 18px',
     background: 'rgba(21,163,74,0.10)', border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap',
   },
   champLabel: { fontSize: '11px', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 },
-  champName: { fontSize: '22px', fontWeight: 800, marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' },
+  champName: { fontSize: '26px', fontWeight: 800, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: '10px' },
   flag: { width: '32px', height: '24px', borderRadius: '3px', backgroundSize: 'cover', backgroundPosition: 'center', display: 'inline-block', boxShadow: '0 1px 3px rgba(13,27,42,0.2)' },
   error: {
     color: 'var(--danger)',
@@ -221,12 +222,6 @@ export default function Matches({ view = 'group' }) {
             )}
             {saveError && <div style={styles.notice}>Kunde inte spara senaste valet. Kontrollera anslutningen.</div>}
 
-            <div style={styles.scroller}>
-              <div style={{ minWidth: 'min-content' }}>
-                <BracketTree matches={bracket.matches} locked={playoffLocked} onPick={handlePick} />
-              </div>
-            </div>
-
             <div style={styles.champ}>
               <div style={styles.champLabel}>Din världsmästare</div>
               <div style={styles.champName}>
@@ -238,6 +233,12 @@ export default function Matches({ view = 'group' }) {
                 ) : (
                   <span style={{ color: 'var(--text-muted)', fontSize: '16px', fontWeight: 500 }}>Inte vald än</span>
                 )}
+              </div>
+            </div>
+
+            <div style={styles.scroller}>
+              <div style={{ minWidth: 'min-content' }}>
+                <BracketTree matches={bracket.matches} locked={playoffLocked} onPick={handlePick} />
               </div>
             </div>
           </>

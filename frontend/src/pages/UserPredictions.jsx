@@ -26,14 +26,17 @@ const styles = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     gap: '12px', marginBottom: '20px', flexWrap: 'wrap',
   },
-  segment: { display: 'flex', gap: '8px' },
+  segment: { display: 'flex', gap: '8px', flex: 1, justifyContent: 'center' },
   segBtn: {
+    flex: 1, maxWidth: '220px',
     background: 'var(--surface)', border: '1px solid var(--border)',
-    color: 'var(--text-muted)', padding: '8px 16px', borderRadius: 'var(--radius)',
-    fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+    color: 'var(--text-muted)', padding: '10px 16px', borderRadius: 'var(--radius)',
+    fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
   },
   segBtnActive: {
-    background: 'var(--green)', borderColor: 'var(--green)', color: '#ffffff',
+    background: 'linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%)',
+    borderColor: 'transparent', color: '#ffffff',
+    boxShadow: '0 4px 10px rgba(21,163,74,0.25)',
   },
   revealBtn: {
     background: 'rgba(184,134,11,0.12)', border: '1px solid rgba(184,134,11,0.4)',
@@ -46,12 +49,13 @@ const styles = {
     fontSize: '14px', marginBottom: '20px',
   },
   champ: {
-    marginTop: '24px', textAlign: 'center', padding: '18px',
+    marginBottom: '20px', padding: '10px 18px',
     background: 'rgba(21,163,74,0.10)', border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap',
   },
   champLabel: { fontSize: '11px', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 },
-  champName: { fontSize: '22px', fontWeight: 800, marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' },
+  champName: { fontSize: '26px', fontWeight: 800, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: '10px' },
   flag: { width: '32px', height: '24px', borderRadius: '3px', backgroundSize: 'cover', backgroundPosition: 'center', display: 'inline-block', boxShadow: '0 1px 3px rgba(13,27,42,0.2)' },
   scoreLine: { textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', marginTop: '16px' },
   error: { color: 'var(--danger)', padding: '16px', background: 'rgba(220,38,38,0.08)', borderRadius: 'var(--radius)', textAlign: 'center' },
@@ -123,7 +127,6 @@ export default function UserPredictions() {
         {view === 'playoff' && (
           playoff ? (
             <>
-              <BracketTree matches={playoff.matches} locked onPick={() => {}} />
               <div style={styles.champ}>
                 <div style={styles.champLabel}>{name}s världsmästare</div>
                 <div style={styles.champName}>
@@ -137,6 +140,7 @@ export default function UserPredictions() {
                   )}
                 </div>
               </div>
+              <BracketTree matches={playoff.matches} locked onPick={() => {}} />
               {data.playoffLocked && data.playoffScore && (
                 <p style={styles.scoreLine}>Slutspelspoäng: <strong>{data.playoffScore.total} p</strong></p>
               )}

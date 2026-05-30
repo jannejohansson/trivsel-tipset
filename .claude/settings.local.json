@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e \"const jwt = require\\('jsonwebtoken'\\); const s = jwt.sign\\({userId:'test', exp: Math.floor\\(Date.now\\(\\)/1000\\)+3600}, 'testsecret'\\); console.log\\('sign ok:', s.substring\\(0,20\\)\\); const p = jwt.verify\\(s, 'testsecret'\\); console.log\\('verify ok:', p.userId\\);\")"
+      "Bash(node -e \"const jwt = require\\('jsonwebtoken'\\); const s = jwt.sign\\({userId:'test', exp: Math.floor\\(Date.now\\(\\)/1000\\)+3600}, 'testsecret'\\); console.log\\('sign ok:', s.substring\\(0,20\\)\\); const p = jwt.verify\\(s, 'testsecret'\\); console.log\\('verify ok:', p.userId\\);\")",
+      "Bash(git -C /c/dev/repos/trivsel-tipset log --oneline)",
+      "Bash(git ls-tree *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.get\\('packages',{}\\).keys\\(\\)\\)[:30]\\)\")",
+      "Bash(npm create *)",
+      "Bash(npm install *)"
     ]
   }
 }

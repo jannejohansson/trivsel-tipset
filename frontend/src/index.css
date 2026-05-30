@@ -1,0 +1,169 @@
+:root {
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --surface-2: #eef2f7;
+  --border: #dde3ea;
+  --text: #0d1b2a;
+  --text-muted: #5a6877;
+  --green: #15a34a;
+  --green-dim: #d4f4dd;
+  --accent: #2563eb;
+  --danger: #dc2626;
+  --yellow: #b8860b;
+  --radius: 10px;
+  --shadow-card: 0 1px 2px rgba(13,27,42,0.06), 0 4px 12px rgba(13,27,42,0.04);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover { text-decoration: underline; }
+
+button { cursor: pointer; font-family: inherit; }
+
+input[type="number"] { font-family: inherit; }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* Symmetric group selector: 12 / 6 / 4 cols */
+.group-tabs {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) {
+  .group-tabs { grid-template-columns: repeat(6, 1fr); }
+}
+@media (max-width: 500px) {
+  .group-tabs { grid-template-columns: repeat(4, 1fr); }
+}
+
+.group-tab {
+  padding: 8px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  font-family: inherit;
+}
+.group-tab:hover { color: var(--text); border-color: var(--text-muted); }
+.group-tab.active {
+  background: linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(21,163,74,0.25);
+}
+
+/* ── Knockout bracket tree ─────────────────────────────────── */
+.bracket-wrap { overflow-x: auto; padding: 4px 0 24px; }
+.bracket { display: flex; min-width: min-content; align-items: stretch; }
+.bracket-col { display: flex; flex-direction: column; flex: 0 0 auto; min-width: 0; }
+.bracket-col-title {
+  height: 26px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.bracket-round { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.bracket-match {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  /* Must comfortably exceed the rendered .bracket-box height (~72px) plus the
+     12px vertical padding, otherwise the centred box overflows the cell and
+     overlaps its vertical neighbours. */
+  min-height: 96px;
+  padding: 6px 16px;
+}
+.bracket-round.bk-first .bracket-match { padding-left: 0; }
+.bracket-round.bk-final .bracket-match { padding-right: 0; }
+
+.bracket-box {
+  position: relative;
+  width: 156px;
+  min-width: 156px;
+  /* Height comes from the content (number + two team rows). The parent
+     .bracket-match is a column flex, so flex-basis would size the *height* — we
+     must keep the box out of flex sizing (flex: none) or it stretches/squeezes
+     vertically and overlaps its neighbours. */
+  flex: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.bracket-num { font-size: 9px; line-height: 1.4; color: var(--text-muted); padding: 2px 8px 0; letter-spacing: 0.4px; }
+
+.bracket-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 6px 9px;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--text);
+  cursor: default;
+}
+.bracket-row:first-of-type { border-top: none; }
+.bracket-row.clickable { cursor: pointer; }
+.bracket-row.clickable:hover { background: var(--surface-2); }
+.bracket-row.picked { background: rgba(21,163,74,0.15); }
+.bracket-row.dimmed { opacity: 0.5; }
+.bracket-row .bk-flag {
+  width: 20px; height: 14px; border-radius: 2px; flex-shrink: 0;
+  background-size: cover; background-position: center;
+  box-shadow: 0 1px 2px rgba(13,27,42,0.15);
+}
+.bracket-row .bk-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bracket-row .bk-placeholder { color: var(--text-muted); font-weight: 500; font-style: italic; }
+
+/* Connector lines: horizontal stubs + vertical bus joining each pair. */
+.bracket-round:not(.bk-final) .bracket-box::after {
+  content: ''; position: absolute; top: 50%; right: -16px; width: 16px; height: 2px; background: var(--border);
+}
+.bracket-round:not(.bk-final) .bracket-match:nth-child(odd)::before {
+  content: ''; position: absolute; top: 50%; right: 0; width: 2px; height: 100%; background: var(--border);
+}
+.bracket-round:not(.bk-first) .bracket-box::before {
+  content: ''; position: absolute; top: 50%; left: -16px; width: 16px; height: 2px; background: var(--border);
+}

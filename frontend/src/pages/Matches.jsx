@@ -185,8 +185,8 @@ export default function Matches({ view = 'group' }) {
         <h1 style={styles.title}>{isPlayoff ? 'Ditt slutspelsträd' : 'Dina tips'}</h1>
         <p style={styles.sub}>
           {isPlayoff
-            ? (playoffLocked ? 'Slutspelstipsen är låsta.' : `${user?.displayName || user?.email} · välj vem som går vidare`)
-            : (groupLocked ? 'Tipsen är låsta.' : `${user?.displayName || user?.email} · sparas automatiskt`)}
+            ? (playoffLocked ? 'Slutspelstipsen är låsta.' : `${user?.displayName || user?.email} · Tippa vilka som går vidare i slutspelet`)
+            : (groupLocked ? 'Tipsen är låsta.' : `${user?.displayName || user?.email} · Tippa resultat i alla gruppspelsmatcher`)}
         </p>
       </section>
 

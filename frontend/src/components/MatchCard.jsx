@@ -27,21 +27,35 @@ const styles = {
     fontSize: '12px',
     color: 'var(--text-muted)',
   },
-  teams: {
+  // Symmetric layout: equal flexible halves around a fixed centre keep the score
+  // boxes pinned to the card's centre in EVERY row (locked, open, with/without a
+  // result), so they line up vertically. The result lives in the right reserved
+  // column; an equal-width empty column on the left preserves the symmetry.
+  row: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    maxWidth: '620px',
+    gap: '10px',
     width: '100%',
-    margin: '0 auto',
   },
+  side: { width: '220px', flexShrink: 0 },
+  sideResult: {
+    width: '220px',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: '6px',
+  },
+  half: { flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' },
   teamName: {
     flex: 1,
     minWidth: 0,
     fontSize: '15px',
     fontWeight: 600,
     color: 'var(--text)',
-    lineHeight: 1.25,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   center: { flexShrink: 0 },
   openCue: {
@@ -83,27 +97,16 @@ const styles = {
     fontWeight: 600,
     whiteSpace: 'nowrap',
   },
-  // Read-only completed match: prediction on the left, actual result + points on
-  // the right, all on one horizontal line (full card width).
-  resultRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '16px',
-  },
-  matchZone: { display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 },
-  resultZone: { display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 },
   resultLabel: {
-    fontSize: '11px',
+    fontSize: '10px',
     fontWeight: 700,
     letterSpacing: '0.5px',
     textTransform: 'uppercase',
     color: 'var(--text-muted)',
-    marginRight: '2px',
   },
   // Actual result in grey boxes the same height as the prediction boxes.
   resultBox: {
-    width: '40px',
+    width: '36px',
     height: '34px',
     display: 'flex',
     alignItems: 'center',
@@ -123,8 +126,7 @@ const styles = {
     background: 'var(--green-dim)',
     border: '1px solid var(--green)',
     borderRadius: '999px',
-    padding: '4px 12px',
-    marginLeft: '4px',
+    padding: '3px 10px',
     fontVariantNumeric: 'tabular-nums',
   },
 };
@@ -140,33 +142,6 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
   const dimmed = editable && locked;
   const hasResult = !hidden && !!actual;
 
-  // The teams + prediction; reused inside either the centred layout or the
-  // result comparison row. Names flex (and truncate) only in the centred layout;
-  // alongside a result they sit at natural width so both scorelines fit one line.
-  const nameBase = hasResult
-    ? { fontSize: '15px', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap' }
-    : styles.teamName;
-  const matchInner = (
-    <>
-      <span style={{ ...nameBase, textAlign: 'right' }}>{match.homeTeam}</span>
-      <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
-      <span style={styles.center}>
-        {hidden ? (
-          <span style={styles.hiddenScore} title="Visas vid avspark">🔒 Dolt</span>
-        ) : (
-          <ScoreInput
-            matchId={match.id}
-            initial={prediction}
-            locked={locked}
-            onChange={onPredictionChange}
-          />
-        )}
-      </span>
-      <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
-      <span style={{ ...nameBase, textAlign: 'left' }}>{match.awayTeam}</span>
-    </>
-  );
-
   return (
     <div style={dimmed ? { ...styles.card, opacity: 0.6, borderLeftColor: 'var(--border)' } : styles.card}>
       <div style={styles.header}>
@@ -179,20 +154,40 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
         )}
         <span>{formatKickoff(match.kickoffUtc)}</span>
       </div>
-      {hasResult ? (
-        <div style={styles.resultRow}>
-          <div style={styles.matchZone}>{matchInner}</div>
-          <div style={styles.resultZone}>
-            <span style={styles.resultLabel}>Resultat</span>
-            <span style={styles.resultBox}>{actual.homeScore}</span>
-            <span style={styles.resultDash}>–</span>
-            <span style={styles.resultBox}>{actual.awayScore}</span>
-            {points != null && <span style={styles.points}>{points} p</span>}
-          </div>
+      <div style={styles.row}>
+        <div style={styles.side} />
+        <div style={{ ...styles.half, justifyContent: 'flex-end' }}>
+          <span style={{ ...styles.teamName, textAlign: 'right' }}>{match.homeTeam}</span>
+          <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
         </div>
-      ) : (
-        <div style={styles.teams}>{matchInner}</div>
-      )}
+        <div style={styles.center}>
+          {hidden ? (
+            <span style={styles.hiddenScore} title="Visas vid avspark">🔒 Dolt</span>
+          ) : (
+            <ScoreInput
+              matchId={match.id}
+              initial={prediction}
+              locked={locked}
+              onChange={onPredictionChange}
+            />
+          )}
+        </div>
+        <div style={{ ...styles.half, justifyContent: 'flex-start' }}>
+          <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
+          <span style={{ ...styles.teamName, textAlign: 'left' }}>{match.awayTeam}</span>
+        </div>
+        <div style={styles.sideResult}>
+          {hasResult && (
+            <>
+              <span style={styles.resultLabel}>Resultat</span>
+              <span style={styles.resultBox}>{actual.homeScore}</span>
+              <span style={styles.resultDash}>–</span>
+              <span style={styles.resultBox}>{actual.awayScore}</span>
+              {points != null && <span style={styles.points}>{points} p</span>}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

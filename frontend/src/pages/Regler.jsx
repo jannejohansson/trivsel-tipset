@@ -282,8 +282,10 @@ export default function Regler() {
       <div style={styles.page}>
         <div style={styles.card}>
           <div style={styles.intro}>
-            Du tippar ett resultat på varje match i gruppspelet. Grundat på dina gruppspelstips byggs 
-            sedan ett slutspelsträd automatiskt, där du väljer vilka lag som går vidare i varje match. .
+            Du tippar ett resultat på varje match i gruppspelet. Baserat på dina tips i gruppspelet byggs 
+            sedan ett slutspelsträd automatiskt. Där väljer du vilka lag som går vidare i varje match. 
+            Tipsen i gruppspelet går att ändra ända fram till avspark i respektive match. 
+            Slutspelet går att ändra fram till avspark i första slutspelsomgången.
           </div>
         </div>
 

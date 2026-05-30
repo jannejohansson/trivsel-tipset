@@ -128,6 +128,18 @@ export default function Matches({ view = 'group' }) {
     });
   };
 
+  const handleResetGroup = (group) =>
+    api.resetGroupPredictions(group).then(({ cleared }) => {
+      if (cleared?.length) {
+        setPredictions((prev) => {
+          const next = new Map(prev);
+          for (const id of cleared) next.delete(id);
+          return next;
+        });
+      }
+      return cleared;
+    });
+
   const bracket = useMemo(
     () => buildBracket(matches, predictions, picks),
     [matches, predictions, picks]
@@ -178,7 +190,7 @@ export default function Matches({ view = 'group' }) {
         </p>
       </section>
 
-      <div style={{ ...styles.page, maxWidth: isPlayoff ? '1100px' : '900px' }}>
+      <div style={{ ...styles.page, maxWidth: '1100px' }}>
         <div style={styles.segment}>
           <button
             type="button"
@@ -237,6 +249,7 @@ export default function Matches({ view = 'group' }) {
               locked={groupLocked}
               predictions={predictions}
               onPredictionChange={handlePredictionChange}
+              onResetGroup={handleResetGroup}
             />
           </>
         )}

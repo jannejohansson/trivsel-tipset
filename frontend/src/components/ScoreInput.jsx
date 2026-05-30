@@ -2,27 +2,46 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../api.js';
 
 const styles = {
-  wrap: { display: 'flex', alignItems: 'center', gap: '8px' },
+  wrap: { display: 'flex', alignItems: 'center', gap: '6px' },
   input: {
-    width: '48px',
-    height: '40px',
+    width: '40px',
+    height: '34px',
     textAlign: 'center',
-    fontSize: '18px',
+    fontSize: '16px',
     fontWeight: 700,
     background: 'var(--surface-2)',
     border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)',
+    borderRadius: '8px',
     color: 'var(--text)',
     outline: 'none',
   },
+  // Static grey box (same look as the input) for locked / read-only scores.
+  box: {
+    width: '40px',
+    height: '34px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '16px',
+    fontWeight: 700,
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: '8px',
+    color: 'var(--text-muted)',
+  },
   dash: {
     color: 'var(--text-muted)',
-    fontSize: '20px',
+    fontSize: '16px',
     fontWeight: 300,
   },
-  indicator: {
-    fontSize: '14px',
-    minWidth: '16px',
+  // Equal-width slots on both sides keep the inputs/dash visually centred;
+  // the save-status icon lives in the right slot.
+  slot: {
+    width: '16px',
+    flexShrink: 0,
+    display: 'inline-flex',
+    justifyContent: 'center',
+    fontSize: '13px',
   },
 };
 
@@ -68,19 +87,18 @@ export default function ScoreInput({ matchId, initial, locked, onChange }) {
   if (locked) {
     return (
       <div style={styles.wrap}>
-        <span style={{ ...styles.input, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', color: 'var(--text-muted)' }}>
-          {home !== '' ? home : '–'}
-        </span>
+        <span style={styles.slot} aria-hidden="true" />
+        <span style={styles.box}>{home !== '' ? home : '–'}</span>
         <span style={styles.dash}>–</span>
-        <span style={{ ...styles.input, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', color: 'var(--text-muted)' }}>
-          {away !== '' ? away : '–'}
-        </span>
+        <span style={styles.box}>{away !== '' ? away : '–'}</span>
+        <span style={styles.slot} aria-hidden="true" />
       </div>
     );
   }
 
   return (
     <div style={styles.wrap}>
+      <span style={styles.slot} aria-hidden="true" />
       <input
         style={styles.input}
         type="number"
@@ -100,7 +118,7 @@ export default function ScoreInput({ matchId, initial, locked, onChange }) {
         onChange={handleChange(setAway, home, false)}
         placeholder="–"
       />
-      <span style={styles.indicator} title={status}>
+      <span style={styles.slot} title={status}>
         {status === 'saving' && '⏳'}
         {status === 'saved' && '✅'}
         {status === 'error' && '❌'}

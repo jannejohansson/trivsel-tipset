@@ -14,10 +14,10 @@ const styles = {
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
     boxShadow: 'var(--shadow-card)',
-    padding: '14px 16px',
+    padding: '8px 16px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px',
+    gap: '4px',
     borderLeft: '3px solid var(--green)',
   },
   header: {
@@ -31,20 +31,25 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    justifyContent: 'space-between',
+    maxWidth: '620px',
+    width: '100%',
+    margin: '0 auto',
   },
-  team: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    fontSize: '14px',
-    fontWeight: 600,
+  teamName: {
     flex: 1,
+    minWidth: 0,
+    fontSize: '15px',
+    fontWeight: 600,
     color: 'var(--text)',
+    lineHeight: 1.25,
   },
-  teamAway: {
-    justifyContent: 'flex-end',
-    flexDirection: 'row-reverse',
+  center: { flexShrink: 0 },
+  openCue: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    color: 'var(--green)',
+    fontWeight: 700,
   },
   flag: {
     width: '28px',
@@ -54,16 +59,6 @@ const styles = {
     flexShrink: 0,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-  },
-  matchday: {
-    background: 'var(--green-dim)',
-    color: '#0b6b32',
-    fontWeight: 700,
-    fontSize: '10px',
-    letterSpacing: '0.5px',
-    padding: '2px 8px',
-    borderRadius: '999px',
-    textTransform: 'uppercase',
   },
   lockedPill: {
     display: 'inline-flex',
@@ -88,16 +83,48 @@ const styles = {
     fontWeight: 600,
     whiteSpace: 'nowrap',
   },
-  result: {
+  // Read-only completed match: prediction on the left, actual result + points on
+  // the right, all on one horizontal line (full card width).
+  resultRow: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    fontSize: '11px',
-    color: 'var(--text-muted)',
+    justifyContent: 'space-between',
+    gap: '16px',
   },
+  matchZone: { display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 },
+  resultZone: { display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 },
+  resultLabel: {
+    fontSize: '11px',
+    fontWeight: 700,
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase',
+    color: 'var(--text-muted)',
+    marginRight: '2px',
+  },
+  // Actual result in grey boxes the same height as the prediction boxes.
+  resultBox: {
+    width: '40px',
+    height: '34px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '16px',
+    fontWeight: 700,
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: '8px',
+    color: 'var(--text)',
+  },
+  resultDash: { color: 'var(--text-muted)', fontSize: '16px', fontWeight: 300 },
   points: {
     fontWeight: 800,
+    fontSize: '13px',
     color: 'var(--green)',
+    background: 'var(--green-dim)',
+    border: '1px solid var(--green)',
+    borderRadius: '999px',
+    padding: '4px 12px',
+    marginLeft: '4px',
     fontVariantNumeric: 'tabular-nums',
   },
 };
@@ -107,27 +134,23 @@ const styles = {
 // match has an official result. The editable/autosave path is unchanged: it runs
 // whenever `hidden` is false and an `onPredictionChange` handler is provided.
 export default function MatchCard({ match, prediction, locked, onPredictionChange, hidden = false, points = null, actual = null }) {
-  // Only mark/dim a locked card in the live editing view (where an onPredictionChange
-  // handler is wired up) — read-only views show results and shouldn't be greyed out.
-  const showLocked = locked && !!onPredictionChange;
-  return (
-    <div style={showLocked ? { ...styles.card, opacity: 0.6, borderLeftColor: 'var(--border)' } : styles.card}>
-      <div style={styles.header}>
-        <span style={styles.matchday}>MD{match.matchday}</span>
-        {showLocked ? (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>{formatKickoff(match.kickoffUtc)}</span>
-            <span style={styles.lockedPill}>🔒 Låst</span>
-          </span>
-        ) : (
-          <span>{formatKickoff(match.kickoffUtc)}</span>
-        )}
-      </div>
-      <div style={styles.teams}>
-        <div style={styles.team}>
-          <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
-          <span>{match.homeTeam}</span>
-        </div>
+  // `editable` is the live /matches tipping view (a change handler is wired up);
+  // read-only views (e.g. UserPredictions) pass none and show results plainly.
+  const editable = !!onPredictionChange;
+  const dimmed = editable && locked;
+  const hasResult = !hidden && !!actual;
+
+  // The teams + prediction; reused inside either the centred layout or the
+  // result comparison row. Names flex (and truncate) only in the centred layout;
+  // alongside a result they sit at natural width so both scorelines fit one line.
+  const nameBase = hasResult
+    ? { fontSize: '15px', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap' }
+    : styles.teamName;
+  const matchInner = (
+    <>
+      <span style={{ ...nameBase, textAlign: 'right' }}>{match.homeTeam}</span>
+      <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
+      <span style={styles.center}>
         {hidden ? (
           <span style={styles.hiddenScore} title="Visas vid avspark">🔒 Dolt</span>
         ) : (
@@ -138,21 +161,37 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
             onChange={onPredictionChange}
           />
         )}
-        <div style={{ ...styles.team, ...styles.teamAway }}>
-          <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
-          <span>{match.awayTeam}</span>
-        </div>
+      </span>
+      <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
+      <span style={{ ...nameBase, textAlign: 'left' }}>{match.awayTeam}</span>
+    </>
+  );
+
+  return (
+    <div style={dimmed ? { ...styles.card, opacity: 0.6, borderLeftColor: 'var(--border)' } : styles.card}>
+      <div style={styles.header}>
+        {editable && !locked ? (
+          <span style={styles.openCue}>🔓 Kan ändras till avspark</span>
+        ) : locked ? (
+          <span style={styles.lockedPill}>🔒 Låst</span>
+        ) : (
+          <span />
+        )}
+        <span>{formatKickoff(match.kickoffUtc)}</span>
       </div>
-      {!hidden && actual && (
-        <div style={styles.result}>
-          <span>Facit {actual.homeScore}–{actual.awayScore}</span>
-          {points != null && <span style={styles.points}>{points} p</span>}
+      {hasResult ? (
+        <div style={styles.resultRow}>
+          <div style={styles.matchZone}>{matchInner}</div>
+          <div style={styles.resultZone}>
+            <span style={styles.resultLabel}>Resultat</span>
+            <span style={styles.resultBox}>{actual.homeScore}</span>
+            <span style={styles.resultDash}>–</span>
+            <span style={styles.resultBox}>{actual.awayScore}</span>
+            {points != null && <span style={styles.points}>{points} p</span>}
+          </div>
         </div>
-      )}
-      {match.venue && (
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.75 }}>
-          {match.venue}
-        </div>
+      ) : (
+        <div style={styles.teams}>{matchInner}</div>
       )}
     </div>
   );

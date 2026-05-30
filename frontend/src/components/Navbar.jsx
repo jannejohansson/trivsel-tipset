@@ -14,10 +14,18 @@ const styles = {
     zIndex: 100,
   },
   logo: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
     fontWeight: 700,
     fontSize: '18px',
     color: 'var(--green)',
     textDecoration: 'none',
+  },
+  logoImg: {
+    height: '26px',
+    width: 'auto',
+    display: 'block',
   },
   links: {
     display: 'flex',
@@ -82,7 +90,10 @@ export default function Navbar() {
 
   return (
     <nav style={styles.nav}>
-      <Link to="/" style={styles.logo}>⚽ Trivseltipset 2026</Link>
+      <Link to="/" style={styles.logo}>
+        <img src="/trivseltipset-logo.svg" alt="" style={styles.logoImg} aria-hidden="true" />
+        Trivseltipset 2026
+      </Link>
       <div style={styles.links}>
         <span style={styles.predictGroup}>
           <span style={styles.predictLabel}>Tippa</span>

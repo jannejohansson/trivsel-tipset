@@ -204,7 +204,7 @@ const styles = {
 
 const POINTS = [
   {
-    points: 1,
+    points: 2,
     name: 'Rätt 1X2-utgång',
     desc: 'Du har tippat rätt på om matchen slutar med hemmavinst, oavgjort eller bortavinst.',
   },
@@ -219,9 +219,9 @@ const POINTS = [
     desc: 'Du har gissat hur många mål bortalaget gör. Räknas också separat.',
   },
   {
-    points: 2,
+    points: 1,
     name: 'Bonus för exakt resultat',
-    desc: 'Får du alla tre delpoängen — alltså exakt rätt slutresultat — får du ytterligare 2 poäng på toppen.',
+    desc: 'Får du alla tre delpoängen — alltså exakt rätt slutresultat — får du ytterligare 1 poäng på toppen.',
     bonus: true,
   },
 ];
@@ -229,11 +229,11 @@ const POINTS = [
 const EXAMPLES = [
   {
     tip: { h: 2, a: 1 }, actual: { h: 2, a: 1 }, points: 5,
-    breakdown: 'Rätt utgång (1p) + rätt hemmamål (1p) + rätt bortamål (1p) + exakt-bonus (2p).',
+    breakdown: 'Rätt utgång (2p) + rätt hemmamål (1p) + rätt bortamål (1p) + exakt-bonus (1p).',
   },
   {
-    tip: { h: 2, a: 0 }, actual: { h: 2, a: 1 }, points: 2,
-    breakdown: 'Rätt utgång (1p) + rätt hemmamål (1p). Bortamål fel — ingen bonus.',
+    tip: { h: 2, a: 0 }, actual: { h: 2, a: 1 }, points: 3,
+    breakdown: 'Rätt utgång (2p) + rätt hemmamål (1p). Bortamål fel — ingen bonus.',
   },
   {
     tip: { h: 2, a: 2 }, actual: { h: 2, a: 1 }, points: 1,
@@ -321,7 +321,7 @@ export default function Regler() {
               <div style={styles.exampleRow}>
                 <span style={styles.exampleLabel}>Ditt tips</span>
                 <ScorePill score={ex.tip} />
-                <span style={styles.exampleLabel}>Facit</span>
+                <span style={styles.exampleLabel}>Resultat</span>
                 <ScorePill score={ex.actual} actual />
                 <div style={styles.exampleResult}>
                   <span style={{ ...styles.pointsTag, ...(ex.points === 0 ? styles.pointsTagZero : {}) }}>

@@ -1,3 +1,5 @@
+import { useIsMobile } from '../lib/useIsMobile.js';
+
 const styles = {
   hero: {
     background: 'linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%)',
@@ -271,6 +273,7 @@ function ScorePill({ score, actual }) {
 }
 
 export default function Regler() {
+  const isMobile = useIsMobile();
   return (
     <>
       <section style={styles.hero}>
@@ -319,11 +322,11 @@ export default function Regler() {
               style={{ ...styles.exampleCard, ...(i === EXAMPLES.length - 1 ? styles.exampleCardLast : {}) }}
             >
               <div style={styles.exampleRow}>
-                <span style={styles.exampleLabel}>Ditt tips</span>
+                <span style={{ ...styles.exampleLabel, ...(isMobile ? { minWidth: 'auto' } : {}) }}>Ditt tips</span>
                 <ScorePill score={ex.tip} />
-                <span style={styles.exampleLabel}>Resultat</span>
+                <span style={{ ...styles.exampleLabel, ...(isMobile ? { minWidth: 'auto' } : {}) }}>Resultat</span>
                 <ScorePill score={ex.actual} actual />
-                <div style={styles.exampleResult}>
+                <div style={{ ...styles.exampleResult, ...(isMobile ? { marginLeft: 0, width: '100%' } : {}) }}>
                   <span style={{ ...styles.pointsTag, ...(ex.points === 0 ? styles.pointsTagZero : {}) }}>
                     {ex.points} p
                   </span>

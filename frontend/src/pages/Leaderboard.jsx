@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useIsMobile } from '../lib/useIsMobile.js';
+import LeaderboardChart from '../components/LeaderboardChart.jsx';
 
 const styles = {
   hero: {
@@ -35,6 +36,29 @@ const styles = {
     textDecoration: 'none',
     borderBottom: '1px solid rgba(255,255,255,0.6)',
     paddingBottom: '1px',
+  },
+  viewToggle: {
+    display: 'inline-flex',
+    gap: '4px',
+    marginTop: '18px',
+    padding: '4px',
+    background: 'rgba(255,255,255,0.12)',
+    borderRadius: '999px',
+  },
+  viewBtn: {
+    border: 'none',
+    background: 'transparent',
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: '14px',
+    fontWeight: 600,
+    padding: '8px 18px',
+    borderRadius: '999px',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  viewBtnActive: {
+    background: '#ffffff',
+    color: 'var(--text)',
   },
   page: {
     maxWidth: '1100px',
@@ -354,6 +378,9 @@ export default function Leaderboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set()); // expanded userIds
+  const [view, setView] = useState('standings'); // 'standings' | 'history'
+  const [history, setHistory] = useState(null); // lazy-loaded { checkpoints, series }
+  const [historyError, setHistoryError] = useState(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -361,6 +388,14 @@ export default function Leaderboard() {
       .then(setData)
       .catch(() => setError('Kunde inte ladda deltagarlistan.'));
   }, []);
+
+  // Fetch the history series only the first time the user opens the chart view.
+  useEffect(() => {
+    if (view !== 'history' || history) return;
+    api.getLeaderboardHistory()
+      .then(setHistory)
+      .catch(() => setHistoryError('Kunde inte ladda poängutvecklingen.'));
+  }, [view, history]);
 
   // Prefer the server-assigned rank so the displayed position matches the rank
   // that movement (prevRank → rank) is measured against; fall back to a local
@@ -411,6 +446,26 @@ export default function Leaderboard() {
             💬 Gå med i gruppchatten och snacka VM-tips!
           </a>
         </p>
+        <div style={styles.viewToggle} role="tablist" aria-label="Visningsläge">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'standings'}
+            style={{ ...styles.viewBtn, ...(view === 'standings' ? styles.viewBtnActive : {}) }}
+            onClick={() => setView('standings')}
+          >
+            Ställning
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'history'}
+            style={{ ...styles.viewBtn, ...(view === 'history' ? styles.viewBtnActive : {}) }}
+            onClick={() => setView('history')}
+          >
+            Utveckling
+          </button>
+        </div>
       </section>
 
       <div style={styles.page}>
@@ -418,11 +473,19 @@ export default function Leaderboard() {
           <p style={{ color: 'var(--danger)', textAlign: 'center', padding: '16px' }}>{error}</p>
         )}
 
-        {data && sortedUsers.length === 0 && (
+        {view === 'history' && (
+          historyError
+            ? <p style={{ color: 'var(--danger)', textAlign: 'center', padding: '16px' }}>{historyError}</p>
+            : history
+              ? <LeaderboardChart checkpoints={history.checkpoints} series={history.series} />
+              : <p style={styles.empty}>Laddar poängutveckling…</p>
+        )}
+
+        {view === 'standings' && data && sortedUsers.length === 0 && (
           <p style={styles.empty}>Inga deltagare registrerade ännu.</p>
         )}
 
-        {sortedUsers.length > 0 && hasSpotlight && (
+        {view === 'standings' && sortedUsers.length > 0 && hasSpotlight && (
           <div style={styles.toolbar}>
             <button type="button" style={styles.expandAllBtn} onClick={toggleAll}>
               {allExpanded ? 'Dölj senaste & kommande tips' : 'Visa senaste & kommande tips'}
@@ -430,7 +493,7 @@ export default function Leaderboard() {
           </div>
         )}
 
-        {sortedUsers.length > 0 && (
+        {view === 'standings' && sortedUsers.length > 0 && (
           <div style={styles.list}>
             {sortedUsers.map((u, i) => {
               const points = u.points || 0;
@@ -492,7 +555,7 @@ export default function Leaderboard() {
           </div>
         )}
 
-        {data && (
+        {view === 'standings' && data && (
           <div style={styles.footer}>
             {data.count} deltagare registrerade
           </div>

@@ -35,6 +35,7 @@ export const api = {
     apiFetch('/auth/profile', { method: 'POST', body: JSON.stringify({ displayName }) }),
   getLeaderboard: () => apiFetch('/leaderboard'),
   getPredictionBreakdown: () => apiFetch('/prediction-breakdown'),
+  getLeaderboardHistory: () => apiFetch('/leaderboard-history'),
   getUserPredictions: (userId, reveal) =>
     apiFetch(`/users/${encodeURIComponent(userId)}/predictions${reveal ? '?reveal=1' : ''}`),
   getPlayoff: () => apiFetch('/playoff'),

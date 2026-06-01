@@ -1,7 +1,8 @@
 'use strict';
 
 const { app } = require('@azure/functions');
-const { getUsersTable, getPredictionsTable, getPlayoffTable } = require('../shared/tableClient');
+const { getPredictionsTable, getPlayoffTable } = require('../shared/tableClient');
+const { collectUsers, collectByUser } = require('../shared/leaderboardData');
 const { loadResults } = require('../shared/results');
 const { MATCHES } = require('../shared/matchData');
 const { resolveSpotlight } = require('../shared/spotlight');
@@ -143,30 +144,3 @@ app.http('getLeaderboard', {
     };
   },
 });
-
-async function collectUsers() {
-  const users = [];
-  for await (const entity of getUsersTable().listEntities({
-    queryOptions: { filter: `PartitionKey eq 'user'` },
-  })) {
-    if (entity.hidden === true) continue; // soft-removed: excluded from the public leaderboard
-    users.push({
-      userId: entity.rowKey,
-      displayName: entity.displayName || entity.rowKey,
-      lastLoginAt: entity.lastLoginAt,
-      paid: entity.paid === true,
-    });
-  }
-  return users;
-}
-
-// Bucket an entire table by partitionKey (userId) into { rowKey: mapFn(entity) }.
-async function collectByUser(table, mapFn) {
-  const byUser = new Map();
-  for await (const entity of table.listEntities()) {
-    const uid = entity.partitionKey;
-    if (!byUser.has(uid)) byUser.set(uid, {});
-    byUser.get(uid)[entity.rowKey] = mapFn(entity);
-  }
-  return byUser;
-}

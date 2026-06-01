@@ -10,7 +10,7 @@ app.http('sendMagicLink', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'auth/send-magic-link',
-  handler: async (request) => {
+  handler: async (request, context) => {
     let body;
     try {
       body = await request.json();
@@ -86,8 +86,12 @@ app.http('sendMagicLink', {
           `,
         },
       });
-      await poller.pollUntilDone();
+      const result = await poller.pollUntilDone();
+      // operationId correlates to CorrelationId in the ACS email delivery logs
+      // (ACSEmailStatusUpdateOperational), so app logs and delivery status line up.
+      context.log(`Magic link sent: recipient=${email} operationId=${result.id} status=${result.status}`);
     } catch (err) {
+      context.error(`Magic link send failed: recipient=${email} error=${err.message}`);
       return { status: 500, jsonBody: { error: 'Email sending failed', detail: err.message } };
     }
 

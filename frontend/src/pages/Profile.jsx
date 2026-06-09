@@ -144,6 +144,11 @@ const styles = {
     color: 'var(--yellow)',
     border: '1px solid rgba(184,134,11,0.35)',
   },
+  chipUnpaid: {
+    background: 'var(--surface-2)',
+    color: 'var(--text-muted)',
+    border: '1px solid var(--border)',
+  },
   standRow: {
     display: 'flex',
     gap: '12px',
@@ -230,6 +235,7 @@ export default function Profile() {
           points: me?.points ?? 0,
           groupPoints: me?.groupPoints ?? 0,
           playoffPoints: me?.playoffPoints ?? 0,
+          paid: me?.paid ?? false,
         });
       })
       .catch(() => { /* stats are best-effort */ });
@@ -309,13 +315,15 @@ export default function Profile() {
           <span style={styles.infoValue}>{user.email}</span>
         </div>
         <div style={{ ...styles.infoRow, borderTop: '1px solid var(--border)' }}>
-          <span style={styles.infoLabel}>Tips ifyllda</span>
           <div style={styles.chips}>
             <span style={{ ...styles.chip, ...(groupDone ? styles.chipDone : styles.chipWarn) }}>
               {groupDone ? '✓' : '⚠'} Gruppspel {stats?.groupCount ?? 0}/{TOTAL_MATCHES}
             </span>
             <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
               {playoffDone ? '✓' : '⚠'} Slutspel {stats?.playoffCount ?? 0}/{TOTAL_PLAYOFF}
+            </span>
+            <span style={{ ...styles.chip, ...(stats?.paid ? styles.chipDone : styles.chipUnpaid) }}>
+              {stats?.paid ? '✓ Betalat' : 'Ej betalat'}
             </span>
           </div>
         </div>

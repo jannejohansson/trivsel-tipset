@@ -101,14 +101,6 @@ const styles = {
     cursor: 'pointer',
     minWidth: 0,
   },
-  visaTips: {
-    flexShrink: 0,
-    fontSize: '12px',
-    fontWeight: 600,
-    color: 'var(--green)',
-    textDecoration: 'none',
-    whiteSpace: 'nowrap',
-  },
   rank: {
     width: '28px',
     height: '28px',
@@ -463,13 +455,6 @@ export default function Leaderboard() {
                         >
                           {u.displayName}
                         </Link>
-                        <Link
-                          to={`/predictions/${u.userId}`}
-                          style={styles.visaTips}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          visa tips →
-                        </Link>
                       </div>
                       <div style={styles.progressTrack} title={`${points} poäng`}>
                         <div style={{ ...styles.progressFill, width: `${pct}%` }} />
@@ -490,9 +475,11 @@ export default function Leaderboard() {
                     </div>
                     <div style={styles.right}>
                       <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>
-                      <span style={styles.date}>
-                        Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
-                      </span>
+                      {!isMobile && (
+                        <span style={styles.date}>
+                          Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
+                        </span>
+                      )}
                     </div>
                     {hasSpotlight && (
                       <span style={styles.chevron} aria-hidden="true">{isExpanded ? '▴' : '▾'}</span>

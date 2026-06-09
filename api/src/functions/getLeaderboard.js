@@ -95,7 +95,10 @@ app.http('getLeaderboard', {
         ...u,
         predictionCount: Object.keys(preds).length,
         groupPredictionCount: Object.keys(preds).length,
-        playoffPredictionCount: Object.keys(picks).length,
+        // Count only picks still valid in the current bracket: stale picks (orphaned
+        // when a group edit changed who advances) linger in the table but buildBracket
+        // nulls them out, so Object.keys(picks).length would overcount.
+        playoffPredictionCount: predictedBracket.matches.filter((m) => m.pick).length,
         groupPoints,
         playoffPoints,
         points: groupPoints + playoffPoints,

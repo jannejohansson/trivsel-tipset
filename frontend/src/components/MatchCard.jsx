@@ -1,4 +1,5 @@
 import ScoreInput from './ScoreInput.jsx';
+import { useIsMobile } from '../lib/useIsMobile.js';
 
 function formatKickoff(utc) {
   return new Date(utc).toLocaleString('sv-SE', {
@@ -22,8 +23,9 @@ const styles = {
   },
   header: {
     display: 'flex',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    gap: '8px',
     fontSize: '12px',
     color: 'var(--text-muted)',
   },
@@ -40,13 +42,6 @@ const styles = {
     textOverflow: 'ellipsis',
   },
   center: { flexShrink: 0 },
-  openCue: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-    color: 'var(--green)',
-    fontWeight: 700,
-  },
   flag: {
     width: '28px',
     height: '21px',
@@ -56,6 +51,8 @@ const styles = {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   },
+  flagMobile: { width: '22px', height: '16px' },
+  cardMobile: { padding: '8px 10px' },
   lockedPill: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -127,24 +124,28 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
   const editable = !!onPredictionChange;
   const dimmed = editable && locked;
   const hasResult = !hidden && !!actual;
+  const isMobile = useIsMobile();
+  const flagStyle = isMobile ? { ...styles.flag, ...styles.flagMobile } : styles.flag;
+
+  const cardStyle = {
+    ...styles.card,
+    ...(isMobile ? styles.cardMobile : {}),
+    ...(dimmed ? { opacity: 0.6, borderLeftColor: 'var(--border)' } : {}),
+  };
 
   return (
-    <div style={dimmed ? { ...styles.card, opacity: 0.6, borderLeftColor: 'var(--border)' } : styles.card}>
+    <div style={cardStyle}>
       <div style={styles.header}>
-        {editable && !locked ? (
-          <span style={styles.openCue} title="Kan ändras till avspark">🔓</span>
-        ) : !hidden && match.locked ? (
-          <span style={styles.lockedPill} title="Låst">🔒</span>
-        ) : (
-          <span />
-        )}
         <span>{formatKickoff(match.kickoffUtc)}</span>
+        {!hidden && match.locked && (
+          <span style={styles.lockedPill} title="Låst">🔒</span>
+        )}
       </div>
       <div className="match-row">
         <div className="match-side" />
         <div className="match-half home">
           <span style={{ ...styles.teamName, textAlign: 'right' }}>{match.homeTeam}</span>
-          <span className={`fi fi-${match.homeFlag}`} style={styles.flag} aria-hidden="true" />
+          <span className={`fi fi-${match.homeFlag}`} style={flagStyle} aria-hidden="true" />
         </div>
         <div style={styles.center}>
           {hidden ? (
@@ -159,7 +160,7 @@ export default function MatchCard({ match, prediction, locked, onPredictionChang
           )}
         </div>
         <div className="match-half away">
-          <span className={`fi fi-${match.awayFlag}`} style={styles.flag} aria-hidden="true" />
+          <span className={`fi fi-${match.awayFlag}`} style={flagStyle} aria-hidden="true" />
           <span style={{ ...styles.teamName, textAlign: 'left' }}>{match.awayTeam}</span>
         </div>
         <div className="match-side-result">

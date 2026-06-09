@@ -100,7 +100,8 @@ input[type=number] { -moz-appearance: textfield; }
 /* Mobile: the fixed 220px columns don't fit. Drop the left spacer, let the row
    wrap, and push the result onto its own line below the teams. */
 @media (max-width: 680px) {
-  .match-row { flex-wrap: wrap; }
+  .match-row { flex-wrap: wrap; gap: 6px; }
+  .match-half { gap: 6px; }
   .match-side { display: none; }
   .match-side-result { width: 100%; }
   .match-side-result:not(:empty) {

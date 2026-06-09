@@ -1,4 +1,5 @@
 import { computeGroupStandings } from '../lib/bracket.js';
+import { useIsMobile } from '../lib/useIsMobile.js';
 
 const styles = {
   wrap: {
@@ -98,6 +99,7 @@ const styles = {
 export default function GroupStandings({ group, matches, predictions }) {
   const rows = computeGroupStandings(matches, predictions);
   const played = rows.reduce((s, r) => s + r.P, 0) / 2;
+  const isMobile = useIsMobile();
 
   return (
     <div style={styles.wrap}>
@@ -109,11 +111,11 @@ export default function GroupStandings({ group, matches, predictions }) {
         <colgroup>
           <col style={{ width: '32px' }} />
           <col />
+          {!isMobile && <col style={{ width: '32px' }} />}
           <col style={{ width: '32px' }} />
           <col style={{ width: '32px' }} />
           <col style={{ width: '32px' }} />
-          <col style={{ width: '32px' }} />
-          <col style={{ width: '56px' }} />
+          {!isMobile && <col style={{ width: '56px' }} />}
           <col style={{ width: '44px' }} />
           <col style={{ width: '40px' }} />
         </colgroup>
@@ -121,11 +123,11 @@ export default function GroupStandings({ group, matches, predictions }) {
           <tr>
             <th style={{ ...styles.th, ...styles.thRank }}>#</th>
             <th style={{ ...styles.th, ...styles.thTeam }}>Lag</th>
-            <th style={styles.th}>S</th>
+            {!isMobile && <th style={styles.th}>S</th>}
             <th style={styles.th}>V</th>
             <th style={styles.th}>O</th>
             <th style={styles.th}>F</th>
-            <th style={styles.th}>GM-IM</th>
+            {!isMobile && <th style={styles.th}>GM-IM</th>}
             <th style={styles.th}>+/-</th>
             <th style={styles.th}>P</th>
           </tr>
@@ -142,11 +144,11 @@ export default function GroupStandings({ group, matches, predictions }) {
                     <span style={styles.teamName}>{r.team}</span>
                   </div>
                 </td>
-                <td style={styles.td}>{r.P}</td>
+                {!isMobile && <td style={styles.td}>{r.P}</td>}
                 <td style={styles.td}>{r.W}</td>
                 <td style={styles.td}>{r.D}</td>
                 <td style={styles.td}>{r.L}</td>
-                <td style={styles.td}>{r.GF}-{r.GA}</td>
+                {!isMobile && <td style={styles.td}>{r.GF}-{r.GA}</td>}
                 <td style={styles.td}>{r.GD > 0 ? `+${r.GD}` : r.GD}</td>
                 <td style={{ ...styles.td, ...styles.pts }}>{r.Pts}</td>
               </tr>

@@ -62,57 +62,48 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '16px',
+    gap: '12px',
     background: 'var(--surface)',
     border: '1px solid var(--border)',
-    borderLeft: '3px solid var(--green)',
     borderRadius: 'var(--radius)',
-    boxShadow: 'var(--shadow-card)',
-    padding: '16px 18px',
-    marginBottom: '32px',
+    padding: '9px 14px',
+    marginBottom: '24px',
     textDecoration: 'none',
     color: 'inherit',
   },
-  placeLeft: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-  },
-  placeLabel: {
-    fontSize: '11px',
-    fontWeight: 700,
-    letterSpacing: '0.5px',
-    textTransform: 'uppercase',
-    color: 'var(--text-muted)',
-  },
-  placeRank: {
-    display: 'flex',
+  placeText: {
+    display: 'inline-flex',
     alignItems: 'baseline',
     gap: '6px',
+    minWidth: 0,
+    flexWrap: 'wrap',
+  },
+  placeLabel: {
+    fontSize: '13px',
+    color: 'var(--text-muted)',
   },
   placeRankNum: {
-    fontSize: '30px',
+    fontSize: '15px',
     fontWeight: 800,
     color: 'var(--text)',
     fontVariantNumeric: 'tabular-nums',
   },
   placeOf: {
-    fontSize: '14px',
+    fontSize: '13px',
     color: 'var(--text-muted)',
   },
   placeRight: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '4px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    flexShrink: 0,
   },
   deltaChip: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '5px',
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: 800,
-    padding: '5px 11px',
+    padding: '2px 8px',
     borderRadius: '999px',
     fontVariantNumeric: 'tabular-nums',
     whiteSpace: 'nowrap',
@@ -172,20 +163,18 @@ function PlacementCard({ rank, total, prevRank }) {
   const delta = prevRank != null ? prevRank - rank : null; // >0 climbed, <0 dropped
   return (
     <Link to="/leaderboard" style={styles.placeCard}>
-      <div style={styles.placeLeft}>
+      <span style={styles.placeText}>
         <span style={styles.placeLabel}>Din placering</span>
-        <span style={styles.placeRank}>
-          <span style={styles.placeRankNum}>#{rank}</span>
-          <span style={styles.placeOf}>av {total}</span>
-        </span>
-      </div>
+        <span style={styles.placeRankNum}>#{rank}</span>
+        <span style={styles.placeOf}>av {total}</span>
+      </span>
       {delta != null && (
-        <div style={styles.placeRight}>
+        <span style={styles.placeRight}>
           {delta > 0 && <span style={{ ...styles.deltaChip, ...styles.deltaUp }}>▲ {delta}</span>}
           {delta < 0 && <span style={{ ...styles.deltaChip, ...styles.deltaDown }}>▼ {Math.abs(delta)}</span>}
           {delta === 0 && <span style={{ ...styles.deltaChip, ...styles.deltaSame }}>oförändrad</span>}
           <span style={styles.placeSince}>sedan igår</span>
-        </div>
+        </span>
       )}
     </Link>
   );

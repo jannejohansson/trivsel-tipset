@@ -1,0 +1,262 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../api.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import MatchCard from '../components/MatchCard.jsx';
+
+const styles = {
+  hero: {
+    background: 'linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%)',
+    color: '#ffffff',
+    padding: '36px 20px 28px',
+    textAlign: 'center',
+  },
+  eyebrow: {
+    fontSize: '11px',
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: '8px',
+    fontWeight: 600,
+  },
+  title: {
+    fontSize: '28px',
+    fontWeight: 800,
+    letterSpacing: '-0.01em',
+    margin: 0,
+  },
+  sub: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: '14px',
+    marginTop: '8px',
+  },
+  page: {
+    maxWidth: '900px',
+    margin: '0 auto',
+    padding: '24px 20px 60px',
+  },
+  section: {
+    marginBottom: '32px',
+  },
+  sectionHead: {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: '12px',
+    marginBottom: '12px',
+  },
+  sectionTitle: {
+    fontSize: '18px',
+    fontWeight: 800,
+    color: 'var(--text)',
+    margin: 0,
+  },
+  sectionLink: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--green)',
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
+  },
+  list: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  empty: {
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    boxShadow: 'var(--shadow-card)',
+    padding: '20px 16px',
+    textAlign: 'center',
+    color: 'var(--text-muted)',
+    fontSize: '14px',
+  },
+  emptyLink: {
+    display: 'inline-block',
+    marginTop: '10px',
+    color: 'var(--green)',
+    fontWeight: 700,
+    textDecoration: 'none',
+  },
+  status: {
+    textAlign: 'center',
+    color: 'var(--text-muted)',
+    padding: '60px 20px',
+  },
+  error: {
+    textAlign: 'center',
+    color: 'var(--danger)',
+    padding: '60px 20px',
+  },
+};
+
+// Day bucket key in Swedish local time (Europe/Stockholm), independent of the
+// viewer's browser timezone. sv-SE formats as 'YYYY-MM-DD', so string equality
+// is a safe same-day test.
+const dayKey = (d) =>
+  new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(d);
+
+// A muted card prompting the user onward when a section has nothing to show.
+function EmptyState({ children, to = '/matches', cta = 'Till alla tips →' }) {
+  return (
+    <div style={styles.empty}>
+      <div>{children}</div>
+      <Link to={to} style={styles.emptyLink}>{cta}</Link>
+    </div>
+  );
+}
+
+export default function Home() {
+  const { user } = useAuth();
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  // "Today"/"tomorrow" in Swedish local time, captured once on mount.
+  const [{ todayKey, tomorrowKey }] = useState(() => {
+    const now = Date.now();
+    return { todayKey: dayKey(new Date(now)), tomorrowKey: dayKey(new Date(now + 86400000)) };
+  });
+
+  useEffect(() => {
+    if (!user) return; // AuthGuard guarantees a user, but guard the auth-refresh race
+    api.getUserPredictions(user.userId) // isSelf ⇒ full reveal + server-computed points
+      .then((d) => { setData(d); setError(null); })
+      .catch(() => setError('Kunde inte ladda din översikt.'));
+  }, [user]);
+
+  if (error) return <div style={styles.error}>{error}</div>;
+  if (!data) return <div style={styles.status}>Laddar...</div>;
+
+  const matches = data.matches || [];
+  const keyOf = (m) => dayKey(new Date(m.kickoffUtc));
+  const byMatchNo = (a, b) => a.matchNumber - b.matchNumber;
+
+  // Three states per match:
+  //   past        – admin has reported a result (m.actual)
+  //   in progress – kicked off (m.locked) but no result yet
+  //   upcoming    – not kicked off and no result → still editable
+  // Last three completed matches (newest first), with predicted score, result and points.
+  const recent = matches
+    .filter((m) => m.actual)
+    .sort((a, b) => b.matchNumber - a.matchNumber)
+    .slice(0, 3);
+
+  // In progress: kicked off, awaiting an admin result. Shown locked, not editable.
+  const inProgress = matches.filter((m) => m.locked && !m.actual).sort(byMatchNo);
+
+  // Upcoming and editable, bucketed by Swedish-local kickoff day.
+  const editable = matches.filter((m) => !m.locked && !m.actual);
+  const today = editable.filter((m) => keyOf(m) === todayKey).sort(byMatchNo);
+  const tomorrow = editable.filter((m) => keyOf(m) === tomorrowKey).sort(byMatchNo);
+  const groupStageOver = matches.length > 0 && matches.every((m) => m.locked);
+
+  // Push an edited scoreline into local state so the bracket/derived views stay
+  // in sync; the actual save is handled (debounced) inside ScoreInput.
+  const handlePredictionChange = (matchId, pred) =>
+    setData((prev) => prev && ({
+      ...prev,
+      matches: prev.matches.map((m) => (m.id === matchId ? { ...m, prediction: pred } : m)),
+    }));
+
+  // Editable today/tomorrow card (the match is upcoming — not kicked off, no result).
+  const editableCard = (m) => (
+    <MatchCard
+      key={m.id}
+      match={m}
+      prediction={m.prediction}
+      locked={m.locked}
+      onPredictionChange={(pred) => handlePredictionChange(m.id, pred)}
+    />
+  );
+
+  // In-progress card: kicked off, awaiting result. Locked (static boxes + 🔒 padlock).
+  const inProgressCard = (m) => (
+    <MatchCard key={m.id} match={m} prediction={m.prediction} locked />
+  );
+
+  const displayName = user?.displayName || '';
+
+  return (
+    <>
+      <section style={styles.hero}>
+        <div style={styles.eyebrow}>Trivseltipset · FIFA World Cup 2026</div>
+        <h1 style={styles.title}>{displayName ? `Hej ${displayName}!` : 'Välkommen'}</h1>
+        <p style={styles.sub}>Din översikt – senaste resultat och dagens matcher</p>
+      </section>
+
+      <div style={styles.page}>
+        {/* Senaste resultat */}
+        <section style={styles.section}>
+          <div style={styles.sectionHead}>
+            <h2 style={styles.sectionTitle}>Senaste resultat</h2>
+            <Link to="/leaderboard" style={styles.sectionLink}>Ställning →</Link>
+          </div>
+          {recent.length > 0 ? (
+            <div style={styles.list}>
+              {recent.map((m) => (
+                <MatchCard key={m.id} match={m} prediction={m.prediction} actual={m.actual} points={m.points} locked />
+              ))}
+            </div>
+          ) : (
+            <EmptyState>Inga avgjorda matcher ännu. Håll utkik här när matcherna börjar spelas!</EmptyState>
+          )}
+        </section>
+
+        {/* Pågående matcher (avspark passerad, inväntar resultat) */}
+        {inProgress.length > 0 && (
+          <section style={styles.section}>
+            <div style={styles.sectionHead}>
+              <h2 style={styles.sectionTitle}>Pågående</h2>
+            </div>
+            <div style={styles.list}>
+              {inProgress.map(inProgressCard)}
+            </div>
+          </section>
+        )}
+
+        {/* Dagens matcher att tippa */}
+        {today.length > 0 && (
+          <section style={styles.section}>
+            <div style={styles.sectionHead}>
+              <h2 style={styles.sectionTitle}>Dagens matcher</h2>
+            </div>
+            <div style={styles.list}>
+              {today.map(editableCard)}
+            </div>
+          </section>
+        )}
+
+        {/* Morgondagens matcher att tippa */}
+        {tomorrow.length > 0 && (
+          <section style={styles.section}>
+            <div style={styles.sectionHead}>
+              <h2 style={styles.sectionTitle}>Imorgon</h2>
+            </div>
+            <div style={styles.list}>
+              {tomorrow.map(editableCard)}
+            </div>
+          </section>
+        )}
+
+        {/* Inget kvar att tippa idag eller imorgon */}
+        {today.length === 0 && tomorrow.length === 0 && (
+          <section style={styles.section}>
+            <div style={styles.sectionHead}>
+              <h2 style={styles.sectionTitle}>Kommande matcher</h2>
+            </div>
+            {groupStageOver ? (
+              <EmptyState to="/slutspel" cta="Till slutspelet →">
+                Gruppspelet är klart – dags att tippa slutspelet!
+              </EmptyState>
+            ) : (
+              <EmptyState>Inga matcher att tippa idag eller imorgon. Passa på att fylla i kommande omgångar.</EmptyState>
+            )}
+          </section>
+        )}
+      </div>
+    </>
+  );
+}

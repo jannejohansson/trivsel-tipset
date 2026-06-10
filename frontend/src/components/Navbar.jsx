@@ -40,27 +40,6 @@ const styles = {
     color: 'var(--text-muted)',
     textDecoration: 'none',
   },
-  predictGroup: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    padding: '4px 10px',
-    border: '1px solid var(--border)',
-    borderRadius: '999px',
-    background: 'var(--surface-2)',
-  },
-  predictLabel: {
-    fontSize: '11px',
-    fontWeight: 700,
-    letterSpacing: '0.5px',
-    textTransform: 'uppercase',
-    color: 'var(--text-muted)',
-  },
-  predictLink: {
-    color: 'var(--text)',
-    fontWeight: 600,
-    textDecoration: 'none',
-  },
   account: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -118,14 +97,6 @@ const styles = {
     textDecoration: 'none',
     borderBottom: '1px solid var(--border)',
   },
-  mobileGroupLabel: {
-    fontSize: '11px',
-    fontWeight: 700,
-    letterSpacing: '0.5px',
-    textTransform: 'uppercase',
-    color: 'var(--text-muted)',
-    padding: '12px 4px 4px',
-  },
 };
 
 export default function Navbar() {
@@ -154,9 +125,7 @@ export default function Navbar() {
 
         {menuOpen && (
           <div style={styles.mobileMenu}>
-            <span style={styles.mobileGroupLabel}>Tippa</span>
-            <Link to="/matches" style={styles.mobileLink} onClick={close}>Gruppspel</Link>
-            <Link to="/slutspel" style={styles.mobileLink} onClick={close}>Slutspel</Link>
+            <Link to="/matches" style={styles.mobileLink} onClick={close}>Tippa</Link>
             <Link to="/leaderboard" style={styles.mobileLink} onClick={close}>Ställning</Link>
             <Link to="/regler" style={styles.mobileLink} onClick={close}>Regler</Link>
             {!loading && user?.isAdmin && (
@@ -182,11 +151,7 @@ export default function Navbar() {
         Trivseltipset 2026
       </Link>
       <div style={styles.links}>
-        <span style={styles.predictGroup}>
-          <span style={styles.predictLabel}>Tippa</span>
-          <Link to="/matches" style={styles.predictLink}>Gruppspel</Link>
-          <Link to="/slutspel" style={styles.predictLink}>Slutspel</Link>
-        </span>
+        <Link to="/matches" style={styles.link}>Tippa</Link>
         <Link to="/leaderboard" style={styles.link}>Ställning</Link>
         <Link to="/regler" style={styles.link}>Regler</Link>
         {!loading && user?.isAdmin && <Link to="/admin" style={styles.link}>Admin</Link>}

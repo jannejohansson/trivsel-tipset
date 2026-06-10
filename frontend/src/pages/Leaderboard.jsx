@@ -30,6 +30,13 @@ const styles = {
     fontSize: '14px',
     marginTop: '8px',
   },
+  chatLink: {
+    color: '#ffffff',
+    fontWeight: 700,
+    textDecoration: 'none',
+    borderBottom: '1px solid rgba(255,255,255,0.6)',
+    paddingBottom: '1px',
+  },
   page: {
     maxWidth: '1100px',
     margin: '0 auto',
@@ -400,9 +407,16 @@ export default function Leaderboard() {
       <section style={styles.hero}>
         <div style={styles.eyebrow}>Trivseltipset · FIFA World Cup 2026</div>
         <h1 style={styles.title}>Aktuell ställning</h1>
-        {data && (
-          <p style={styles.sub}>{data.count} deltagare registrerade</p>
-        )}
+        <p style={styles.sub}>
+          <a
+            href="https://chat.whatsapp.com/FaL9Yh9Ofkd8p5LJTeDib2"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.chatLink}
+          >
+            💬 Gå med i gruppchatten och snacka VM-tips!
+          </a>
+        </p>
       </section>
 
       <div style={styles.page}>
@@ -492,9 +506,11 @@ export default function Leaderboard() {
           </div>
         )}
 
-        <div style={styles.footer}>
-          Poängställningen uppdateras löpande under VM-gruppspelet från 11 juni 2026.
-        </div>
+        {data && (
+          <div style={styles.footer}>
+            {data.count} deltagare registrerade
+          </div>
+        )}
       </div>
     </>
   );

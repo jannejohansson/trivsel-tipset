@@ -147,7 +147,7 @@ export default function UserPredictions() {
             </>
           ) : (
             <div style={styles.notice}>
-              Slutspelstipsen visas när gruppspelet är spelklart.
+              Slutspelstipsen visas när det har startat och tipsen är låsta.
             </div>
           )
         )}

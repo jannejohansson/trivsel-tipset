@@ -25,7 +25,7 @@ export default function App() {
           <Route path="/matches" element={<AuthGuard><Matches view="group" /></AuthGuard>} />
           <Route path="/slutspel" element={<AuthGuard><Matches view="playoff" /></AuthGuard>} />
           <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/leaderboard" element={<AuthGuard><Leaderboard /></AuthGuard>} />
           <Route path="/predictions/:userId" element={<AuthGuard><UserPredictions /></AuthGuard>} />
           <Route path="/regler" element={<Regler />} />
           <Route path="*" element={<Navigate to="/" replace />} />

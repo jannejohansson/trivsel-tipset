@@ -58,6 +58,72 @@ const styles = {
     textDecoration: 'none',
     whiteSpace: 'nowrap',
   },
+  placeCard: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderLeft: '3px solid var(--green)',
+    borderRadius: 'var(--radius)',
+    boxShadow: 'var(--shadow-card)',
+    padding: '16px 18px',
+    marginBottom: '32px',
+    textDecoration: 'none',
+    color: 'inherit',
+  },
+  placeLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  placeLabel: {
+    fontSize: '11px',
+    fontWeight: 700,
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase',
+    color: 'var(--text-muted)',
+  },
+  placeRank: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: '6px',
+  },
+  placeRankNum: {
+    fontSize: '30px',
+    fontWeight: 800,
+    color: 'var(--text)',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  placeOf: {
+    fontSize: '14px',
+    color: 'var(--text-muted)',
+  },
+  placeRight: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '4px',
+  },
+  deltaChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontSize: '14px',
+    fontWeight: 800,
+    padding: '5px 11px',
+    borderRadius: '999px',
+    fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
+  },
+  deltaUp: { background: 'var(--green-dim)', color: '#0b6b32' },
+  deltaDown: { background: 'rgba(220,38,38,0.10)', color: 'var(--danger)' },
+  deltaSame: { background: 'var(--surface-2)', color: 'var(--text-muted)' },
+  placeSince: {
+    fontSize: '11px',
+    color: 'var(--text-muted)',
+  },
   list: {
     display: 'flex',
     flexDirection: 'column',
@@ -100,6 +166,31 @@ const dayKey = (d) =>
     timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(d);
 
+// The user's current leaderboard placement, with movement since yesterday when
+// there's a prior standing to compare against (prevRank is null on day one).
+function PlacementCard({ rank, total, prevRank }) {
+  const delta = prevRank != null ? prevRank - rank : null; // >0 climbed, <0 dropped
+  return (
+    <Link to="/leaderboard" style={styles.placeCard}>
+      <div style={styles.placeLeft}>
+        <span style={styles.placeLabel}>Din placering</span>
+        <span style={styles.placeRank}>
+          <span style={styles.placeRankNum}>#{rank}</span>
+          <span style={styles.placeOf}>av {total}</span>
+        </span>
+      </div>
+      {delta != null && (
+        <div style={styles.placeRight}>
+          {delta > 0 && <span style={{ ...styles.deltaChip, ...styles.deltaUp }}>▲ {delta}</span>}
+          {delta < 0 && <span style={{ ...styles.deltaChip, ...styles.deltaDown }}>▼ {Math.abs(delta)}</span>}
+          {delta === 0 && <span style={{ ...styles.deltaChip, ...styles.deltaSame }}>oförändrad</span>}
+          <span style={styles.placeSince}>sedan igår</span>
+        </div>
+      )}
+    </Link>
+  );
+}
+
 // A muted card prompting the user onward when a section has nothing to show.
 function EmptyState({ children, to = '/matches', cta = 'Till alla tips →' }) {
   return (
@@ -114,6 +205,7 @@ export default function Home() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [standing, setStanding] = useState(null); // { rank, total, prevRank }
   // "Today"/"tomorrow" in Swedish local time, captured once on mount.
   const [{ todayKey, tomorrowKey }] = useState(() => {
     const now = Date.now();
@@ -125,6 +217,17 @@ export default function Home() {
     api.getUserPredictions(user.userId) // isSelf ⇒ full reveal + server-computed points
       .then((d) => { setData(d); setError(null); })
       .catch(() => setError('Kunde inte ladda din översikt.'));
+  }, [user]);
+
+  // Placement is best-effort: a leaderboard hiccup must not blank the dashboard.
+  useEffect(() => {
+    if (!user) return;
+    api.getLeaderboard()
+      .then((lb) => {
+        const me = (lb.users || []).find((u) => u.userId === user.userId);
+        if (me) setStanding({ rank: me.rank, total: lb.count, prevRank: me.prevRank ?? null });
+      })
+      .catch(() => { /* best-effort */ });
   }, [user]);
 
   if (error) return <div style={styles.error}>{error}</div>;
@@ -188,6 +291,9 @@ export default function Home() {
       </section>
 
       <div style={styles.page}>
+        {/* Din placering */}
+        {standing && <PlacementCard rank={standing.rank} total={standing.total} prevRank={standing.prevRank} />}
+
         {/* Senaste resultat */}
         <section style={styles.section}>
           <div style={styles.sectionHead}>

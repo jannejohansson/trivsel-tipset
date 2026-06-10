@@ -54,22 +54,56 @@ function resolveSpotlight(groupResults) {
   return { recent: completed.slice(-3), inProgress, next };
 }
 
+// Real-UTC instant of the most recent Europe/Stockholm midnight (start of "today"
+// in Swedish local time). Used as the cutoff for the previous-day snapshot.
+function startOfTodayStockholmMs() {
+  const tz = 'Europe/Stockholm';
+  const now = new Date();
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz, hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(now).reduce((a, x) => { a[x.type] = x.value; return a; }, {});
+  const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  const offset = asUTC - now.getTime();                      // Stockholm wall − real UTC
+  return Date.UTC(+p.year, +p.month - 1, +p.day) - offset;   // Stockholm midnight as real UTC
+}
+
+// Stable leaderboard ordering: points desc, then more predictions, then most
+// recent login. Shared by the live ranking and the previous-day ranking so the
+// movement delta reflects only point changes.
+function makeComparator(pointsOf) {
+  return (a, b) =>
+    pointsOf(b) - pointsOf(a) ||
+    b.predictionCount - a.predictionCount ||
+    new Date(b.lastLoginAt) - new Date(a.lastLoginAt);
+}
+
 app.http('getLeaderboard', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'leaderboard',
   handler: async () => {
-    const [usersRaw, predsByUser, picksByUser, results] = await Promise.all([
+    const cutoffMs = startOfTodayStockholmMs();
+    const [usersRaw, predsByUser, picksByUser, results, prevResults] = await Promise.all([
       collectUsers(),
       collectByUser(getPredictionsTable(), (e) => ({ homeScore: e.homeScore, awayScore: e.awayScore })),
       collectByUser(getPlayoffTable(), (e) => e.winner),
       loadResults(),
+      loadResults({ asOfMs: cutoffMs }),
     ]);
 
-    // The single shared actual bracket every user's playoff picks are scored against.
+    // The single shared actual bracket every user's playoff picks are scored against,
+    // plus its previous-day counterpart for computing rank movement.
     const actualBracket = buildBracket(MATCHES, results.groupResults, results.knockoutWinners, {
       thirdOrder: results.thirdOrder,
     });
+    const prevBracket = buildBracket(MATCHES, prevResults.groupResults, prevResults.knockoutWinners, {
+      thirdOrder: prevResults.thirdOrder,
+    });
+    // Only surface movement once there was a standing to move from (≥1 result before today).
+    const hadPriorResults =
+      Object.keys(prevResults.groupResults).length > 0 || Object.keys(prevResults.knockoutWinners).length > 0;
 
     const { recent, inProgress, next } = resolveSpotlight(results.groupResults);
 
@@ -79,6 +113,10 @@ app.http('getLeaderboard', {
       const groupPoints = scoreGroupTotal(preds, results.groupResults);
       const predictedBracket = buildBracket(MATCHES, preds, picks);
       const playoffPoints = scorePlayoff(predictedBracket, actualBracket).total;
+      // Previous-day total reuses the same predicted bracket (predictions don't
+      // depend on actual results) — only the actual results/bracket differ.
+      const prevPoints = scoreGroupTotal(preds, prevResults.groupResults)
+        + scorePlayoff(predictedBracket, prevBracket).total;
 
       // Per-user spotlight predictions, keyed by matchId — only for matches whose tips are
       // already public (completed or in progress). Completed matches also carry the points
@@ -102,15 +140,25 @@ app.http('getLeaderboard', {
         groupPoints,
         playoffPoints,
         points: groupPoints + playoffPoints,
+        _prevPoints: prevPoints,
         spotlight,
       };
     });
 
-    users.sort((a, b) =>
-      b.points - a.points ||
-      b.predictionCount - a.predictionCount ||
-      new Date(b.lastLoginAt) - new Date(a.lastLoginAt)
-    );
+    // Current standing order + 1-based rank.
+    users.sort(makeComparator((u) => u.points));
+    users.forEach((u, i) => { u.rank = i + 1; });
+
+    // Previous-day rank, by the same comparator on yesterday's points. Null until
+    // there was a prior standing to compare against.
+    if (hadPriorResults) {
+      const prevRank = new Map();
+      [...users].sort(makeComparator((u) => u._prevPoints)).forEach((u, i) => prevRank.set(u.userId, i + 1));
+      users.forEach((u) => { u.prevRank = prevRank.get(u.userId); });
+    } else {
+      users.forEach((u) => { u.prevRank = null; });
+    }
+    users.forEach((u) => { delete u._prevPoints; });
 
     return {
       status: 200,

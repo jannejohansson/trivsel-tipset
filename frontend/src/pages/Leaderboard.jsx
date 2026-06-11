@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
-import { TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 import { useIsMobile } from '../lib/useIsMobile.js';
 
 const styles = {
@@ -133,36 +132,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
-  },
-  chips: {
-    display: 'flex',
-    gap: '6px',
-    flexWrap: 'wrap',
-  },
-  chip: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '4px',
-    fontSize: '11px',
-    fontWeight: 700,
-    padding: '2px 8px',
-    borderRadius: '999px',
-    fontVariantNumeric: 'tabular-nums',
-    whiteSpace: 'nowrap',
-  },
-  chipDone: {
-    background: 'var(--green-dim)',
-    color: '#0b6b32',
-  },
-  chipWarn: {
-    background: 'rgba(184,134,11,0.14)',
-    color: 'var(--yellow)',
-    border: '1px solid rgba(184,134,11,0.35)',
-  },
-  chipUnpaid: {
-    background: 'var(--surface-2)',
-    color: 'var(--text-muted)',
-    border: '1px solid var(--border)',
   },
   progressTrack: {
     height: '6px',
@@ -439,10 +408,6 @@ export default function Leaderboard() {
         {sortedUsers.length > 0 && (
           <div style={styles.list}>
             {sortedUsers.map((u, i) => {
-              const groupCount = u.groupPredictionCount ?? u.predictionCount ?? 0;
-              const playoffCount = u.playoffPredictionCount || 0;
-              const groupDone = groupCount >= TOTAL_MATCHES;
-              const playoffDone = playoffCount >= TOTAL_PLAYOFF;
               const points = u.points || 0;
               const pct = maxPoints > 0 ? Math.min(100, (points / maxPoints) * 100) : 0;
               const isExpanded = expanded.has(u.userId);
@@ -473,19 +438,6 @@ export default function Leaderboard() {
                       <div style={styles.progressTrack} title={`${points} poäng`}>
                         <div style={{ ...styles.progressFill, width: `${pct}%` }} />
                       </div>
-                      {!isMobile && (
-                        <div style={styles.chips}>
-                          <span style={{ ...styles.chip, ...(groupDone ? styles.chipDone : styles.chipWarn) }}>
-                            {groupDone ? '✓' : '⚠'} Gruppspel {groupCount}/{TOTAL_MATCHES}
-                          </span>
-                          <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
-                            {playoffDone ? '✓' : '⚠'} Slutspel {playoffCount}/{TOTAL_PLAYOFF}
-                          </span>
-                          <span style={{ ...styles.chip, ...(u.paid ? styles.chipDone : styles.chipUnpaid) }}>
-                            {u.paid ? '✓ Betalat' : 'Ej betalat'}
-                          </span>
-                        </div>
-                      )}
                     </div>
                     <div style={styles.right}>
                       <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api.js';
-import { KICKOFF_TS, TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
+import { KICKOFF_TS, NAME_LOCKOUT_TS, TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 
 const styles = {
   page: {
@@ -213,7 +213,12 @@ export default function Profile() {
   const [stats, setStats] = useState(null);
 
   // Lock state is fixed for the session, so capture it once on mount.
+  // The tournament-started flag gates stats; the name lock lingers a few days.
   const [locked] = useState(() => Date.now() >= KICKOFF_TS);
+  const [nameLocked] = useState(() => Date.now() >= NAME_LOCKOUT_TS);
+  const nameLockLabel = new Date(NAME_LOCKOUT_TS).toLocaleString('sv-SE', {
+    day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+  });
 
   useEffect(() => {
     if (user) setDisplayName(user.displayName || '');
@@ -278,10 +283,10 @@ export default function Profile() {
 
       <div style={styles.card}>
         <div style={styles.cardTitle}>Visningsnamn</div>
-        {locked ? (
+        {nameLocked ? (
           <>
             <div style={styles.lockedName}>{user.displayName}</div>
-            <p style={styles.lockedNote}>Namnet är låst eftersom VM har startat.</p>
+            <p style={styles.lockedNote}>Namnet är låst sedan {nameLockLabel}.</p>
           </>
         ) : (
           <form onSubmit={handleSubmit} style={styles.form}>
@@ -296,7 +301,7 @@ export default function Profile() {
               onChange={e => { setDisplayName(e.target.value); setSaved(false); }}
               required
             />
-            <p style={styles.hint}>Max 30 tecken. Kan ändras fram till första avsparken.</p>
+            <p style={styles.hint}>Max 30 tecken. Du kan ändra namnet fram till {nameLockLabel}.</p>
             <button
               type="submit"
               style={{ ...styles.btn, ...(submitting ? styles.btnDisabled : {}) }}

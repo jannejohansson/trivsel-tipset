@@ -3,7 +3,7 @@
 const { app } = require('@azure/functions');
 const { verifyAuth } = require('../shared/authMiddleware');
 const { getUsersTable } = require('../shared/tableClient');
-const { LOCKOUT_TIMESTAMP } = require('../shared/constants');
+const { NAME_LOCKOUT_TIMESTAMP } = require('../shared/constants');
 
 app.http('updateProfile', {
   methods: ['POST'],
@@ -17,7 +17,7 @@ app.http('updateProfile', {
       return { status: err.status || 401, jsonBody: { error: err.message } };
     }
 
-    if (Date.now() >= LOCKOUT_TIMESTAMP) {
+    if (Date.now() >= NAME_LOCKOUT_TIMESTAMP) {
       return { status: 403, jsonBody: { error: 'name_locked' } };
     }
 

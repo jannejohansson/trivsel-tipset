@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 import {
   buildBracket, computeAllStandings, rankThirdPlace,
 } from '../lib/bracket.js';
@@ -47,6 +48,10 @@ const styles = {
   userName: { fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' },
   hiddenTag: { fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', background: 'var(--surface-2)', borderRadius: '999px', padding: '1px 7px' },
   userEmail: { fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  chips: { display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '2px' },
+  chip: { display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+  chipDone: { background: 'var(--green-dim)', color: '#0b6b32' },
+  chipWarn: { background: 'rgba(184,134,11,0.14)', color: 'var(--yellow)', border: '1px solid rgba(184,134,11,0.35)' },
   paidLabel: { display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text)', cursor: 'pointer', flexShrink: 0, fontWeight: 600 },
   removeBtn: { flexShrink: 0, background: 'none', border: '1px solid var(--border)', color: 'var(--danger)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   restoreBtn: { flexShrink: 0, background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
@@ -235,6 +240,24 @@ export default function Admin() {
                   {u.hidden && <span style={styles.hiddenTag}>dold</span>}
                 </span>
                 <span style={styles.userEmail}>{u.email}</span>
+                <div style={styles.chips}>
+                  {(() => {
+                    const groupCount = u.groupPredictionCount ?? 0;
+                    const playoffCount = u.playoffPredictionCount ?? 0;
+                    const groupDone = groupCount >= TOTAL_MATCHES;
+                    const playoffDone = playoffCount >= TOTAL_PLAYOFF;
+                    return (
+                      <>
+                        <span style={{ ...styles.chip, ...(groupDone ? styles.chipDone : styles.chipWarn) }}>
+                          {groupDone ? '✓' : '⚠'} Gruppspel {groupCount}/{TOTAL_MATCHES}
+                        </span>
+                        <span style={{ ...styles.chip, ...(playoffDone ? styles.chipDone : styles.chipWarn) }}>
+                          {playoffDone ? '✓' : '⚠'} Slutspel {playoffCount}/{TOTAL_PLAYOFF}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
               <label style={styles.paidLabel}>
                 <input type="checkbox" checked={u.paid} onChange={() => togglePaid(u)} />

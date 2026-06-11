@@ -7,6 +7,7 @@ import LockBanner from '../components/LockBanner.jsx';
 import LockCountdown from '../components/LockCountdown.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { buildBracket } from '../lib/bracket.js';
+import { TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 
 const styles = {
   hero: {
@@ -174,6 +175,13 @@ export default function Matches({ view = 'group' }) {
   }
 
   const isPlayoff = view === 'playoff';
+
+  // Progress counters powering the "matches left to predict" notices.
+  const groupPredicted = predictions.size;
+  const groupRemaining = Math.max(0, TOTAL_MATCHES - groupPredicted);
+  const playoffPredicted = bracket.matches.filter((m) => m.pick).length;
+  const playoffRemaining = Math.max(0, TOTAL_PLAYOFF - playoffPredicted);
+
   const champ = bracket.matches.find((m) => m.id === 'ko_104');
   const champFlag = champ && champ.pick ? (champ.home.team === champ.pick ? champ.home.flag : champ.away.flag) : null;
 
@@ -214,6 +222,9 @@ export default function Matches({ view = 'group' }) {
         {isPlayoff ? (
           <>
             {playoffLocked ? <LockBanner /> : <LockCountdown lockoutUtc={playoffLockoutUtc} />}
+            {!playoffLocked && playoffRemaining > 0 && (
+              <div style={styles.notice}>⚠ Du har tippat {playoffPredicted} av {TOTAL_PLAYOFF} slutspelsval. {playoffRemaining} kvar att tippa.</div>
+            )}
             {!bracket.allComplete && (
               <div style={styles.notice}>
                 Fyll i alla gruppspelsmatcher under <strong>Gruppspel</strong> för att låsa upp hela slutspelsträdet.
@@ -245,6 +256,9 @@ export default function Matches({ view = 'group' }) {
         ) : (
           <>
             {groupLocked && <LockBanner />}
+            {!groupLocked && groupRemaining > 0 && (
+              <div style={styles.notice}>⚠ Du har tippat {groupPredicted} av {TOTAL_MATCHES} gruppspelsmatcher. {groupRemaining} kvar att tippa.</div>
+            )}
             <GroupTabs
               matches={matches}
               locked={groupLocked}

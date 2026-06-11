@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar.jsx';
 import AuthGuard from './components/AuthGuard.jsx';
-import Landing from './pages/Landing.jsx';
+import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Matches from './pages/Matches.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
@@ -18,7 +18,7 @@ export default function App() {
       <BrowserRouter>
         <Navbar />
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
           <Route path="/login" element={<Login />} />
           <Route path="/setup" element={<AuthGuard><SetupProfile /></AuthGuard>} />
           <Route path="/profil" element={<AuthGuard><Profile /></AuthGuard>} />

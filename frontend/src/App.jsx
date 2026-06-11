@@ -6,6 +6,7 @@ import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Matches from './pages/Matches.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
+import LeaderboardHistory from './pages/LeaderboardHistory.jsx';
 import PredictionBreakdown from './pages/PredictionBreakdown.jsx';
 import UserPredictions from './pages/UserPredictions.jsx';
 import Regler from './pages/Regler.jsx';
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/slutspel" element={<AuthGuard><Matches view="playoff" /></AuthGuard>} />
           <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />
           <Route path="/leaderboard" element={<AuthGuard><Leaderboard /></AuthGuard>} />
+          <Route path="/historik" element={<AuthGuard><LeaderboardHistory /></AuthGuard>} />
           <Route path="/vad-tippar-andra" element={<AuthGuard><PredictionBreakdown /></AuthGuard>} />
           <Route path="/predictions/:userId" element={<AuthGuard><UserPredictions /></AuthGuard>} />
           <Route path="/regler" element={<Regler />} />

@@ -9,6 +9,7 @@ require('./src/functions/savePrediction');
 require('./src/functions/resetGroupPredictions');
 require('./src/functions/getLeaderboard');
 require('./src/functions/getPredictionBreakdown');
+require('./src/functions/getLeaderboardHistory');
 require('./src/functions/getUserPredictions');
 require('./src/functions/updateProfile');
 require('./src/functions/getPlayoff');

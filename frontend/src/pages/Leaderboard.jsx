@@ -107,6 +107,26 @@ const styles = {
     cursor: 'pointer',
     minWidth: 0,
   },
+  pointsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: '7px',
+  },
+  deltaChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    alignSelf: 'center',
+    fontSize: '11px',
+    fontWeight: 800,
+    padding: '1px 7px',
+    borderRadius: '999px',
+    fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  },
+  deltaUp: { background: 'var(--green-dim)', color: '#0b6b32' },
+  deltaDown: { background: 'rgba(220,38,38,0.10)', color: 'var(--danger)' },
   rank: {
     width: '28px',
     height: '28px',
@@ -342,11 +362,16 @@ export default function Leaderboard() {
       .catch(() => setError('Kunde inte ladda deltagarlistan.'));
   }, []);
 
+  // Prefer the server-assigned rank so the displayed position matches the rank
+  // that movement (prevRank → rank) is measured against; fall back to a local
+  // comparator only if rank is absent.
   const sortedUsers = data?.users
     ? [...data.users].sort((a, b) =>
-        (b.points || 0) - (a.points || 0)
-        || (b.predictionCount || 0) - (a.predictionCount || 0)
-        || (a.displayName || '').localeCompare(b.displayName || '')
+        (a.rank != null && b.rank != null
+          ? a.rank - b.rank
+          : (b.points || 0) - (a.points || 0)
+            || (b.predictionCount || 0) - (a.predictionCount || 0)
+            || (a.displayName || '').localeCompare(b.displayName || ''))
       )
     : [];
 
@@ -411,6 +436,8 @@ export default function Leaderboard() {
               const points = u.points || 0;
               const pct = maxPoints > 0 ? Math.min(100, (points / maxPoints) * 100) : 0;
               const isExpanded = expanded.has(u.userId);
+              // Movement since yesterday's standing (null on day one, 0 = unchanged).
+              const delta = u.prevRank != null ? u.prevRank - u.rank : null;
               return (
                 <div key={u.userId || u.displayName + i} style={styles.row}>
                   <div
@@ -440,7 +467,14 @@ export default function Leaderboard() {
                       </div>
                     </div>
                     <div style={styles.right}>
-                      <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>
+                      <div style={styles.pointsRow}>
+                        {delta ? (
+                          delta > 0
+                            ? <span style={{ ...styles.deltaChip, ...styles.deltaUp }} title={`Upp ${delta} sedan igår`}>▲ {delta}</span>
+                            : <span style={{ ...styles.deltaChip, ...styles.deltaDown }} title={`Ner ${Math.abs(delta)} sedan igår`}>▼ {Math.abs(delta)}</span>
+                        ) : null}
+                        <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>
+                      </div>
                       {!isMobile && (
                         <span style={styles.date}>
                           Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}

@@ -4,6 +4,7 @@ const { app } = require('@azure/functions');
 const { getUsersTable, getPredictionsTable } = require('../shared/tableClient');
 const { loadResults } = require('../shared/results');
 const { resolveSpotlight } = require('../shared/spotlight');
+const { scoreGroup } = require('../shared/scoring');
 
 // Outcome bucket: 0 = home win, 1 = draw, 2 = away win.
 function outcomeRank(s) {
@@ -94,6 +95,11 @@ app.http('getPredictionBreakdown', {
       scorelines.sort(compareScorelines);
       const total = scorelines.reduce((n, s) => n + s.count, 0);
       const actual = results.groupResults[m.id] || null;
+      // For finished matches, attach the group-stage points each scoreline earns
+      // against the actual result (null while the match is still in progress).
+      for (const s of scorelines) {
+        s.points = actual ? scoreGroup(s, actual) : null;
+      }
       return {
         ...fixtureMeta(m),
         status: actual ? 'completed' : 'inProgress',

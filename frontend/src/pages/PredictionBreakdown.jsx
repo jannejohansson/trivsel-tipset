@@ -107,10 +107,12 @@ const styles = {
   nameChipExact: {
     color: '#0b6b32', background: 'var(--green-dim)', borderColor: 'rgba(21,163,74,0.3)',
   },
-  exactTag: {
-    fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px',
-    color: '#0b6b32',
+  ptsPill: {
+    fontSize: '11px', fontWeight: 800, padding: '1px 8px', borderRadius: '999px',
+    fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', flexShrink: 0,
   },
+  ptsPillPos: { background: 'var(--green-dim)', color: '#0b6b32', border: '1px solid rgba(21,163,74,0.3)' },
+  ptsPillZero: { background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' },
 };
 
 function formatKickoff(utc) {
@@ -208,7 +210,11 @@ function MatchCard({ match, isMobile }) {
                   </div>
                 </div>
                 <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
-                  {isExact && <span style={styles.exactTag}>✓ Rätt</span>}
+                  {s.points !== null && s.points !== undefined && (
+                    <span style={{ ...styles.ptsPill, ...(s.points > 0 ? styles.ptsPillPos : styles.ptsPillZero) }}>
+                      {s.points > 0 ? `+${s.points}` : '0'} p
+                    </span>
+                  )}
                   {s.users.map((name, i) => (
                     <span key={i} style={{ ...styles.nameChip, ...(isExact ? styles.nameChipExact : {}) }}>{name}</span>
                   ))}

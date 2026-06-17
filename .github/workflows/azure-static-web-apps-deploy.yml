@@ -4,18 +4,49 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - feature/claude-design
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
+      - '**'
 
 jobs:
-  deploy_frontend:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+  # On every branch push that isn't main: build and verify only, no deploy.
+  # This is also what surfaces as the status check on an open PR.
+  verify:
+    name: Build and verify (no deploy)
+    if: github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            api/package-lock.json
+
+      # API has no build/lint/test; npm ci verifies the lockfile and that deps resolve.
+      - name: Install & verify API
+        run: npm ci
+        working-directory: api
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Lint frontend
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+  # On push to main (i.e. a merged PR) or manual dispatch: deploy both apps.
+  deploy_frontend:
     name: Build and Deploy Frontend
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -45,9 +76,9 @@ jobs:
           api_location: ""
 
   deploy_api:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
     name: Deploy API to Azure Functions
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -73,14 +104,3 @@ jobs:
           app-name: ${{ secrets.AZURE_FUNCTION_APP_NAME }}
           package: api
           sku: flexconsumption
-
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    name: Close Pull Request
-    steps:
-      - name: Close Pull Request
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_HAPPY_WATER_06BFAEE03 }}
-          action: close

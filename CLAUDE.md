@@ -89,9 +89,11 @@ so group score edits flow live into the bracket. Group scores autosave from
 
 - **Shell is PowerShell on Windows.** Use PowerShell syntax (`$env:VAR`, `$null`), not bash-isms.
 - **UI text is Swedish.** Keep new user-facing strings Swedish to match.
-- Commits: this repo's working branch is `feature/claude-design`; `main` is the deploy target.
-  Pushes to either branch trigger the Azure deploy
-  ([.github/workflows/azure-static-web-apps-deploy.yml](.github/workflows/azure-static-web-apps-deploy.yml)).
+- Commits: `main` is the deploy target. CI
+  ([.github/workflows/azure-static-web-apps-deploy.yml](.github/workflows/azure-static-web-apps-deploy.yml))
+  only **builds and verifies** (frontend build + lint, API `npm ci`) on pushes to feature
+  branches; **deploying** both the frontend (Static Web App) and API (Function App) happens only
+  on push to `main` (i.e. a merged PR) or manual `workflow_dispatch`.
 - After frontend changes, sanity-check with `cd frontend; npm run build` (and `npm run lint`).
 - `api/dbg-out.txt` and `api/dbg2.txt` are stray debug artifacts that ended up tracked in git —
   ignore them; they're not part of the app.

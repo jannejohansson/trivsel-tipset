@@ -7,11 +7,33 @@
   --text-muted: #5a6877;
   --green: #15a34a;
   --green-dim: #d4f4dd;
+  --green-text: #0b6b32;       /* readable green for text on --green-dim chips */
   --accent: #2563eb;
   --danger: #dc2626;
   --yellow: #b8860b;
   --radius: 10px;
   --shadow-card: 0 1px 2px rgba(13,27,42,0.06), 0 4px 12px rgba(13,27,42,0.04);
+}
+
+/* Dark theme: redefine the palette tokens. Because components read colours
+   through these variables, the whole app re-skins from this one block. The
+   data-theme attribute is set by the boot script in index.html and kept in sync
+   by ThemeContext. The navy→green brand gradient (group-tab.active, the Tippa
+   segmented toggle, hero sections) stays hardcoded — it reads well on both. */
+:root[data-theme="dark"] {
+  --bg: #0f1620;
+  --surface: #161e29;
+  --surface-2: #1f2937;
+  --border: #2b3543;
+  --text: #e6edf3;
+  --text-muted: #9aa7b4;
+  --green: #22c55e;            /* brighter so it pops on dark surfaces */
+  --green-dim: #15311f;        /* dark chip fill */
+  --green-text: #4ade80;       /* light green text on dark chips */
+  --accent: #3b82f6;
+  --danger: #f87171;
+  --yellow: #d4a017;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.35);
 }
 
 *, *::before, *::after {

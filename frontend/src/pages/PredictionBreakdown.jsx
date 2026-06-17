@@ -63,7 +63,7 @@ const styles = {
   },
   statusDone: {
     display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 800,
-    fontSize: '12px', color: '#0b6b32', background: 'var(--green-dim)',
+    fontSize: '12px', color: 'var(--green-text)', background: 'var(--green-dim)',
     borderRadius: '999px', padding: '2px 10px', fontVariantNumeric: 'tabular-nums',
   },
   noPreds: { color: 'var(--text-muted)', fontSize: '13px', fontStyle: 'italic', padding: '4px 0' },
@@ -76,7 +76,7 @@ const styles = {
     fontVariantNumeric: 'tabular-nums', width: '46px', flexShrink: 0,
   },
   scoreMobile: { width: '40px', fontSize: '14px' },
-  scoreCorrect: { color: '#0b6b32' },
+  scoreCorrect: { color: 'var(--green-text)' },
   track: {
     flex: 1, minWidth: 0, height: '24px', background: 'var(--surface-2)',
     borderRadius: '6px', overflow: 'hidden', position: 'relative',
@@ -105,13 +105,13 @@ const styles = {
     borderRadius: '999px', padding: '2px 8px',
   },
   nameChipExact: {
-    color: '#0b6b32', background: 'var(--green-dim)', borderColor: 'rgba(21,163,74,0.3)',
+    color: 'var(--green-text)', background: 'var(--green-dim)', borderColor: 'rgba(21,163,74,0.3)',
   },
   ptsPill: {
     fontSize: '11px', fontWeight: 800, padding: '1px 8px', borderRadius: '999px',
     fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', flexShrink: 0,
   },
-  ptsPillPos: { background: 'var(--green-dim)', color: '#0b6b32', border: '1px solid rgba(21,163,74,0.3)' },
+  ptsPillPos: { background: 'var(--green-dim)', color: 'var(--green-text)', border: '1px solid rgba(21,163,74,0.3)' },
   ptsPillZero: { background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' },
 };
 

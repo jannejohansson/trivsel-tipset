@@ -108,7 +108,7 @@ const styles = {
     fontVariantNumeric: 'tabular-nums',
     whiteSpace: 'nowrap',
   },
-  deltaUp: { background: 'var(--green-dim)', color: '#0b6b32' },
+  deltaUp: { background: 'var(--green-dim)', color: 'var(--green-text)' },
   deltaDown: { background: 'rgba(220,38,38,0.10)', color: 'var(--danger)' },
   deltaSame: { background: 'var(--surface-2)', color: 'var(--text-muted)' },
   placeSince: {

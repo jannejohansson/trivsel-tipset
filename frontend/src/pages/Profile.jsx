@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../context/ThemeContext.jsx';
 import { api } from '../api.js';
 import { KICKOFF_TS, NAME_LOCKOUT_TS, TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 
@@ -81,7 +82,7 @@ const styles = {
     borderRadius: 'var(--radius)',
   },
   success: {
-    color: '#0b6b32',
+    color: 'var(--green-text)',
     fontSize: '13px',
     padding: '10px 14px',
     background: 'var(--green-dim)',
@@ -137,7 +138,7 @@ const styles = {
   },
   chipDone: {
     background: 'var(--green-dim)',
-    color: '#0b6b32',
+    color: 'var(--green-text)',
   },
   chipWarn: {
     background: 'rgba(184,134,11,0.14)',
@@ -192,6 +193,51 @@ const styles = {
     cursor: 'pointer',
     marginTop: '8px',
   },
+  // ── Theme switch ─────────────────────────────────────────
+  themeRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  themeLabel: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    color: 'var(--text)',
+    fontSize: '14px',
+    fontWeight: 600,
+  },
+  switch: {
+    position: 'relative',
+    width: '46px',
+    height: '26px',
+    flexShrink: 0,
+    borderRadius: '999px',
+    border: '1px solid var(--border)',
+    background: 'var(--surface-2)',
+    cursor: 'pointer',
+    padding: 0,
+    transition: 'background 0.15s, border-color 0.15s',
+  },
+  switchOn: {
+    background: 'var(--green)',
+    borderColor: 'transparent',
+  },
+  switchKnob: {
+    position: 'absolute',
+    top: '2px',
+    left: '2px',
+    width: '20px',
+    height: '20px',
+    borderRadius: '999px',
+    background: '#ffffff',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+    transition: 'transform 0.15s',
+  },
+  switchKnobOn: {
+    transform: 'translateX(20px)',
+  },
 };
 
 // Mirror the sort used on the leaderboard so a user's position here matches there.
@@ -205,6 +251,7 @@ function sortUsers(users) {
 
 export default function Profile() {
   const { user, loading, refresh, logout } = useAuth();
+  const { isDark, toggle } = useTheme();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -311,6 +358,26 @@ export default function Profile() {
             </button>
           </form>
         )}
+      </div>
+
+      <div style={styles.card}>
+        <div style={styles.cardTitle}>Tema</div>
+        <div style={styles.themeRow}>
+          <span style={styles.themeLabel}>
+            <span aria-hidden="true">{isDark ? '🌙' : '☀️'}</span>
+            Mörkt läge
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isDark}
+            aria-label="Mörkt läge"
+            style={{ ...styles.switch, ...(isDark ? styles.switchOn : {}) }}
+            onClick={toggle}
+          >
+            <span style={{ ...styles.switchKnob, ...(isDark ? styles.switchKnobOn : {}) }} />
+          </button>
+        </div>
       </div>
 
       <div style={styles.card}>

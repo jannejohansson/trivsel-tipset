@@ -224,7 +224,9 @@ export default function Home() {
 
   const matches = data.matches || [];
   const keyOf = (m) => dayKey(new Date(m.kickoffUtc));
-  const byMatchNo = (a, b) => a.matchNumber - b.matchNumber;
+  // Chronological by actual kickoff time — match numbers don't always follow the
+  // schedule (same-day matches can kick off out of number order).
+  const byKickoff = (a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc);
 
   // Three states per match:
   //   past        – admin has reported a result (m.actual)
@@ -233,16 +235,18 @@ export default function Home() {
   // Last three completed matches (newest first), with predicted score, result and points.
   const recent = matches
     .filter((m) => m.actual)
-    .sort((a, b) => b.matchNumber - a.matchNumber)
+    .sort((a, b) => byKickoff(b, a))
     .slice(0, 3);
 
   // In progress: kicked off, awaiting an admin result. Shown locked, not editable.
-  const inProgress = matches.filter((m) => m.locked && !m.actual).sort(byMatchNo);
+  const inProgress = matches.filter((m) => m.locked && !m.actual).sort(byKickoff);
 
-  // Upcoming and editable, bucketed by Swedish-local kickoff day.
+  // Upcoming and editable: today's and tomorrow's matches merged into one
+  // chronological list (Swedish-local kickoff day).
   const editable = matches.filter((m) => !m.locked && !m.actual);
-  const today = editable.filter((m) => keyOf(m) === todayKey).sort(byMatchNo);
-  const tomorrow = editable.filter((m) => keyOf(m) === tomorrowKey).sort(byMatchNo);
+  const upcoming = editable
+    .filter((m) => keyOf(m) === todayKey || keyOf(m) === tomorrowKey)
+    .sort(byKickoff);
   const groupStageOver = matches.length > 0 && matches.every((m) => m.locked);
 
   // Push an edited scoreline into local state so the bracket/derived views stay
@@ -312,32 +316,20 @@ export default function Home() {
           </section>
         )}
 
-        {/* Dagens matcher att tippa */}
-        {today.length > 0 && (
+        {/* Kommande matcher att tippa (idag + imorgon, kronologiskt) */}
+        {upcoming.length > 0 && (
           <section style={styles.section}>
             <div style={styles.sectionHead}>
-              <h2 style={styles.sectionTitle}>Dagens matcher</h2>
+              <h2 style={styles.sectionTitle}>Kommande matcher</h2>
             </div>
             <div style={styles.list}>
-              {today.map(editableCard)}
-            </div>
-          </section>
-        )}
-
-        {/* Morgondagens matcher att tippa */}
-        {tomorrow.length > 0 && (
-          <section style={styles.section}>
-            <div style={styles.sectionHead}>
-              <h2 style={styles.sectionTitle}>Imorgon</h2>
-            </div>
-            <div style={styles.list}>
-              {tomorrow.map(editableCard)}
+              {upcoming.map(editableCard)}
             </div>
           </section>
         )}
 
         {/* Inget kvar att tippa idag eller imorgon */}
-        {today.length === 0 && tomorrow.length === 0 && (
+        {upcoming.length === 0 && (
           <section style={styles.section}>
             <div style={styles.sectionHead}>
               <h2 style={styles.sectionTitle}>Kommande matcher</h2>

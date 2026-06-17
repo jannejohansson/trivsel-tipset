@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar.jsx';
 import AuthGuard from './components/AuthGuard.jsx';
@@ -16,25 +17,27 @@ import Admin from './pages/Admin.jsx';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/setup" element={<AuthGuard><SetupProfile /></AuthGuard>} />
-          <Route path="/profil" element={<AuthGuard><Profile /></AuthGuard>} />
-          <Route path="/matches" element={<AuthGuard><Matches view="group" /></AuthGuard>} />
-          <Route path="/slutspel" element={<AuthGuard><Matches view="playoff" /></AuthGuard>} />
-          <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />
-          <Route path="/leaderboard" element={<AuthGuard><Leaderboard /></AuthGuard>} />
-          <Route path="/historik" element={<AuthGuard><LeaderboardHistory /></AuthGuard>} />
-          <Route path="/vad-tippar-andra" element={<AuthGuard><PredictionBreakdown /></AuthGuard>} />
-          <Route path="/predictions/:userId" element={<AuthGuard><UserPredictions /></AuthGuard>} />
-          <Route path="/regler" element={<Regler />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/setup" element={<AuthGuard><SetupProfile /></AuthGuard>} />
+            <Route path="/profil" element={<AuthGuard><Profile /></AuthGuard>} />
+            <Route path="/matches" element={<AuthGuard><Matches view="group" /></AuthGuard>} />
+            <Route path="/slutspel" element={<AuthGuard><Matches view="playoff" /></AuthGuard>} />
+            <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />
+            <Route path="/leaderboard" element={<AuthGuard><Leaderboard /></AuthGuard>} />
+            <Route path="/historik" element={<AuthGuard><LeaderboardHistory /></AuthGuard>} />
+            <Route path="/vad-tippar-andra" element={<AuthGuard><PredictionBreakdown /></AuthGuard>} />
+            <Route path="/predictions/:userId" element={<AuthGuard><UserPredictions /></AuthGuard>} />
+            <Route path="/regler" element={<Regler />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

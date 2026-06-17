@@ -111,7 +111,7 @@ const styles = {
   },
   maxBanner: {
     background: 'var(--green-dim)',
-    color: '#0b6b32',
+    color: 'var(--green-text)',
     padding: '12px 20px',
     fontSize: '13px',
     fontWeight: 700,

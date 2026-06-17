@@ -5,7 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Trivseltipset 2026 — tippa fotbolls-VM 2026 och vinn över dina vänner." />
+    <meta name="color-scheme" content="light dark" />
     <title>Trivseltipset 2026</title>
+    <!-- Set the theme before React paints so there's no light-flash on load.
+         localStorage 'theme' holds 'light'/'dark' only after an explicit choice;
+         absent means follow the OS preference. Kept in sync by ThemeContext. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var dark = stored
+            ? stored === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+        } catch (e) { /* localStorage blocked — default light */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

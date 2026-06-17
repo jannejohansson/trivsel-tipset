@@ -130,7 +130,7 @@ const styles = {
     whiteSpace: 'nowrap',
     flexShrink: 0,
   },
-  deltaUp: { background: 'var(--green-dim)', color: '#0b6b32' },
+  deltaUp: { background: 'var(--green-dim)', color: 'var(--green-text)' },
   deltaDown: { background: 'rgba(220,38,38,0.10)', color: 'var(--danger)' },
   rank: {
     width: '28px',
@@ -278,7 +278,7 @@ const styles = {
     padding: '1px 7px',
     borderRadius: '999px',
     background: 'var(--green-dim)',
-    color: '#0b6b32',
+    color: 'var(--green-text)',
     fontVariantNumeric: 'tabular-nums',
     whiteSpace: 'nowrap',
   },

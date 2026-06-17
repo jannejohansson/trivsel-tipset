@@ -313,6 +313,9 @@ frontend/dist/
 azurite-data/
 azurite-debug.log
 
+# Table Storage backups (contain real user data — never commit)
+backups/
+
 # Visual Studio 6 build log
 *.plg
 

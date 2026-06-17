@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useIsMobile } from '../lib/useIsMobile.js';
 
 // Custom SVG line chart of cumulative points per participant, one vertex per played
-// match so the climb shows match by match. The x-axis is labelled by stage (Omg 1-3,
-// 16-del .. Final), not per match, to stay readable. All participants are drawn equally;
-// hovering/tapping a line or a legend chip highlights one and dims the rest. No charting
-// library — matches the app's zero-UI-deps approach.
+// match so the climb shows match by match. Dashed stage separators split the x-axis,
+// with discreet match-number ticks beneath it. All participants are drawn equally;
+// hovering/tapping a line or a legend chip highlights one and dims the rest.
+// No charting library — matches the app's zero-UI-deps approach.
 
 const styles = {
   wrap: {
@@ -60,7 +60,30 @@ const styles = {
   },
 };
 
-const colorFor = (i, n) => `hsl(${Math.round((i * 360) / Math.max(n, 1))}, 65%, 50%)`;
+const hueColor = (i, n) => `hsl(${Math.round((i * 360) / Math.max(n, 1))}, 65%, 50%)`;
+
+// A user's colour is keyed by identity, not by their current rank, so it stays
+// the same as they move up and down the field between visits. We spread hues over
+// a stable userId ordering; the legend/series can be re-sorted freely on top.
+function useColorMap(series) {
+  return useMemo(() => {
+    const ids = series.map((s) => s.userId).sort((a, b) => String(a).localeCompare(String(b)));
+    const map = {};
+    ids.forEach((id, i) => { map[id] = hueColor(i, ids.length); });
+    return map;
+  }, [series]);
+}
+
+// Pick checkpoint indices to label on the x-axis: roughly `target` evenly-spaced
+// ticks, always including the first and last.
+function xTickIndices(n, target) {
+  if (n <= 1) return [0];
+  const step = Math.max(1, Math.round((n - 1) / target));
+  const idx = [];
+  for (let i = 0; i < n; i += step) idx.push(i);
+  if (idx[idx.length - 1] !== n - 1) idx.push(n - 1);
+  return idx;
+}
 
 // Pick ~4 rounded gridline values between 0 and max.
 function yTicks(max) {
@@ -88,6 +111,8 @@ function stageSpans(checkpoints) {
 export default function LeaderboardChart({ checkpoints, series }) {
   const isMobile = useIsMobile();
   const [active, setActive] = useState(null); // highlighted userId or null
+  const colorMap = useColorMap(series);
+  const colorOf = (s) => colorMap[s.userId] || '#888';
 
   if (!checkpoints || checkpoints.length === 0) {
     return (
@@ -105,7 +130,8 @@ export default function LeaderboardChart({ checkpoints, series }) {
   // Widen the canvas as matches accumulate so vertices don't bunch up; scroll if needed.
   const W = Math.max(900, n * (isMobile ? 14 : 10));
   const H = isMobile ? 360 : 460;
-  const m = { top: 20, right: 16, bottom: 44, left: 40 };
+  // Just enough bottom room for a discreet row of match-number ticks.
+  const m = { top: 20, right: 16, bottom: 28, left: 40 };
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
@@ -113,6 +139,7 @@ export default function LeaderboardChart({ checkpoints, series }) {
   const ticks = yTicks(maxPoints);
   const spans = stageSpans(checkpoints);
   const showDots = n <= 24; // only annotate individual matches when the field is sparse
+  const xTicks = xTickIndices(n, isMobile ? 6 : 12);
 
   const x = (i) => (n === 1 ? m.left + plotW / 2 : m.left + (plotW * i) / (n - 1));
   const y = (v) => m.top + plotH - ((Number(v) || 0) / maxPoints) * plotH;
@@ -124,7 +151,7 @@ export default function LeaderboardChart({ checkpoints, series }) {
       <div style={styles.caption}>
         {activeSeries ? (
           <>
-            <span style={{ ...styles.swatch, background: colorFor(series.indexOf(activeSeries), series.length) }} />
+            <span style={{ ...styles.swatch, background: colorOf(activeSeries) }} />
             {activeSeries.displayName}
             <span style={styles.captionHint}>
               · {activeSeries.points[activeSeries.points.length - 1] || 0} p
@@ -154,35 +181,43 @@ export default function LeaderboardChart({ checkpoints, series }) {
             </g>
           ))}
 
-          {/* stage separators + centred stage labels */}
+          {/* dashed separators between stages (no labels) */}
           {spans.map((sp, si) => (
-            <g key={`${sp.stage}-${si}`}>
-              {si > 0 && (
-                <line
-                  x1={(x(sp.start) + x(sp.start - 1)) / 2}
-                  y1={m.top}
-                  x2={(x(sp.start) + x(sp.start - 1)) / 2}
-                  y2={m.top + plotH}
-                  stroke="var(--border)"
-                  strokeWidth="1"
-                  strokeDasharray="3 3"
-                />
-              )}
-              <text
-                x={(x(sp.start) + x(sp.end)) / 2}
-                y={H - m.bottom + 22}
-                textAnchor="middle"
-                fontSize="12"
-                fill="var(--text-muted)"
-              >
-                {sp.stage}
-              </text>
-            </g>
+            si > 0 ? (
+              <line
+                key={`${sp.stage}-${si}`}
+                x1={(x(sp.start) + x(sp.start - 1)) / 2}
+                y1={m.top}
+                x2={(x(sp.start) + x(sp.start - 1)) / 2}
+                y2={m.top + plotH}
+                stroke="var(--border)"
+                strokeWidth="1"
+                strokeDasharray="3 3"
+              />
+            ) : null
           ))}
+
+          {/* discreet adaptive match-number ticks along the x-axis */}
+          {xTicks.map((i) => {
+            const cp = checkpoints[i];
+            return (
+              <text
+                key={`x${cp.key || i}`}
+                x={x(i)}
+                y={H - m.bottom + 16}
+                textAnchor="middle"
+                fontSize="9"
+                fill="var(--text-muted)"
+                opacity="0.6"
+              >
+                {cp.num}
+              </text>
+            );
+          })}
 
           {/* one line per participant */}
           {series.map((s, idx) => {
-            const color = colorFor(idx, series.length);
+            const color = colorOf(s);
             const isActive = active === s.userId;
             const dim = active != null && !isActive;
             const pts = s.points.map((p, i) => `${x(i)},${y(p)}`).join(' ');
@@ -220,7 +255,7 @@ export default function LeaderboardChart({ checkpoints, series }) {
 
       <div style={styles.legend}>
         {series.map((s, idx) => {
-          const color = colorFor(idx, series.length);
+          const color = colorOf(s);
           const isActive = active === s.userId;
           return (
             <button

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
 
 const styles = {
@@ -60,6 +61,10 @@ const styles = {
     textDecoration: 'none',
     color: 'inherit',
     cursor: 'pointer',
+  },
+  rowMe: {
+    borderLeftWidth: '4px',
+    background: 'var(--green-dim)',
   },
   rowTop: {
     display: 'flex',
@@ -351,6 +356,7 @@ function SpotlightStrip({ shared, mine }) {
 }
 
 export default function Leaderboard() {
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set()); // expanded userIds
@@ -436,10 +442,11 @@ export default function Leaderboard() {
               const points = u.points || 0;
               const pct = maxPoints > 0 ? Math.min(100, (points / maxPoints) * 100) : 0;
               const isExpanded = expanded.has(u.userId);
+              const isMe = !!user && u.userId === user.userId;
               // Movement since yesterday's standing (null on day one, 0 = unchanged).
               const delta = u.prevRank != null ? u.prevRank - u.rank : null;
               return (
-                <div key={u.userId || u.displayName + i} style={styles.row}>
+                <div key={u.userId || u.displayName + i} style={{ ...styles.row, ...(isMe ? styles.rowMe : {}) }}>
                   <div
                     style={styles.rowTop}
                     role={hasSpotlight ? 'button' : undefined}

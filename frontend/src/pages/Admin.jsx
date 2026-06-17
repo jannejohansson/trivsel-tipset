@@ -23,7 +23,17 @@ const styles = {
   section: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px', marginBottom: '24px', boxShadow: 'var(--shadow-card)' },
   h2: { fontSize: '16px', fontWeight: 800, margin: '0 0 12px' },
   hint: { fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 14px' },
+  dayGroup: { marginBottom: '10px' },
+  dayHeader: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '10px 12px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '10px', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text)' },
+  dayTitle: { fontSize: '14px', fontWeight: 800 },
+  dayProgress: { display: 'inline-flex', alignItems: 'center', gap: '10px', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' },
+  dayProgressDone: { color: '#0b6b32' },
+  dayChevron: { color: 'var(--text-muted)', fontSize: '12px', width: '12px', textAlign: 'center' },
   matchRow: { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderTop: '1px solid var(--border)', fontSize: '14px' },
+  doneRow: { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', fontSize: '14px', width: '100%', background: 'none', border: 'none', borderTop: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text)', textAlign: 'left' },
+  scoreText: { fontSize: '16px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+  editHint: { fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 },
+  collapseBtn: { width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 },
   matchMeta: { width: '104px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '3px' },
   matchTime: { fontSize: '12px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
   groupBadge: { alignSelf: 'flex-start', fontSize: '11px', fontWeight: 800, lineHeight: 1, padding: '2px 7px', borderRadius: '999px', background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' },
@@ -67,6 +77,11 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
+  // Group-result UI state: which matchdays the admin has explicitly toggled
+  // (otherwise a matchday auto-collapses once every match in it has a result),
+  // and which already-entered matches are expanded for editing.
+  const [dayOverride, setDayOverride] = useState({}); // matchday -> bool (open)
+  const [editingMatches, setEditingMatches] = useState(() => new Set());
 
   useEffect(() => {
     Promise.all([api.getMatches(), api.getResults(), api.getUsers().catch(() => ({ users: [] }))])
@@ -106,6 +121,29 @@ export default function Admin() {
   const sortedMatches = [...matches]
     .sort((a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc) || a.matchNumber - b.matchNumber);
 
+  const isComplete = (m) => {
+    const r = groupResults[m.id];
+    return !!r && Number.isInteger(r.homeScore) && Number.isInteger(r.awayScore);
+  };
+
+  // Section 1 is split into matchday groups ("Omgång 1/2/3") so the 72 matches
+  // are easier to scan and scroll.
+  const matchdays = [];
+  for (const m of sortedMatches) {
+    let g = matchdays.find((d) => d.day === m.matchday);
+    if (!g) { g = { day: m.matchday, list: [] }; matchdays.push(g); }
+    g.list.push(m);
+  }
+
+  // A matchday is open unless the admin toggled it, defaulting to collapsed once
+  // every match in it has a result entered.
+  const dayOpen = (g) => (g.day in dayOverride ? dayOverride[g.day] : !g.list.every(isComplete));
+  const toggleDay = (g) => setDayOverride((prev) => ({ ...prev, [g.day]: !dayOpen(g) }));
+
+  const expandMatch = (id) => setEditingMatches((s) => new Set(s).add(id));
+  const collapseMatch = (id) =>
+    setEditingMatches((s) => { const n = new Set(s); n.delete(id); return n; });
+
   const setScore = (id, side, value) => {
     const v = value.replace(/[^0-9]/g, '').slice(0, 2);
     setGroupResults((prev) => {
@@ -127,6 +165,7 @@ export default function Admin() {
       delete next[id];
       return next;
     });
+    collapseMatch(id);
     save({ groupResults: { [id]: { homeScore: null, awayScore: null } } });
   };
 
@@ -157,6 +196,53 @@ export default function Admin() {
       });
   };
 
+  // A match with a result, shown compact; click to expand it back into inputs.
+  const matchDoneRow = (m, r) => (
+    <button
+      key={m.id}
+      style={{ ...styles.doneRow, ...(isMobile ? styles.matchRowMobile : {}) }}
+      onClick={() => expandMatch(m.id)}
+      title="Ändra resultat"
+    >
+      <div style={{ ...styles.matchMeta, ...(isMobile ? styles.matchMetaMobile : {}) }}>
+        <span style={{ ...styles.matchTime, ...(isMobile ? styles.matchTimeMobile : {}) }}>{formatKickoff(m.kickoffUtc)}</span>
+        <span style={styles.groupBadge}>{isMobile ? m.group : `Grupp ${m.group}`}</span>
+      </div>
+      {!isMobile && <span style={styles.teamL}>{m.homeTeam}</span>}
+      <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
+      <span style={styles.scoreText}>{r.homeScore}–{r.awayScore}</span>
+      <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
+      {!isMobile && <span style={styles.teamR}>{m.awayTeam}</span>}
+      {!isMobile && <span style={styles.editHint}>Ändra</span>}
+    </button>
+  );
+
+  // The editable score row: used for pending matches and for completed ones the
+  // admin has expanded. Completed rows also get a collapse (▲) and clear (✕) button.
+  const matchInputRow = (m, r, completed) => (
+    <div key={m.id} style={{ ...styles.matchRow, ...(isMobile ? styles.matchRowMobile : {}) }}>
+      <div style={{ ...styles.matchMeta, ...(isMobile ? styles.matchMetaMobile : {}) }}>
+        <span style={{ ...styles.matchTime, ...(isMobile ? styles.matchTimeMobile : {}) }}>{formatKickoff(m.kickoffUtc)}</span>
+        <span style={styles.groupBadge}>{isMobile ? m.group : `Grupp ${m.group}`}</span>
+      </div>
+      {!isMobile && <span style={styles.teamL}>{m.homeTeam}</span>}
+      <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
+      <input style={styles.input} value={r.homeScore ?? ''} onChange={(e) => setScore(m.id, 'homeScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
+      <span style={{ color: 'var(--text-muted)' }}>–</span>
+      <input style={styles.input} value={r.awayScore ?? ''} onChange={(e) => setScore(m.id, 'awayScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
+      <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
+      {!isMobile && <span style={styles.teamR}>{m.awayTeam}</span>}
+      {completed ? (
+        <>
+          <button style={styles.collapseBtn} onClick={() => collapseMatch(m.id)} title="Fäll ihop">▲</button>
+          <button style={styles.clearBtn} onClick={() => clearScore(m.id)} title="Rensa resultat (låser upp matchen)">✕</button>
+        </>
+      ) : (
+        <span style={styles.clearBtnHidden} aria-hidden="true" />
+      )}
+    </div>
+  );
+
   const togglePaid = (u) => patchUser(u, { paid: !u.paid });
   const setHidden = (u, hidden) => {
     if (hidden && !window.confirm(`Ta bort ${u.displayName} från ställningen? Tipsen sparas men deltagaren döljs.`)) return;
@@ -176,27 +262,29 @@ export default function Admin() {
         {/* 1. Group results */}
         <div style={styles.section}>
           <h2 style={styles.h2}>1. Gruppspelsresultat</h2>
-          <p style={styles.hint}>Alla matcher i spelordning. Faktiska slutresultat — tabellen och slutspelsträdet uppdateras automatiskt.</p>
-          {sortedMatches.map((m) => {
-            const r = groupResults[m.id] || {};
+          <p style={styles.hint}>Matcherna är grupperade per omgång. Inlagda resultat fälls ihop — klicka för att ändra. Tabellen och slutspelsträdet uppdateras automatiskt.</p>
+          {matchdays.map((g) => {
+            const open = dayOpen(g);
+            const done = g.list.filter(isComplete).length;
+            const allDone = done === g.list.length;
             return (
-              <div key={m.id} style={{ ...styles.matchRow, ...(isMobile ? styles.matchRowMobile : {}) }}>
-                <div style={{ ...styles.matchMeta, ...(isMobile ? styles.matchMetaMobile : {}) }}>
-                  <span style={{ ...styles.matchTime, ...(isMobile ? styles.matchTimeMobile : {}) }}>{formatKickoff(m.kickoffUtc)}</span>
-                  <span style={styles.groupBadge}>{isMobile ? m.group : `Grupp ${m.group}`}</span>
-                </div>
-                {!isMobile && <span style={styles.teamL}>{m.homeTeam}</span>}
-                <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
-                <input style={styles.input} value={r.homeScore ?? ''} onChange={(e) => setScore(m.id, 'homeScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
-                <span style={{ color: 'var(--text-muted)' }}>–</span>
-                <input style={styles.input} value={r.awayScore ?? ''} onChange={(e) => setScore(m.id, 'awayScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
-                <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
-                {!isMobile && <span style={styles.teamR}>{m.awayTeam}</span>}
-                {Number.isInteger(r.homeScore) && Number.isInteger(r.awayScore) ? (
-                  <button style={styles.clearBtn} onClick={() => clearScore(m.id)} title="Rensa resultat (låser upp matchen)">✕</button>
-                ) : (
-                  <span style={styles.clearBtnHidden} aria-hidden="true" />
-                )}
+              <div key={g.day} style={styles.dayGroup}>
+                <button style={styles.dayHeader} onClick={() => toggleDay(g)} aria-expanded={open}>
+                  <span style={styles.dayTitle}>Omgång {g.day}</span>
+                  <span style={styles.dayProgress}>
+                    <span style={allDone ? styles.dayProgressDone : undefined}>
+                      {allDone ? '✓ klart' : `${done}/${g.list.length} inlagda`}
+                    </span>
+                    <span style={styles.dayChevron}>{open ? '▲' : '▼'}</span>
+                  </span>
+                </button>
+                {open && g.list.map((m) => {
+                  const r = groupResults[m.id] || {};
+                  const completed = isComplete(m);
+                  return completed && !editingMatches.has(m.id)
+                    ? matchDoneRow(m, r)
+                    : matchInputRow(m, r, completed);
+                })}
               </div>
             );
           })}

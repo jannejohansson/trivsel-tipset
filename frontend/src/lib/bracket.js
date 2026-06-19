@@ -75,12 +75,14 @@ export function computeGroupStandings(matches, predictions) {
   };
   for (const m of matches) { seed(m.homeTeam, m.homeFlag); seed(m.awayTeam, m.awayFlag); }
 
+  const played = [];
   for (const m of matches) {
     const pred = get(m.id);
     if (!pred) continue;
     const hs = Number(pred.homeScore);
     const as = Number(pred.awayScore);
     if (!Number.isFinite(hs) || !Number.isFinite(as)) continue;
+    played.push({ home: m.homeTeam, away: m.awayTeam, hs, as });
     const home = teams.get(m.homeTeam);
     const away = teams.get(m.awayTeam);
     home.P++; away.P++;
@@ -90,12 +92,58 @@ export function computeGroupStandings(matches, predictions) {
     else { home.D++; away.D++; home.Pts += 1; away.Pts += 1; }
   }
   for (const t of teams.values()) t.GD = t.GF - t.GA;
-  return [...teams.values()].sort((a, b) => {
+
+  // FIFA tie-break for teams level on overall points/GD/goals: a mini-table of
+  // only the matches played among those teams, ranked by head-to-head points ->
+  // goal difference -> goals scored (criteria d-f). Falls back to team name as a
+  // deterministic last resort (we don't model fair-play points or drawing of lots).
+  const headToHead = (names) => {
+    const set = new Set(names);
+    const mini = new Map(names.map((n) => [n, { Pts: 0, GD: 0, GF: 0 }]));
+    for (const g of played) {
+      if (!set.has(g.home) || !set.has(g.away)) continue;
+      const h = mini.get(g.home);
+      const a = mini.get(g.away);
+      h.GF += g.hs; h.GD += g.hs - g.as;
+      a.GF += g.as; a.GD += g.as - g.hs;
+      if (g.hs > g.as) h.Pts += 3;
+      else if (g.hs < g.as) a.Pts += 3;
+      else { h.Pts += 1; a.Pts += 1; }
+    }
+    return mini;
+  };
+
+  const sorted = [...teams.values()].sort((a, b) => {
     if (b.Pts !== a.Pts) return b.Pts - a.Pts;
     if (b.GD !== a.GD) return b.GD - a.GD;
     if (b.GF !== a.GF) return b.GF - a.GF;
-    return a.team.localeCompare(b.team);
+    return 0;
   });
+
+  // Re-rank each block of teams tied on overall points/GD/goals via head-to-head.
+  const ranked = [];
+  for (let i = 0; i < sorted.length;) {
+    let j = i + 1;
+    while (j < sorted.length
+      && sorted[j].Pts === sorted[i].Pts
+      && sorted[j].GD === sorted[i].GD
+      && sorted[j].GF === sorted[i].GF) j++;
+    const tied = sorted.slice(i, j);
+    if (tied.length > 1) {
+      const mini = headToHead(tied.map((t) => t.team));
+      tied.sort((a, b) => {
+        const ma = mini.get(a.team);
+        const mb = mini.get(b.team);
+        if (mb.Pts !== ma.Pts) return mb.Pts - ma.Pts;
+        if (mb.GD !== ma.GD) return mb.GD - ma.GD;
+        if (mb.GF !== ma.GF) return mb.GF - ma.GF;
+        return a.team.localeCompare(b.team);
+      });
+    }
+    ranked.push(...tied);
+    i = j;
+  }
+  return ranked;
 }
 
 export function computeAllStandings(matches, predictions) {

@@ -95,6 +95,7 @@ export default function Matches({ view = 'group' }) {
   const navigate = useNavigate();
   const [matches, setMatches] = useState([]);
   const [predictions, setPredictions] = useState(new Map());
+  const [actualResults, setActualResults] = useState(new Map());
   const [picks, setPicks] = useState({});
   const [groupLocked, setGroupLocked] = useState(false);
   const [playoffLocked, setPlayoffLocked] = useState(false);
@@ -105,13 +106,14 @@ export default function Matches({ view = 'group' }) {
   const seq = useRef(0);
 
   useEffect(() => {
-    Promise.all([api.getMatches(), api.getPlayoff()])
-      .then(([m, p]) => {
+    Promise.all([api.getMatches(), api.getPlayoff(), api.getResults()])
+      .then(([m, p, r]) => {
         setMatches(m.matches);
         setGroupLocked(m.locked);
         const predMap = new Map();
         for (const match of m.matches) if (match.prediction) predMap.set(match.id, match.prediction);
         setPredictions(predMap);
+        setActualResults(new Map(Object.entries(r.groupResults || {})));
         const pk = {};
         for (const ko of p.matches) if (ko.pick) pk[ko.id] = ko.pick;
         setPicks(pk);
@@ -265,6 +267,7 @@ export default function Matches({ view = 'group' }) {
               predictions={predictions}
               onPredictionChange={handlePredictionChange}
               onResetGroup={handleResetGroup}
+              results={actualResults}
             />
           </>
         )}

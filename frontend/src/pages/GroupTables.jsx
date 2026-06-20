@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '../api.js';
 import GroupStandings from '../components/GroupStandings.jsx';
+import { useIsMobile } from '../lib/useIsMobile.js';
 
 const styles = {
   hero: {
@@ -30,9 +31,21 @@ const styles = {
   },
   page: {
     margin: '0 auto',
-    maxWidth: '720px',
+    maxWidth: '1080px',
     padding: '24px 20px 60px',
   },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '28px',
+    alignItems: 'start',
+  },
+  gridMobile: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: '28px',
+  },
+  groupBlock: { minWidth: 0 },
   notice: {
     background: 'rgba(184,134,11,0.10)', border: '1px solid rgba(184,134,11,0.35)',
     color: 'var(--text)', borderRadius: 'var(--radius)', padding: '12px 16px',
@@ -88,15 +101,13 @@ const styles = {
   },
 };
 
-const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('');
-
 // Public view of the real, admin-entered group standings + match results.
 export default function GroupTables() {
   const [matches, setMatches] = useState([]);
   const [results, setResults] = useState(new Map());
-  const [activeGroup, setActiveGroup] = useState('A');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     Promise.all([api.getMatches(), api.getResults()])
@@ -119,7 +130,7 @@ export default function GroupTables() {
 
   const groupKeys = [...groups.keys()].sort();
 
-  const groupMatches = (groups.get(activeGroup) || []).slice().sort(
+  const sortMatches = (list) => list.slice().sort(
     (a, b) => a.matchday - b.matchday || a.matchNumber - b.matchNumber
   );
 
@@ -136,7 +147,6 @@ export default function GroupTables() {
   }
 
   const hasResults = results.size > 0;
-  const tabs = groupKeys.length ? groupKeys : GROUP_LETTERS;
 
   return (
     <>
@@ -151,44 +161,40 @@ export default function GroupTables() {
           <div style={styles.notice}>Inga resultat inlagda ännu.</div>
         )}
 
-        <div className="group-tabs">
-          {tabs.map((g) => (
-            <button
-              key={g}
-              className={`group-tab${g === activeGroup ? ' active' : ''}`}
-              onClick={() => setActiveGroup(g)}
-              aria-label={`Grupp ${g}`}
-            >
-              {g}
-            </button>
-          ))}
-        </div>
-
-        <GroupStandings
-          group={activeGroup}
-          matches={groupMatches}
-          predictions={results}
-          countNoun="spelade"
-        />
-
-        <div style={styles.resultsWrap}>
-          <div style={styles.resultsBanner}>Resultat</div>
-          {groupMatches.map((m) => {
-            const res = results.get(m.id);
+        <div style={isMobile ? styles.gridMobile : styles.grid}>
+          {groupKeys.map((g) => {
+            const groupMatches = sortMatches(groups.get(g) || []);
             return (
-              <div key={m.id} style={styles.row}>
-                <div style={styles.homeCell}>
-                  <span style={styles.teamName}>{m.homeTeam}</span>
-                  <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
-                </div>
-                {res ? (
-                  <span style={styles.score}>{res.homeScore} – {res.awayScore}</span>
-                ) : (
-                  <span style={styles.notPlayed}>Ej spelad</span>
-                )}
-                <div style={styles.awayCell}>
-                  <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
-                  <span style={styles.teamName}>{m.awayTeam}</span>
+              <div key={g} style={styles.groupBlock}>
+                <GroupStandings
+                  group={g}
+                  matches={groupMatches}
+                  predictions={results}
+                  countNoun="spelade"
+                />
+
+                <div style={styles.resultsWrap}>
+                  <div style={styles.resultsBanner}>Resultat</div>
+                  {groupMatches.map((m) => {
+                    const res = results.get(m.id);
+                    return (
+                      <div key={m.id} style={styles.row}>
+                        <div style={styles.homeCell}>
+                          <span style={styles.teamName}>{m.homeTeam}</span>
+                          <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
+                        </div>
+                        {res ? (
+                          <span style={styles.score}>{res.homeScore} – {res.awayScore}</span>
+                        ) : (
+                          <span style={styles.notPlayed}>Ej spelad</span>
+                        )}
+                        <div style={styles.awayCell}>
+                          <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
+                          <span style={styles.teamName}>{m.awayTeam}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );

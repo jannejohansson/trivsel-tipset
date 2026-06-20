@@ -6,6 +6,7 @@ import AuthGuard from './components/AuthGuard.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Matches from './pages/Matches.jsx';
+import GroupTables from './pages/GroupTables.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
 import LeaderboardHistory from './pages/LeaderboardHistory.jsx';
 import PredictionBreakdown from './pages/PredictionBreakdown.jsx';
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/profil" element={<AuthGuard><Profile /></AuthGuard>} />
             <Route path="/matches" element={<AuthGuard><Matches view="group" /></AuthGuard>} />
             <Route path="/slutspel" element={<AuthGuard><Matches view="playoff" /></AuthGuard>} />
+            <Route path="/tabeller" element={<AuthGuard><GroupTables /></AuthGuard>} />
             <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />
             <Route path="/leaderboard" element={<AuthGuard><Leaderboard /></AuthGuard>} />
             <Route path="/historik" element={<AuthGuard><LeaderboardHistory /></AuthGuard>} />

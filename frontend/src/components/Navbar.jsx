@@ -127,6 +127,7 @@ export default function Navbar() {
           <div style={styles.mobileMenu}>
             <Link to="/matches" style={styles.mobileLink} onClick={close}>Tippa</Link>
             <Link to="/leaderboard" style={styles.mobileLink} onClick={close}>Ställning</Link>
+            <Link to="/tabeller" style={styles.mobileLink} onClick={close}>Tabeller</Link>
             <Link to="/historik" style={styles.mobileLink} onClick={close}>Historik</Link>
             <Link to="/vad-tippar-andra" style={styles.mobileLink} onClick={close}>Vad tippar andra?</Link>
             <Link to="/regler" style={styles.mobileLink} onClick={close}>Regler</Link>
@@ -155,6 +156,7 @@ export default function Navbar() {
       <div style={styles.links}>
         <Link to="/matches" style={styles.link}>Tippa</Link>
         <Link to="/leaderboard" style={styles.link}>Ställning</Link>
+        <Link to="/tabeller" style={styles.link}>Tabeller</Link>
         <Link to="/historik" style={styles.link}>Historik</Link>
         <Link to="/vad-tippar-andra" style={styles.link}>Vad tippar andra?</Link>
         <Link to="/regler" style={styles.link}>Regler</Link>

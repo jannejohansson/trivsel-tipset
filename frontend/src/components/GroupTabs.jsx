@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import MatchCard from './MatchCard.jsx';
 import GroupStandings from './GroupStandings.jsx';
+import { useIsMobile } from '../lib/useIsMobile.js';
 
 const styles = {
   grid: {
@@ -26,14 +27,49 @@ const styles = {
     textDecoration: 'underline',
   },
   resetError: { color: 'var(--danger)', fontSize: '13px' },
+  tableToggle: {
+    display: 'flex',
+    gap: '8px',
+    marginBottom: '12px',
+    justifyContent: 'center',
+  },
+  toggleBtn: {
+    flex: 1,
+    maxWidth: '200px',
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    color: 'var(--text-muted)',
+    padding: '8px 14px',
+    borderRadius: 'var(--radius)',
+    fontSize: '13px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  toggleBtnActive: {
+    background: 'linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%)',
+    borderColor: 'transparent',
+    color: '#ffffff',
+    boxShadow: '0 4px 10px rgba(21,163,74,0.25)',
+  },
+  sideBySide: {
+    display: 'flex',
+    gap: '16px',
+    alignItems: 'flex-start',
+  },
+  col: {
+    flex: 1,
+    minWidth: 0,
+  },
 };
 
 // `predictions` + `onPredictionChange` make this a controlled component so a
 // parent (e.g. the combined Tippa page) can share the prediction map with the
 // playoff bracket. When omitted, GroupTabs keeps its own internal state.
-export default function GroupTabs({ matches, locked, readOnly = false, predictions: controlledPreds, onPredictionChange: controlledOnChange, onResetGroup }) {
+export default function GroupTabs({ matches, locked, readOnly = false, predictions: controlledPreds, onPredictionChange: controlledOnChange, onResetGroup, results }) {
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState(false);
+  const [tableMode, setTableMode] = useState('pred');
   const isControlled = !!controlledPreds;
   const groups = useMemo(() => {
     const map = new Map();
@@ -64,6 +100,9 @@ export default function GroupTabs({ matches, locked, readOnly = false, predictio
   }, [matches, isControlled]);
 
   const predictions = controlledPreds ?? internalPreds;
+  const showActual = results instanceof Map && results.size > 0;
+  // Below this width two tables won't fit comfortably, so fall back to a toggle.
+  const narrowForSplit = useIsMobile(900);
 
   const handlePredictionChange = (matchId, pred) => {
     if (controlledOnChange) {
@@ -110,11 +149,61 @@ export default function GroupTabs({ matches, locked, readOnly = false, predictio
         ))}
       </div>
 
-      <GroupStandings
-        group={activeGroup}
-        matches={groupMatches}
-        predictions={predictions}
-      />
+      {showActual && !narrowForSplit ? (
+        // Wide screens: predicted and actual tables side by side.
+        <div style={styles.sideBySide}>
+          <div style={styles.col}>
+            <GroupStandings
+              group={activeGroup}
+              matches={groupMatches}
+              predictions={predictions}
+              title="Min tabell"
+              countNoun="tippade"
+            />
+          </div>
+          <div style={styles.col}>
+            <GroupStandings
+              group={activeGroup}
+              matches={groupMatches}
+              predictions={results}
+              title="Verklig"
+              countNoun="spelade"
+            />
+          </div>
+        </div>
+      ) : (
+        <>
+          {showActual && (
+            // Narrow screens: a toggle swaps the single table between the two.
+            <div style={styles.tableToggle}>
+              <button
+                type="button"
+                style={{ ...styles.toggleBtn, ...(tableMode === 'pred' ? styles.toggleBtnActive : {}) }}
+                onClick={() => setTableMode('pred')}
+                aria-pressed={tableMode === 'pred'}
+              >
+                Min tabell
+              </button>
+              <button
+                type="button"
+                style={{ ...styles.toggleBtn, ...(tableMode === 'actual' ? styles.toggleBtnActive : {}) }}
+                onClick={() => setTableMode('actual')}
+                aria-pressed={tableMode === 'actual'}
+              >
+                Verklig
+              </button>
+            </div>
+          )}
+
+          <GroupStandings
+            group={activeGroup}
+            matches={groupMatches}
+            predictions={showActual && tableMode === 'actual' ? results : predictions}
+            title={showActual ? (tableMode === 'actual' ? 'Verklig' : 'Min tabell') : 'Tabell'}
+            countNoun={showActual && tableMode === 'actual' ? 'spelade' : 'tippade'}
+          />
+        </>
+      )}
 
       <div style={styles.grid}>
         {groupMatches.map(match => (

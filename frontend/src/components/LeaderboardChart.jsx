@@ -3,8 +3,11 @@ import { useIsMobile } from '../lib/useIsMobile.js';
 
 // Custom SVG line chart of cumulative points per participant, one vertex per played
 // match so the climb shows match by match. Dashed stage separators split the x-axis,
-// with discreet match-number ticks beneath it. All participants are drawn equally;
-// hovering/tapping a line or a legend chip highlights one and dims the rest.
+// with a discreet sequential counter (1, 2, 3 … the order matches were played, not the
+// official match numbers, which don't run in play order) beneath it. All participants
+// are drawn equally; hovering/tapping a line or a legend chip highlights one and dims
+// the rest. With `zoom`, the y-axis spans the visible window instead of starting at 0,
+// so a "last N matches" view shows the movement rather than a flat band near the top.
 // No charting library — matches the app's zero-UI-deps approach.
 
 const styles = {
@@ -85,16 +88,19 @@ function xTickIndices(n, target) {
   return idx;
 }
 
-// Pick ~4 rounded gridline values between 0 and max.
-function yTicks(max) {
-  if (max <= 0) return [0];
+// Build a rounded y-axis spanning [min, max] with ~4 gridlines. The full chart passes
+// min 0; the zoomed "recent" chart passes a non-zero min so the window fills the height.
+function yScale(min, max) {
+  if (max <= min) max = min + 1;
   const steps = 4;
-  const raw = max / steps;
+  const raw = (max - min) / steps;
   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
   const step = Math.max(1, Math.ceil(raw / mag) * mag);
+  const lo = Math.floor(min / step) * step;
+  const hi = Math.ceil(max / step) * step;
   const ticks = [];
-  for (let v = 0; v <= max + 0.001; v += step) ticks.push(v);
-  return ticks;
+  for (let v = lo; v <= hi + 0.001; v += step) ticks.push(v);
+  return { lo, hi, ticks };
 }
 
 // Contiguous runs of the same stage, for x-axis labels + separators.
@@ -108,7 +114,7 @@ function stageSpans(checkpoints) {
   return spans;
 }
 
-export default function LeaderboardChart({ checkpoints, series }) {
+export default function LeaderboardChart({ checkpoints, series, zoom = false }) {
   const isMobile = useIsMobile();
   const [active, setActive] = useState(null); // highlighted userId or null
   const colorMap = useColorMap(series);
@@ -135,14 +141,18 @@ export default function LeaderboardChart({ checkpoints, series }) {
   const plotW = W - m.left - m.right;
   const plotH = H - m.top - m.bottom;
 
-  const maxPoints = Math.max(1, ...series.flatMap((s) => s.points.map((p) => Number(p) || 0)));
-  const ticks = yTicks(maxPoints);
+  const allVals = series.flatMap((s) => s.points.map((p) => Number(p) || 0));
+  const dataMax = Math.max(1, ...allVals);
+  const dataMin = zoom && allVals.length ? Math.min(...allVals) : 0;
+  const yAxis = yScale(dataMin, dataMax);
+  const ticks = yAxis.ticks;
+  const ySpan = yAxis.hi - yAxis.lo || 1;
   const spans = stageSpans(checkpoints);
   const showDots = n <= 24; // only annotate individual matches when the field is sparse
   const xTicks = xTickIndices(n, isMobile ? 6 : 12);
 
   const x = (i) => (n === 1 ? m.left + plotW / 2 : m.left + (plotW * i) / (n - 1));
-  const y = (v) => m.top + plotH - ((Number(v) || 0) / maxPoints) * plotH;
+  const y = (v) => m.top + plotH - (((Number(v) || 0) - yAxis.lo) / ySpan) * plotH;
 
   const activeSeries = active != null ? series.find((s) => s.userId === active) : null;
 
@@ -210,7 +220,7 @@ export default function LeaderboardChart({ checkpoints, series }) {
                 fill="var(--text-muted)"
                 opacity="0.6"
               >
-                {cp.num}
+                {cp.seq ?? cp.num}
               </text>
             );
           })}

@@ -3,6 +3,10 @@ import { api } from '../api.js';
 import LeaderboardChart from '../components/LeaderboardChart.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
 
+// Once more than this many matches are played, add a zoomed chart of just the latest
+// ones above the full-history chart, so recent movement isn't lost in a crowded x-axis.
+const RECENT_COUNT = 24;
+
 const styles = {
   hero: {
     background: 'linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%)',
@@ -19,6 +23,11 @@ const styles = {
   // Wider than the standard pages so the line chart gets as much horizontal room
   // as the screen allows on laptops/desktops.
   page: { maxWidth: '1500px', margin: '0 auto', padding: '24px 20px 60px' },
+  chartHeading: {
+    fontSize: '15px', fontWeight: 700, color: 'var(--text)',
+    margin: '0 0 10px', display: 'flex', alignItems: 'baseline', gap: '8px',
+  },
+  chartHeadingHint: { fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' },
   empty: { textAlign: 'center', color: 'var(--text-muted)', padding: '40px 20px' },
   error: { color: 'var(--danger)', textAlign: 'center', padding: '16px' },
   mobileNote: {
@@ -63,9 +72,34 @@ export default function LeaderboardHistory() {
           <>
             {error && <p style={styles.error}>{error}</p>}
             {!error && !history && <p style={styles.empty}>Laddar poängutveckling…</p>}
-            {!error && history && (
-              <LeaderboardChart checkpoints={history.checkpoints} series={history.series} />
-            )}
+            {!error && history && (() => {
+              // Number checkpoints in play order (1, 2, 3 …) so both charts share a
+              // simple counter on the x-axis instead of the non-sequential match numbers.
+              const checkpoints = history.checkpoints.map((c, i) => ({ ...c, seq: i + 1 }));
+              const showRecent = checkpoints.length > RECENT_COUNT;
+              const recentCps = checkpoints.slice(-RECENT_COUNT);
+              const recentSeries = history.series.map((s) => ({
+                ...s,
+                points: s.points.slice(-RECENT_COUNT),
+              }));
+              return (
+                <>
+                  {showRecent && (
+                    <>
+                      <h2 style={styles.chartHeading}>
+                        Senaste matcherna
+                        <span style={styles.chartHeadingHint}>
+                          match {recentCps[0].seq}–{recentCps[recentCps.length - 1].seq}
+                        </span>
+                      </h2>
+                      <LeaderboardChart checkpoints={recentCps} series={recentSeries} zoom />
+                      <h2 style={styles.chartHeading}>Hela turneringen</h2>
+                    </>
+                  )}
+                  <LeaderboardChart checkpoints={checkpoints} series={history.series} />
+                </>
+              );
+            })()}
           </>
         )}
       </div>

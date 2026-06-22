@@ -44,7 +44,7 @@ app.http('getLeaderboardHistory', {
     const predicted = usersRaw.map((u) => {
       const preds = predsByUser.get(u.userId) || {};
       const picks = picksByUser.get(u.userId) || {};
-      return { user: u, preds, bracket: buildBracket(MATCHES, preds, picks) };
+      return { user: u, preds, bracket: buildBracket(MATCHES, preds, picks, { allowPartial: true }) };
     });
 
     const series = predicted.map((p) => ({

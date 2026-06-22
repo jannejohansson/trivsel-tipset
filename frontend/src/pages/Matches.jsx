@@ -145,7 +145,7 @@ export default function Matches({ view = 'group' }) {
     });
 
   const bracket = useMemo(
-    () => buildBracket(matches, predictions, picks),
+    () => buildBracket(matches, predictions, picks, { allowPartial: true }),
     [matches, predictions, picks]
   );
 
@@ -229,8 +229,8 @@ export default function Matches({ view = 'group' }) {
             )}
             {!bracket.allComplete && (
               <div style={styles.notice}>
-                Fyll i alla gruppspelsmatcher under <strong>Gruppspel</strong> för att låsa upp hela slutspelsträdet.
-                Lagen placeras automatiskt utifrån dina gruppspelstips.
+                Slutspelsträdet är ifyllt utifrån dina gruppspelstips hittills. Du har inte tippat alla
+                gruppspelsmatcher under <strong>Gruppspel</strong> — fyll i resten för att placera lagen rätt.
               </div>
             )}
             {saveError && <div style={styles.notice}>Kunde inte spara senaste valet. Kontrollera anslutningen.</div>}

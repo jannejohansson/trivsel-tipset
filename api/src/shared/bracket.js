@@ -205,14 +205,23 @@ function buildBracket(matches, predictions, picks, opts = {}) {
   const getPick = predGetter(picks);
   const all = computeAllStandings(matches, predictions);
 
-  const winner = (g) => (all[g] && all[g].complete ? all[g].rows[0].team : null);
-  const runner = (g) => (all[g] && all[g].complete ? all[g].rows[1].team : null);
-  const third = (g) => (all[g] && all[g].complete ? all[g].rows[2].team : null);
+  // Predicted brackets pass { allowPartial: true } so a user who left a few group
+  // matches unpredicted still gets a fully-resolved grid to pick from — standings are
+  // taken as-is from whatever was predicted (unpredicted games simply don't count).
+  // Actual-result brackets omit it, keeping the strict gating: a group's qualifiers
+  // aren't resolved until every match in the group has a result.
+  const resolvable = (g) => all[g] && (opts.allowPartial || all[g].complete);
 
-  // Resolve the eight best-third slots once every group is decided.
+  // Guard each row: a group's standings are empty until its matches are loaded
+  // (e.g. the first render before data arrives), so rows[0..2] may be undefined.
+  const winner = (g) => (resolvable(g) && all[g].rows[0] ? all[g].rows[0].team : null);
+  const runner = (g) => (resolvable(g) && all[g].rows[1] ? all[g].rows[1].team : null);
+  const third = (g) => (resolvable(g) && all[g].rows[2] ? all[g].rows[2].team : null);
+
+  // Resolve the eight best-third slots once every group is resolvable.
   let thirdSlotTeam = {}; // winnerKey ('1E'...) -> team name
-  const allComplete = GROUP_LETTERS.every((g) => all[g].complete);
-  if (allComplete) {
+  const allResolvable = GROUP_LETTERS.every((g) => resolvable(g));
+  if (allResolvable) {
     const best8 = rankThirdPlace(all, opts.thirdOrder).slice(0, 8).map((t) => t.group);
     const key = best8.slice().sort().join('');
     const mapping = THIRD_PLACE_MATRIX[key];

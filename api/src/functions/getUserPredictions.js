@@ -96,7 +96,7 @@ app.http('getUserPredictions', {
     let playoff = null;
     let playoffScore = null;
     if (playoffLocked || revealAll) {
-      const predictedBracket = buildBracket(MATCHES, preds, picks);
+      const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
       playoff = { matches: predictedBracket.matches, champion: predictedBracket.champion };
       const actualBracket = buildBracket(MATCHES, results.groupResults, results.knockoutWinners, {
         thirdOrder: results.thirdOrder,

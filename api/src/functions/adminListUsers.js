@@ -44,7 +44,7 @@ app.http('adminListUsers', {
       const picks = picksByUser.get(e.rowKey) || {};
       // Mirror getLeaderboard's counting: stale playoff picks linger in the table but
       // buildBracket nulls them out, so count only picks still valid in the bracket.
-      const predictedBracket = buildBracket(MATCHES, preds, picks);
+      const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
       users.push({
         userId: e.rowKey,
         email: e.email,

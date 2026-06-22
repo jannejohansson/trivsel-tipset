@@ -81,7 +81,7 @@ app.http('getLeaderboard', {
       const preds = predsByUser.get(u.userId) || {};
       const picks = picksByUser.get(u.userId) || {};
       const groupPoints = scoreGroupTotal(preds, results.groupResults);
-      const predictedBracket = buildBracket(MATCHES, preds, picks);
+      const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
       const playoffPoints = scorePlayoff(predictedBracket, actualBracket).total;
       // Previous-day total reuses the same predicted bracket (predictions don't
       // depend on actual results) — only the actual results/bracket differ.

@@ -31,7 +31,7 @@ app.http('getPlayoff', {
       }
     }
 
-    const bracket = buildBracket(MATCHES, predictions, picks);
+    const bracket = buildBracket(MATCHES, predictions, picks, { allowPartial: true });
     return {
       status: 200,
       jsonBody: { ...bracket, locked, lockoutUtc: new Date(PLAYOFF_LOCKOUT).toISOString() },

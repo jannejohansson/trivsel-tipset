@@ -37,6 +37,12 @@ const styles = {
   rank: { width: '24px', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'center' },
   qualBadge: { fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '999px', background: 'rgba(21,163,74,0.15)', color: 'var(--green-text)' },
   arrowBtn: { width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text)' },
+  sectionHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', margin: '0 0 12px' },
+  modeBadge: { fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px' },
+  modeAuto: { background: 'var(--surface-2)', color: 'var(--text-muted)' },
+  modeManual: { background: 'rgba(184,134,11,0.15)', color: 'var(--text)' },
+  resetBtn: { fontSize: '12px', fontWeight: 700, padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text)' },
+  resetBtnDisabled: { opacity: 0.45, cursor: 'default' },
   clearBtn: { width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 },
   clearBtnHidden: { width: '26px', flexShrink: 0, visibility: 'hidden' },
   flag: { width: '22px', height: '16px', borderRadius: '2px', backgroundSize: 'cover', backgroundPosition: 'center', display: 'inline-block', flexShrink: 0 },
@@ -95,6 +101,8 @@ export default function Admin() {
 
   // The 12 actual third-placed teams, ordered by saved thirdOrder or computed rank.
   const thirds = useMemo(() => rankThirdPlace(all, thirdOrder), [all, thirdOrder]);
+  // A non-empty saved order means the admin has overridden the automatic ranking.
+  const manualThirdOrder = Array.isArray(thirdOrder) && thirdOrder.length > 0;
 
   if (authLoading || loading) {
     return <div style={{ ...styles.page, textAlign: 'center', paddingTop: '80px' }}><span style={{ color: 'var(--text-muted)' }}>Laddar...</span></div>;
@@ -137,6 +145,12 @@ export default function Admin() {
     [order[i], order[j]] = [order[j], order[i]];
     setThirdOrder(order);
     save({ thirdOrder: order });
+  };
+
+  // Drop the manual order so the ranking falls back to automatic (points/goals).
+  const resetThirdOrder = () => {
+    setThirdOrder([]);
+    save({ thirdOrder: [] });
   };
 
   const pickKo = (koId, winner) => {
@@ -204,8 +218,25 @@ export default function Admin() {
 
         {/* 2. Third-place ranking */}
         <div style={styles.section}>
-          <h2 style={styles.h2}>2. Ranka trean i grupperna</h2>
-          <p style={styles.hint}>De 8 högst rankade treorna går vidare. Justera ordningen där poäng/målskillnad inte räcker (fair play, Fifa-ranking).</p>
+          <div style={styles.sectionHead}>
+            <h2 style={{ ...styles.h2, margin: 0 }}>2. Ranka trean i grupperna</h2>
+            <span style={{ ...styles.modeBadge, ...(manualThirdOrder ? styles.modeManual : styles.modeAuto) }}>
+              {manualThirdOrder ? 'Manuell ordning' : 'Automatisk ordning'}
+            </span>
+          </div>
+          <p style={styles.hint}>
+            {manualThirdOrder
+              ? 'Din manuella ordning gäller. Återställ för att gå tillbaka till automatisk rangordning (poäng, målskillnad, gjorda mål).'
+              : 'Rangordnas automatiskt efter poäng, målskillnad och gjorda mål. Flytta med pilarna där t.ex. fair play avgör – då gäller din ordning tills du återställer.'}
+          </p>
+          <button
+            style={{ ...styles.resetBtn, ...(manualThirdOrder ? {} : styles.resetBtnDisabled), marginBottom: '14px' }}
+            onClick={resetThirdOrder}
+            disabled={!manualThirdOrder}
+            title="Återställ till automatisk ordning (poäng & mål)"
+          >
+            ↺ Återställ till automatisk
+          </button>
           {thirds.length < 12 && <p style={styles.hint}>Fyll i alla gruppresultat för att se alla 12 treor (just nu {thirds.length}).</p>}
           {thirds.map((t, i) => (
             <div key={t.group} style={styles.thirdRow}>

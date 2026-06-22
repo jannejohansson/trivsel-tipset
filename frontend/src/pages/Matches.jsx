@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import GroupTabs from '../components/GroupTabs.jsx';
 import BracketTree from '../components/BracketTree.jsx';
+import ThirdPlaceTable from '../components/ThirdPlaceTable.jsx';
 import LockBanner from '../components/LockBanner.jsx';
 import LockCountdown from '../components/LockCountdown.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -68,6 +69,11 @@ const styles = {
     background: 'rgba(184,134,11,0.10)', border: '1px solid rgba(184,134,11,0.35)',
     color: 'var(--text)', borderRadius: 'var(--radius)', padding: '12px 16px',
     fontSize: '14px', marginBottom: '20px',
+  },
+  infoNote: {
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    color: 'var(--text-muted)', borderRadius: 'var(--radius)', padding: '12px 16px',
+    fontSize: '13px', lineHeight: 1.5, marginBottom: '20px',
   },
   scroller: { display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '12px' },
   champ: {
@@ -177,6 +183,7 @@ export default function Matches({ view = 'group' }) {
   }
 
   const isPlayoff = view === 'playoff';
+  const isThirds = view === 'thirds';
 
   // Progress counters powering the "matches left to predict" notices.
   const groupPredicted = predictions.size;
@@ -191,13 +198,15 @@ export default function Matches({ view = 'group' }) {
     <>
       <section style={styles.hero}>
         <div style={styles.eyebrow}>
-          {isPlayoff ? 'Slutspel' : 'Gruppspel'} · FIFA World Cup 2026
+          {isPlayoff ? 'Slutspel' : isThirds ? 'Grupptreor' : 'Gruppspel'} · FIFA World Cup 2026
         </div>
-        <h1 style={styles.title}>{isPlayoff ? 'Ditt slutspelsträd' : 'Dina tips'}</h1>
+        <h1 style={styles.title}>{isPlayoff ? 'Ditt slutspelsträd' : isThirds ? 'Bästa grupptreorna' : 'Dina tips'}</h1>
         <p style={styles.sub}>
           {isPlayoff
             ? (playoffLocked ? 'Slutspelstipsen är låsta.' : `${user?.displayName || user?.email} · Tippa vilka som går vidare i slutspelet`)
-            : (groupLocked ? 'Tipsen är låsta.' : `${user?.displayName || user?.email} · Tippa resultat i alla gruppspelsmatcher`)}
+            : isThirds
+              ? 'De 8 bästa treorna går vidare till slutspelet – baserat på dina gruppspelstips'
+              : (groupLocked ? 'Tipsen är låsta.' : `${user?.displayName || user?.email} · Tippa resultat i alla gruppspelsmatcher`)}
         </p>
       </section>
 
@@ -205,11 +214,19 @@ export default function Matches({ view = 'group' }) {
         <div style={styles.segment}>
           <button
             type="button"
-            style={{ ...styles.segBtn, ...(!isPlayoff ? styles.segBtnActive : {}) }}
+            style={{ ...styles.segBtn, ...(!isPlayoff && !isThirds ? styles.segBtnActive : {}) }}
             onClick={() => navigate('/matches')}
-            aria-pressed={!isPlayoff}
+            aria-pressed={!isPlayoff && !isThirds}
           >
             Gruppspel
+          </button>
+          <button
+            type="button"
+            style={{ ...styles.segBtn, ...(isThirds ? styles.segBtnActive : {}) }}
+            onClick={() => navigate('/grupptreor')}
+            aria-pressed={isThirds}
+          >
+            Grupptreor
           </button>
           <button
             type="button"
@@ -254,6 +271,16 @@ export default function Matches({ view = 'group' }) {
                 <BracketTree matches={bracket.matches} locked={playoffLocked} onPick={handlePick} />
               </div>
             </div>
+          </>
+        ) : isThirds ? (
+          <>
+            <div style={styles.infoNote}>
+              Tabellen visar de tolv grupptreorna rangordnade utifrån <strong>dina gruppspelstips</strong>:
+              först poäng, sedan målskillnad och flest gjorda mål. De 8 bästa går vidare till slutspelet och
+              placeras i slutspelsträdet enligt Fifas schema (Annex C). Vill du ändra ordningen? Justera dina
+              resultat under <strong>Gruppspel</strong> så uppdateras tabellen direkt.
+            </div>
+            <ThirdPlaceTable matches={matches} predictions={predictions} />
           </>
         ) : (
           <>

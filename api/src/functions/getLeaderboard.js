@@ -64,13 +64,18 @@ app.http('getLeaderboard', {
     ]);
 
     // The single shared actual bracket every user's playoff picks are scored against,
-    // plus its previous-day counterpart for computing rank movement.
+    // plus its previous-day counterpart for computing rank movement. allowPartial lets
+    // it resolve from results so far (so playoff scoring can be tested before the group
+    // stage is fully complete); the playoffScoring switch gates whether points count.
     const actualBracket = buildBracket(MATCHES, results.groupResults, results.knockoutWinners, {
-      thirdOrder: results.thirdOrder,
+      thirdOrder: results.thirdOrder, allowPartial: true,
     });
     const prevBracket = buildBracket(MATCHES, prevResults.groupResults, prevResults.knockoutWinners, {
-      thirdOrder: prevResults.thirdOrder,
+      thirdOrder: prevResults.thirdOrder, allowPartial: true,
     });
+    // Admin master-switch: while off, no playoff points are awarded to users.
+    const playoffOn = results.playoffScoring;
+    const prevPlayoffOn = prevResults.playoffScoring;
     // Only surface movement once there was a standing to move from (≥1 result before today).
     const hadPriorResults =
       Object.keys(prevResults.groupResults).length > 0 || Object.keys(prevResults.knockoutWinners).length > 0;
@@ -82,11 +87,11 @@ app.http('getLeaderboard', {
       const picks = picksByUser.get(u.userId) || {};
       const groupPoints = scoreGroupTotal(preds, results.groupResults);
       const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
-      const playoffPoints = scorePlayoff(predictedBracket, actualBracket).total;
+      const playoffPoints = playoffOn ? scorePlayoff(predictedBracket, actualBracket).total : 0;
       // Previous-day total reuses the same predicted bracket (predictions don't
       // depend on actual results) — only the actual results/bracket differ.
       const prevPoints = scoreGroupTotal(preds, prevResults.groupResults)
-        + scorePlayoff(predictedBracket, prevBracket).total;
+        + (prevPlayoffOn ? scorePlayoff(predictedBracket, prevBracket).total : 0);
 
       // Per-user spotlight predictions, keyed by matchId — only for matches whose tips are
       // already public (completed or in progress). Completed matches also carry the points

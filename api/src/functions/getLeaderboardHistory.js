@@ -61,11 +61,12 @@ app.http('getLeaderboardHistory', {
       else koSoFar[cp.id] = results.knockoutWinners[cp.id];
 
       // One shared "results so far" bracket, scored against every user's predicted bracket.
-      const actualBracket = buildBracket(MATCHES, groupSoFar, koSoFar, { thirdOrder: results.thirdOrder });
+      const actualBracket = buildBracket(MATCHES, groupSoFar, koSoFar, { thirdOrder: results.thirdOrder, allowPartial: true });
 
       predicted.forEach((p, i) => {
         const groupPts = scoreGroupTotal(p.preds, groupSoFar);
-        const playoffPts = scorePlayoff(p.bracket, actualBracket).total;
+        // Playoff points only count once the admin enables scoring (playoff started).
+        const playoffPts = results.playoffScoring ? scorePlayoff(p.bracket, actualBracket).total : 0;
         series[i].points.push(groupPts + playoffPts);
       });
     }

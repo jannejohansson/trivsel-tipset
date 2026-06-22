@@ -43,6 +43,9 @@ const styles = {
   modeManual: { background: 'rgba(184,134,11,0.15)', color: 'var(--text)' },
   resetBtn: { fontSize: '12px', fontWeight: 700, padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text)' },
   resetBtnDisabled: { opacity: 0.45, cursor: 'default' },
+  scoringToggle: { display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px 14px', margin: '0 0 16px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', fontSize: '14px' },
+  scoringCheckbox: { width: '18px', height: '18px', marginTop: '1px', flexShrink: 0, cursor: 'pointer' },
+  scoringHint: { display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' },
   clearBtn: { width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 },
   clearBtnHidden: { width: '26px', flexShrink: 0, visibility: 'hidden' },
   flag: { width: '22px', height: '16px', borderRadius: '2px', backgroundSize: 'cover', backgroundPosition: 'center', display: 'inline-block', flexShrink: 0 },
@@ -70,6 +73,7 @@ export default function Admin() {
   const [groupResults, setGroupResults] = useState({});
   const [knockoutWinners, setKnockoutWinners] = useState({});
   const [thirdOrder, setThirdOrder] = useState([]);
+  const [playoffScoring, setPlayoffScoring] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
@@ -81,6 +85,7 @@ export default function Admin() {
         setGroupResults(r.groupResults || {});
         setKnockoutWinners(r.knockoutWinners || {});
         setThirdOrder(r.thirdOrder || []);
+        setPlayoffScoring(!!r.playoffScoring);
         setUsers(u.users || []);
       })
       .finally(() => setLoading(false));
@@ -95,7 +100,9 @@ export default function Admin() {
 
   const all = useMemo(() => computeAllStandings(matches, groupResults), [matches, groupResults]);
   const bracket = useMemo(
-    () => buildBracket(matches, groupResults, knockoutWinners, { thirdOrder }),
+    // allowPartial fills the Round-of-32 tree from results so far, so the admin can
+    // populate/pick the knockout before every group is finished.
+    () => buildBracket(matches, groupResults, knockoutWinners, { thirdOrder, allowPartial: true }),
     [matches, groupResults, knockoutWinners, thirdOrder]
   );
 
@@ -103,6 +110,7 @@ export default function Admin() {
   const thirds = useMemo(() => rankThirdPlace(all, thirdOrder), [all, thirdOrder]);
   // A non-empty saved order means the admin has overridden the automatic ranking.
   const manualThirdOrder = Array.isArray(thirdOrder) && thirdOrder.length > 0;
+  const hasKnockoutWinners = Object.values(knockoutWinners).some(Boolean);
 
   if (authLoading || loading) {
     return <div style={{ ...styles.page, textAlign: 'center', paddingTop: '80px' }}><span style={{ color: 'var(--text-muted)' }}>Laddar...</span></div>;
@@ -156,6 +164,20 @@ export default function Admin() {
   const pickKo = (koId, winner) => {
     setKnockoutWinners((prev) => ({ ...prev, [koId]: winner }));
     save({ knockoutWinners: { [koId]: winner } });
+  };
+
+  const togglePlayoffScoring = (enabled) => {
+    setPlayoffScoring(enabled);
+    save({ playoffScoring: enabled });
+  };
+
+  // Clear every saved knockout winner so the bracket falls back to empty.
+  const resetKnockout = () => {
+    const ids = Object.keys(knockoutWinners).filter((id) => knockoutWinners[id]);
+    if (ids.length === 0) return;
+    if (!window.confirm('Rensa alla slutspelsvinnare? Trädet nollställs.')) return;
+    setKnockoutWinners({});
+    save({ knockoutWinners: Object.fromEntries(ids.map((id) => [id, null])) });
   };
 
   // Optimistically patch a user flag (paid/hidden), reverting the row on failure.
@@ -252,9 +274,34 @@ export default function Admin() {
 
         {/* 3. Knockout winners */}
         <div style={styles.section}>
-          <h2 style={styles.h2}>3. Slutspelsvinnare</h2>
-          <p style={styles.hint}>Klicka på laget som faktiskt gick vidare i varje match.</p>
-          {!bracket.allComplete && <p style={styles.hint}>Sextondelsfinalerna fylls i när alla gruppresultat är inlagda.</p>}
+          <div style={styles.sectionHead}>
+            <h2 style={{ ...styles.h2, margin: 0 }}>3. Slutspelsvinnare</h2>
+            <button
+              style={{ ...styles.resetBtn, ...(hasKnockoutWinners ? {} : styles.resetBtnDisabled) }}
+              onClick={resetKnockout}
+              disabled={!hasKnockoutWinners}
+              title="Rensa alla slutspelsvinnare"
+            >
+              ↺ Rensa trädet
+            </button>
+          </div>
+          <p style={styles.hint}>Klicka på laget som faktiskt gick vidare i varje match. Sextondelsfinalerna fylls i utifrån resultaten hittills.</p>
+          <label style={styles.scoringToggle}>
+            <input
+              type="checkbox"
+              checked={playoffScoring}
+              onChange={(e) => togglePlayoffScoring(e.target.checked)}
+              style={styles.scoringCheckbox}
+            />
+            <span>
+              <strong>Räkna slutspelspoäng till deltagarna</strong>
+              <span style={styles.scoringHint}>
+                {playoffScoring
+                  ? 'På – deltagarna får poäng för sina slutspelstips utifrån resultaten ovan.'
+                  : 'Av – inga slutspelspoäng delas ut än. Slå på när slutspelet startar (eller för att testa poängräkningen).'}
+              </span>
+            </span>
+          </label>
           <BracketTree matches={bracket.matches} locked={false} onPick={pickKo} />
         </div>
 

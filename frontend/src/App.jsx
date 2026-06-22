@@ -28,6 +28,7 @@ export default function App() {
             <Route path="/setup" element={<AuthGuard><SetupProfile /></AuthGuard>} />
             <Route path="/profil" element={<AuthGuard><Profile /></AuthGuard>} />
             <Route path="/matches" element={<AuthGuard><Matches view="group" /></AuthGuard>} />
+            <Route path="/grupptreor" element={<AuthGuard><Matches view="thirds" /></AuthGuard>} />
             <Route path="/slutspel" element={<AuthGuard><Matches view="playoff" /></AuthGuard>} />
             <Route path="/tabeller" element={<AuthGuard><GroupTables /></AuthGuard>} />
             <Route path="/admin" element={<AuthGuard><Admin /></AuthGuard>} />

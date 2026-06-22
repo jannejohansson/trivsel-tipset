@@ -54,7 +54,7 @@ app.http('savePlayoffPrediction', {
       picks[e.rowKey] = e.winner;
     }
 
-    const bracket = buildBracket(MATCHES, predictions, picks);
+    const bracket = buildBracket(MATCHES, predictions, picks, { allowPartial: true });
     const match = bracket.matches.find((m) => m.id === koMatchId);
     if (!match || !match.complete) {
       return { status: 409, jsonBody: { error: 'This tie is not decided yet' } };
@@ -71,7 +71,7 @@ app.http('savePlayoffPrediction', {
 
     // Re-resolve so downstream picks orphaned by this change are reported as cleared.
     picks[koMatchId] = winner;
-    const updated = buildBracket(MATCHES, predictions, picks);
+    const updated = buildBracket(MATCHES, predictions, picks, { allowPartial: true });
 
     return { status: 200, jsonBody: { ...updated, locked: false } };
   },

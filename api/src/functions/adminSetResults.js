@@ -36,7 +36,7 @@ app.http('adminSetResults', {
     const table = getResultsTable();
     const now = new Date().toISOString();
 
-    const { groupResults, knockoutWinners, thirdOrder } = body;
+    const { groupResults, knockoutWinners, thirdOrder, playoffScoring } = body;
 
     if (groupResults && typeof groupResults === 'object') {
       for (const [matchId, r] of Object.entries(groupResults)) {
@@ -78,6 +78,10 @@ app.http('adminSetResults', {
         return { status: 400, jsonBody: { error: 'thirdOrder must be unique valid group letters' } };
       }
       await table.upsertEntity({ partitionKey: 'meta', rowKey: 'thirdOrder', value: JSON.stringify(letters), updatedAt: now }, 'Replace');
+    }
+
+    if (typeof playoffScoring === 'boolean') {
+      await table.upsertEntity({ partitionKey: 'meta', rowKey: 'playoffScoring', value: playoffScoring ? '1' : '0', updatedAt: now }, 'Replace');
     }
 
     return { status: 200, jsonBody: { ok: true } };

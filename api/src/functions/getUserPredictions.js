@@ -98,10 +98,13 @@ app.http('getUserPredictions', {
     if (playoffLocked || revealAll) {
       const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
       playoff = { matches: predictedBracket.matches, champion: predictedBracket.champion };
-      const actualBracket = buildBracket(MATCHES, results.groupResults, results.knockoutWinners, {
-        thirdOrder: results.thirdOrder,
-      });
-      playoffScore = scorePlayoff(predictedBracket, actualBracket);
+      // Playoff points only count once the admin enables scoring (playoff started).
+      if (results.playoffScoring) {
+        const actualBracket = buildBracket(MATCHES, results.groupResults, results.knockoutWinners, {
+          thirdOrder: results.thirdOrder, allowPartial: true,
+        });
+        playoffScore = scorePlayoff(predictedBracket, actualBracket);
+      }
     }
 
     return {

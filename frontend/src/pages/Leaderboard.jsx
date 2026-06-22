@@ -118,6 +118,12 @@ const styles = {
     justifyContent: 'flex-end',
     gap: '7px',
   },
+  deltaSlot: {
+    width: '40px',
+    flexShrink: 0,
+    display: 'flex',
+    justifyContent: 'flex-end',
+  },
   deltaChip: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -182,6 +188,11 @@ const styles = {
     fontSize: '19px',
     fontWeight: 800,
     color: 'var(--text)',
+    // Reserve space for up to a 3-digit score ("150 p") so the points text width
+    // doesn't vary row-to-row and shift the progress bar. tabular-nums on `.right`
+    // keeps the digits aligned.
+    minWidth: '52px',
+    textAlign: 'right',
   },
   countDone: {
     color: 'var(--green)',
@@ -475,11 +486,15 @@ export default function Leaderboard() {
                     </div>
                     <div style={styles.right}>
                       <div style={styles.pointsRow}>
-                        {delta ? (
-                          delta > 0
-                            ? <span style={{ ...styles.deltaChip, ...styles.deltaUp }} title={`Upp ${delta} sedan igår`}>▲ {delta}</span>
-                            : <span style={{ ...styles.deltaChip, ...styles.deltaDown }} title={`Ner ${Math.abs(delta)} sedan igår`}>▼ {Math.abs(delta)}</span>
-                        ) : null}
+                        {/* Fixed-width slot so a present/absent chip doesn't change
+                            the width of `.right` (and thus the progress bar width). */}
+                        <span style={styles.deltaSlot}>
+                          {delta ? (
+                            delta > 0
+                              ? <span style={{ ...styles.deltaChip, ...styles.deltaUp }} title={`Upp ${delta} sedan igår`}>▲ {delta}</span>
+                              : <span style={{ ...styles.deltaChip, ...styles.deltaDown }} title={`Ner ${Math.abs(delta)} sedan igår`}>▼ {Math.abs(delta)}</span>
+                          ) : null}
+                        </span>
                         <span style={{ ...styles.count, ...styles.countDone }}>{points} p</span>
                       </div>
                       {!isMobile && (

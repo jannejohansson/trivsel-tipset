@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
+import useAutoRefresh from '../hooks/useAutoRefresh.js';
 
 const styles = {
   hero: {
@@ -373,11 +374,17 @@ export default function Leaderboard() {
   const [expanded, setExpanded] = useState(() => new Set()); // expanded userIds
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    api.getLeaderboard()
+  // Background-safe loader: replaces `data` in place so the leaderboard updates
+  // live as the admin scores matches, without disturbing the locally-held
+  // `expanded` set (keyed by userId, so it survives a refresh).
+  const load = useCallback(() => {
+    return api.getLeaderboard()
       .then(setData)
       .catch(() => setError('Kunde inte ladda deltagarlistan.'));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useAutoRefresh(load, 60000);
 
   // Prefer the server-assigned rank so the displayed position matches the rank
   // that movement (prevRank → rank) is measured against; fall back to a local

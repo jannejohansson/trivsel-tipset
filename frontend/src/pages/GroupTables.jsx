@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../api.js';
 import GroupStandings from '../components/GroupStandings.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
+import useAutoRefresh from '../hooks/useAutoRefresh.js';
 
 const styles = {
   hero: {
@@ -109,8 +110,11 @@ export default function GroupTables() {
   const [error, setError] = useState(null);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    Promise.all([api.getMatches(), api.getResults()])
+  // Reload group matches + real results; runs on mount and on the auto-refresh
+  // cadence so standings update live as the admin enters results. Only the first
+  // load toggles the loading spinner.
+  const load = useCallback(() => {
+    return Promise.all([api.getMatches(), api.getResults()])
       .then(([m, r]) => {
         setMatches(m.matches);
         setResults(new Map(Object.entries(r.groupResults || {})));
@@ -118,6 +122,9 @@ export default function GroupTables() {
       .catch(() => setError('Kunde inte ladda tabellerna. Försök igen.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useAutoRefresh(load, 60000);
 
   const groups = useMemo(() => {
     const map = new Map();

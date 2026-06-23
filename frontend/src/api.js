@@ -47,4 +47,17 @@ export const api = {
   getUsers: () => apiFetch('/users'),
   updateUser: (userId, patch) =>
     apiFetch(`/users/${encodeURIComponent(userId)}`, { method: 'POST', body: JSON.stringify(patch) }),
+  // Best-effort: the build id of the currently deployed frontend, served from the
+  // (non-hashed, no-cache) /version.json. Returns null on any failure so callers
+  // can treat "couldn't check" as "no update". Not under /api — plain static file.
+  getDeployedVersion: async () => {
+    try {
+      const res = await fetch('/version.json', { cache: 'no-store' });
+      if (!res.ok) return null;
+      const { version } = await res.json();
+      return version ?? null;
+    } catch {
+      return null;
+    }
+  },
 };

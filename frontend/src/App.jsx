@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar.jsx';
+import UpdateBanner from './components/UpdateBanner.jsx';
 import AuthGuard from './components/AuthGuard.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
@@ -22,6 +23,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Navbar />
+          <UpdateBanner />
           <Routes>
             <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
             <Route path="/login" element={<Login />} />

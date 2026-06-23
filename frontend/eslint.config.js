@@ -6,6 +6,11 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores(['dist', '.vite']),
+  // Build/config files run in Node, not the browser (process, __dirname, etc.).
+  {
+    files: ['*.config.js'],
+    languageOptions: { globals: globals.node },
+  },
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -14,7 +19,8 @@ export default defineConfig([
       reactRefresh.configs.vite,
     ],
     languageOptions: {
-      globals: globals.browser,
+      // __APP_VERSION__ is injected by Vite's `define` at build time.
+      globals: { ...globals.browser, __APP_VERSION__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     // eslint-plugin-react-hooks v7 promotes these to errors in its recommended

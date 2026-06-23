@@ -7,10 +7,15 @@
     {
       "route": "/api/*",
       "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/assets/*",
+      "headers": { "Cache-Control": "public, max-age=31536000, immutable" }
     }
   ],
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY"
+    "X-Frame-Options": "DENY",
+    "Cache-Control": "no-cache"
   }
 }

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api.js';
 import { useIsMobile } from '../lib/useIsMobile.js';
+import useAutoRefresh from '../hooks/useAutoRefresh.js';
 
 const styles = {
   hero: {
@@ -233,11 +234,16 @@ export default function PredictionBreakdown() {
   const [error, setError] = useState(null);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    api.getPredictionBreakdown()
+  // Reloads on mount and on the auto-refresh cadence so stats reflect newly
+  // revealed (kicked-off) matches without a manual reload.
+  const load = useCallback(() => {
+    return api.getPredictionBreakdown()
       .then((data) => setMatches(data.matches || []))
       .catch(() => setError('Kunde inte ladda tippstatistiken.'));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+  useAutoRefresh(load, 60000);
 
   return (
     <>

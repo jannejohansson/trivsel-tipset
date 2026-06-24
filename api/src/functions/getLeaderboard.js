@@ -24,6 +24,36 @@ function fixtureMeta(m) {
   };
 }
 
+// Sign of a scoreline (1 home win / 0 draw / -1 away win), used for outcome comparison.
+const sign = (h, a) => (h > a ? 1 : h < a ? -1 : 0);
+
+// Per-user group achievement counters, derived by walking the chronologically-ordered
+// list of completed group matches (oldest → newest) against one user's predictions.
+//   exact   – exact-score hits (scoreGroup === 5)
+//   streak  – longest run of consecutive completed matches that scored > 0
+//   outcome – correct 1X2 outcomes (→ Stryktipparen)
+//   lucky   – outcome WRONG yet exactly one goal side matched (→ Tursam); when the outcome
+//             is wrong both sides can't match (that would be an exact score), so this is a
+//             goal point won "by luck"
+function groupAchievements(preds, completed, groupResults) {
+  let exact = 0, outcome = 0, lucky = 0, streak = 0, run = 0;
+  for (const m of completed) {
+    const p = preds[m.id];
+    const a = groupResults[m.id];
+    const pts = scoreGroup(p, a);
+    if (pts > 0) { run += 1; if (run > streak) streak = run; } else run = 0;
+    if (!p || !a) continue;
+    const ph = Number(p.homeScore), pa = Number(p.awayScore);
+    const ah = Number(a.homeScore), aa = Number(a.awayScore);
+    if (![ph, pa, ah, aa].every(Number.isFinite)) continue;
+    if (pts === 5) exact += 1;
+    const outcomeRight = sign(ph, pa) === sign(ah, aa);
+    if (outcomeRight) outcome += 1;
+    else if ((ph === ah) !== (pa === aa)) lucky += 1;
+  }
+  return { exact, streak, outcome, lucky };
+}
+
 // Real-UTC instant of the most recent Europe/Stockholm midnight (start of "today"
 // in Swedish local time). Used as the cutoff for the previous-day snapshot.
 function startOfTodayStockholmMs() {
@@ -55,12 +85,14 @@ app.http('getLeaderboard', {
   route: 'leaderboard',
   handler: async () => {
     const cutoffMs = startOfTodayStockholmMs();
-    const [usersRaw, predsByUser, picksByUser, results, prevResults] = await Promise.all([
+    const threeDaysAgoMs = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    const [usersRaw, predsByUser, picksByUser, results, prevResults, weekResults] = await Promise.all([
       collectUsers(),
       collectByUser(getPredictionsTable(), (e) => ({ homeScore: e.homeScore, awayScore: e.awayScore })),
       collectByUser(getPlayoffTable(), (e) => e.winner),
       loadResults(),
       loadResults({ asOfMs: cutoffMs }),
+      loadResults({ asOfMs: threeDaysAgoMs }),
     ]);
 
     // The single shared actual bracket every user's playoff picks are scored against,
@@ -73,12 +105,28 @@ app.http('getLeaderboard', {
     const prevBracket = buildBracket(MATCHES, prevResults.groupResults, prevResults.knockoutWinners, {
       thirdOrder: prevResults.thirdOrder, allowPartial: true,
     });
+    // 3-day-ago snapshot for the "Raketen" climber award.
+    const weekBracket = buildBracket(MATCHES, weekResults.groupResults, weekResults.knockoutWinners, {
+      thirdOrder: weekResults.thirdOrder, allowPartial: true,
+    });
     // Admin master-switch: while off, no playoff points are awarded to users.
     const playoffOn = results.playoffScoring;
     const prevPlayoffOn = prevResults.playoffScoring;
+    const weekPlayoffOn = weekResults.playoffScoring;
     // Only surface movement once there was a standing to move from (≥1 result before today).
     const hadPriorResults =
       Object.keys(prevResults.groupResults).length > 0 || Object.keys(prevResults.knockoutWinners).length > 0;
+    const hadResults3d =
+      Object.keys(weekResults.groupResults).length > 0 || Object.keys(weekResults.knockoutWinners).length > 0;
+
+    // Completed group matches, oldest → newest, for streak/achievement walking. Mirrors the
+    // chronological ordering resolveSpotlight uses. A match is "completed" iff it has a result.
+    const completedGroup = MATCHES
+      .filter((m) => results.groupResults[m.id])
+      .sort((a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc) || a.matchNumber - b.matchNumber);
+    const groupPossible = completedGroup.length * 5;
+    // Max playoff points achievable so far = a perfect bracket scored against the actual one.
+    const playoffPossible = playoffOn ? scorePlayoff(actualBracket, actualBracket).total : 0;
 
     const { recent, inProgress, next } = resolveSpotlight(results.groupResults);
 
@@ -88,10 +136,13 @@ app.http('getLeaderboard', {
       const groupPoints = scoreGroupTotal(preds, results.groupResults);
       const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
       const playoffPoints = playoffOn ? scorePlayoff(predictedBracket, actualBracket).total : 0;
-      // Previous-day total reuses the same predicted bracket (predictions don't
+      // Previous-day / 3-days-ago totals reuse the same predicted bracket (predictions don't
       // depend on actual results) — only the actual results/bracket differ.
       const prevPoints = scoreGroupTotal(preds, prevResults.groupResults)
         + (prevPlayoffOn ? scorePlayoff(predictedBracket, prevBracket).total : 0);
+      const weekPoints = scoreGroupTotal(preds, weekResults.groupResults)
+        + (weekPlayoffOn ? scorePlayoff(predictedBracket, weekBracket).total : 0);
+      const ach = groupAchievements(preds, completedGroup, results.groupResults);
 
       // Per-user spotlight predictions, keyed by matchId — only for matches whose tips are
       // already public (completed or in progress). Completed matches also carry the points
@@ -115,7 +166,11 @@ app.http('getLeaderboard', {
         groupPoints,
         playoffPoints,
         points: groupPoints + playoffPoints,
+        groupPossible,
+        playoffPossible,
         _prevPoints: prevPoints,
+        _weekPoints: weekPoints,
+        _ach: ach,
         spotlight,
       };
     });
@@ -133,7 +188,33 @@ app.http('getLeaderboard', {
     } else {
       users.forEach((u) => { u.prevRank = null; });
     }
-    users.forEach((u) => { delete u._prevPoints; });
+
+    // Rank gain over the last 3 days (for the "Raketen" climber award). climbDelta > 0 = moved up.
+    if (hadResults3d) {
+      const weekRank = new Map();
+      [...users].sort(makeComparator((u) => u._weekPoints)).forEach((u, i) => weekRank.set(u.userId, i + 1));
+      users.forEach((u) => { u._climbDelta = weekRank.get(u.userId) - u.rank; });
+    } else {
+      users.forEach((u) => { u._climbDelta = null; });
+    }
+
+    // Award badges. Each category goes to the user(s) with the max value, provided it clears a
+    // floor (so nobody "wins" a trivial title). Ties → every tied user gets the badge.
+    const awardBadge = (key, label, valueOf, floor) => {
+      let best = floor - 1;
+      for (const u of users) { const v = valueOf(u); if (v != null && v > best) best = v; }
+      if (best < floor) return; // nobody cleared the floor → no winner for this title
+      for (const u of users) {
+        if (valueOf(u) === best) (u.badges ||= []).push({ key, label, value: best });
+      }
+    };
+    awardBadge('prickskytt', 'Prickskytt', (u) => u._ach.exact, 1);
+    awardBadge('streak', 'Längsta svit', (u) => u._ach.streak, 3);
+    awardBadge('stryktipparen', 'Stryktipparen', (u) => u._ach.outcome, 1);
+    awardBadge('tursam', 'Tursam', (u) => u._ach.lucky, 1);
+    awardBadge('raket', 'Raketen', (u) => u._climbDelta, 1);
+
+    users.forEach((u) => { delete u._prevPoints; delete u._weekPoints; delete u._ach; delete u._climbDelta; });
 
     return {
       status: 200,

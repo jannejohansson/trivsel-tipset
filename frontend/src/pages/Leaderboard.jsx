@@ -166,17 +166,23 @@ const styles = {
     flexDirection: 'column',
     gap: '6px',
   },
-  progressTrack: {
-    height: '6px',
-    background: 'var(--surface-2)',
-    borderRadius: '999px',
-    overflow: 'hidden',
+  badges: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '3px',
+    flexShrink: 0,
   },
-  progressFill: {
-    height: '100%',
-    background: 'linear-gradient(90deg, #15a34a, #58c46f)',
-    borderRadius: '999px',
-    transition: 'width 0.3s',
+  badge: {
+    fontSize: '14px',
+    lineHeight: 1,
+    cursor: 'help',
+  },
+  legend: {
+    color: 'var(--text-muted)',
+    fontSize: '11px',
+    lineHeight: 1.6,
+    marginBottom: '12px',
+    textAlign: 'center',
   },
   right: {
     textAlign: 'right',
@@ -312,6 +318,16 @@ const styles = {
   },
 };
 
+// Achievement badges awarded server-side (getLeaderboard). Emoji + Swedish label/description,
+// keyed by the `badge.key` the API attaches to each winning user.
+const BADGE_META = {
+  prickskytt: { emoji: '🎯', label: 'Prickskytt', desc: 'flest exakta resultat' },
+  streak: { emoji: '🔥', label: 'Längsta svit', desc: 'längst poängsvit i rad' },
+  raket: { emoji: '🚀', label: 'Raketen', desc: 'störst klättring senaste 3 dagarna' },
+  stryktipparen: { emoji: '✅', label: 'Stryktipparen', desc: 'flest rätt tecken (1X2)' },
+  tursam: { emoji: '🍀', label: 'Tursam', desc: 'flest turpoäng' },
+};
+
 function formatKickoff(utc) {
   return new Date(utc).toLocaleString('sv-SE', {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
@@ -400,9 +416,8 @@ export default function Leaderboard() {
       )
     : [];
 
-  // The progress bar now visualises scored points relative to the current
-  // leader, rather than how many matches a user has filled in.
-  const maxPoints = sortedUsers.reduce((m, u) => Math.max(m, u.points || 0), 0);
+  // Whether any user has earned a badge (drives the badge legend's visibility).
+  const hasBadges = sortedUsers.some((u) => u.badges?.length);
 
   // Whether there are any spotlight fixtures to reveal (same set for everyone).
   const sp = data?.spotlight;
@@ -455,11 +470,20 @@ export default function Leaderboard() {
           </div>
         )}
 
+        {hasBadges && (
+          <div style={styles.legend}>
+            {Object.values(BADGE_META).map((m) => (
+              <span key={m.label} style={{ marginRight: '12px', whiteSpace: 'nowrap' }}>
+                {m.emoji} {m.label} – {m.desc}
+              </span>
+            ))}
+          </div>
+        )}
+
         {sortedUsers.length > 0 && (
           <div style={styles.list}>
             {sortedUsers.map((u, i) => {
               const points = u.points || 0;
-              const pct = maxPoints > 0 ? Math.min(100, (points / maxPoints) * 100) : 0;
               const isExpanded = expanded.has(u.userId);
               const isMe = !!user && u.userId === user.userId;
               // Movement since yesterday's standing (null on day one, 0 = unchanged).
@@ -487,15 +511,30 @@ export default function Leaderboard() {
                         >
                           {u.displayName}
                         </Link>
-                      </div>
-                      <div style={styles.progressTrack} title={`${points} poäng`}>
-                        <div style={{ ...styles.progressFill, width: `${pct}%` }} />
+                        {u.badges?.length > 0 && (
+                          <span style={styles.badges}>
+                            {u.badges.map((b) => {
+                              const meta = BADGE_META[b.key];
+                              if (!meta) return null;
+                              return (
+                                <span
+                                  key={b.key}
+                                  style={styles.badge}
+                                  title={`${meta.label} · ${meta.desc} (${b.value})`}
+                                  aria-label={meta.label}
+                                >
+                                  {meta.emoji}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div style={styles.right}>
                       <div style={styles.pointsRow}>
                         {/* Fixed-width slot so a present/absent chip doesn't change
-                            the width of `.right` (and thus the progress bar width). */}
+                            the width of `.right` and shift the points column. */}
                         <span style={styles.deltaSlot}>
                           {delta ? (
                             delta > 0
@@ -507,7 +546,7 @@ export default function Leaderboard() {
                       </div>
                       {!isMobile && (
                         <span style={styles.date}>
-                          Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
+                          Grupp {u.groupPoints || 0}/{u.groupPossible || 0} · Slutspel {u.playoffPoints || 0}/{u.playoffPossible || 0}
                         </span>
                       )}
                     </div>

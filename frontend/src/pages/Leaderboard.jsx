@@ -115,13 +115,6 @@ const styles = {
     cursor: 'pointer',
     minWidth: 0,
   },
-  titleStars: {
-    flexShrink: 0,
-    fontSize: '12px',
-    letterSpacing: '1px',
-    whiteSpace: 'nowrap',
-    cursor: 'help',
-  },
   pointsRow: {
     display: 'flex',
     alignItems: 'center',
@@ -509,15 +502,6 @@ export default function Leaderboard() {
                         >
                           {u.displayName}
                         </Link>
-                        {u.titles > 0 && (
-                          <span
-                            style={styles.titleStars}
-                            title={`${u.titles} tidigare ${u.titles === 1 ? 'seger' : 'segrar'} i Trivseltipset`}
-                            aria-label={`${u.titles} tidigare ${u.titles === 1 ? 'seger' : 'segrar'}`}
-                          >
-                            {u.titles <= 3 ? '⭐'.repeat(u.titles) : `⭐×${u.titles}`}
-                          </span>
-                        )}
                         {u.badges?.length > 0 && (
                           <span style={styles.badges}>
                             {u.badges.map((b) => {

@@ -4,9 +4,8 @@
 
 const { getUsersTable } = require('./tableClient');
 
-// All non-hidden participants as { userId, displayName, lastLoginAt, paid, titles }.
-// `titles` = previous Trivseltipset editions won (jersey-style stars). Hidden users are
-// soft-removed and excluded from public views.
+// All non-hidden participants as { userId, displayName, lastLoginAt, paid }.
+// Hidden users are soft-removed and excluded from public views.
 async function collectUsers() {
   const users = [];
   for await (const entity of getUsersTable().listEntities({
@@ -18,7 +17,6 @@ async function collectUsers() {
       displayName: entity.displayName || entity.rowKey,
       lastLoginAt: entity.lastLoginAt,
       paid: entity.paid === true,
-      titles: Number(entity.titles) || 0,
     });
   }
   return users;

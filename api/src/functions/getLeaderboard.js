@@ -193,21 +193,34 @@ app.http('getLeaderboard', {
       users.forEach((u) => { u._climbDelta = null; });
     }
 
-    // Award badges. Each category goes to the user(s) with the max value, provided it clears a
-    // floor (so nobody "wins" a trivial title). Ties → every tied user gets the badge.
-    const awardBadge = (key, label, valueOf, floor) => {
-      let best = floor - 1;
-      for (const u of users) { const v = valueOf(u); if (v != null && v > best) best = v; }
-      if (best < floor) return; // nobody cleared the floor → no winner for this title
-      for (const u of users) {
-        if (valueOf(u) === best) (u.badges ||= []).push({ key, label, value: best });
-      }
-    };
-    awardBadge('prickskytt', 'Prickskytt', (u) => u._ach.exact, 1);
-    awardBadge('streak', 'Längsta svit', (u) => u._ach.streak, 3);
-    awardBadge('stryktipparen', 'Stryktipparen', (u) => u._ach.outcome, 1);
-    awardBadge('tursam', 'Tursam', (u) => u._ach.lucky, 1);
-    awardBadge('raket', 'Raketen', (u) => u._climbDelta, 1);
+    // Public per-user achievement numbers (profile page shows everyone their own values).
+    users.forEach((u) => {
+      u.achievements = { exact: u._ach.exact, streak: u._ach.streak, outcome: u._ach.outcome, lucky: u._ach.lucky, climb: u._climbDelta };
+    });
+
+    // Resolve each achievement category: the user(s) with the max value win the badge and define
+    // the category leader, provided the value clears a floor (so nobody "wins" a trivial title).
+    // Ties → every tied user gets the badge and appears as a co-leader.
+    const CATEGORIES = [
+      { key: 'prickskytt', label: 'Prickskytt', field: 'exact', floor: 1 },
+      { key: 'streak', label: 'Längsta svit', field: 'streak', floor: 3 },
+      { key: 'stryktipparen', label: 'Stryktipparen', field: 'outcome', floor: 1 },
+      { key: 'tursam', label: 'Tursam', field: 'lucky', floor: 1 },
+      { key: 'raket', label: 'Raketen', field: 'climb', floor: 1 },
+    ];
+    const achievementLeaders = {};
+    for (const cat of CATEGORIES) {
+      let best = cat.floor - 1;
+      for (const u of users) { const v = u.achievements[cat.field]; if (v != null && v > best) best = v; }
+      if (best < cat.floor) { achievementLeaders[cat.key] = null; continue; }
+      const winners = users.filter((u) => u.achievements[cat.field] === best);
+      for (const u of winners) (u.badges ||= []).push({ key: cat.key, label: cat.label, value: best });
+      achievementLeaders[cat.key] = {
+        value: best,
+        names: winners.map((u) => u.displayName),
+        userIds: winners.map((u) => u.userId),
+      };
+    }
 
     users.forEach((u) => { delete u._prevPoints; delete u._weekPoints; delete u._ach; delete u._climbDelta; });
 
@@ -216,6 +229,7 @@ app.http('getLeaderboard', {
       jsonBody: {
         count: users.length,
         users,
+        achievementLeaders,
         spotlight: {
           recent: recent.map((m) => ({ ...fixtureMeta(m), actual: results.groupResults[m.id] })),
           inProgress: inProgress.map(fixtureMeta),

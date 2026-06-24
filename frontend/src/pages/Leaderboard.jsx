@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
 import useAutoRefresh from '../hooks/useAutoRefresh.js';
+import { BADGE_META } from '../lib/achievements.js';
 
 const styles = {
   hero: {
@@ -316,16 +317,6 @@ const styles = {
     color: 'var(--text-muted)',
     fontStyle: 'italic',
   },
-};
-
-// Achievement badges awarded server-side (getLeaderboard). Emoji + Swedish label/description,
-// keyed by the `badge.key` the API attaches to each winning user.
-const BADGE_META = {
-  prickskytt: { emoji: '🎯', label: 'Prickskytt', desc: 'flest exakta resultat' },
-  streak: { emoji: '🔥', label: 'Längsta svit', desc: 'längst poängsvit i rad' },
-  raket: { emoji: '🚀', label: 'Raketen', desc: 'störst klättring senaste 3 dagarna' },
-  stryktipparen: { emoji: '✅', label: 'Stryktipparen', desc: 'flest rätt tecken (1X2)' },
-  tursam: { emoji: '🍀', label: 'Tursam', desc: 'tippat helt fel men fått poäng ändå' },
 };
 
 function formatKickoff(utc) {

@@ -124,9 +124,6 @@ app.http('getLeaderboard', {
     const completedGroup = MATCHES
       .filter((m) => results.groupResults[m.id])
       .sort((a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc) || a.matchNumber - b.matchNumber);
-    const groupPossible = completedGroup.length * 5;
-    // Max playoff points achievable so far = a perfect bracket scored against the actual one.
-    const playoffPossible = playoffOn ? scorePlayoff(actualBracket, actualBracket).total : 0;
 
     const { recent, inProgress, next } = resolveSpotlight(results.groupResults);
 
@@ -166,8 +163,6 @@ app.http('getLeaderboard', {
         groupPoints,
         playoffPoints,
         points: groupPoints + playoffPoints,
-        groupPossible,
-        playoffPossible,
         _prevPoints: prevPoints,
         _weekPoints: weekPoints,
         _ach: ach,

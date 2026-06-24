@@ -325,7 +325,7 @@ const BADGE_META = {
   streak: { emoji: '🔥', label: 'Längsta svit', desc: 'längst poängsvit i rad' },
   raket: { emoji: '🚀', label: 'Raketen', desc: 'störst klättring senaste 3 dagarna' },
   stryktipparen: { emoji: '✅', label: 'Stryktipparen', desc: 'flest rätt tecken (1X2)' },
-  tursam: { emoji: '🍀', label: 'Tursam', desc: 'flest turpoäng' },
+  tursam: { emoji: '🍀', label: 'Tursam', desc: 'tippat helt fel men fått poäng ändå' },
 };
 
 function formatKickoff(utc) {
@@ -546,7 +546,7 @@ export default function Leaderboard() {
                       </div>
                       {!isMobile && (
                         <span style={styles.date}>
-                          Grupp {u.groupPoints || 0}/{u.groupPossible || 0} · Slutspel {u.playoffPoints || 0}/{u.playoffPossible || 0}
+                          Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
                         </span>
                       )}
                     </div>

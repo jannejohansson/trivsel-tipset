@@ -417,6 +417,9 @@ export default function Leaderboard() {
   // Whether any user has earned a badge (drives the badge legend's visibility).
   const hasBadges = sortedUsers.some((u) => u.badges?.length);
 
+  // Whether any user has winner stars (drives the star legend's visibility).
+  const hasStars = sortedUsers.some((u) => u.titles > 0);
+
   // Whether there are any spotlight fixtures to reveal (same set for everyone).
   const sp = data?.spotlight;
   const hasSpotlight = !!sp && ((sp.recent?.length || 0) + (sp.inProgress?.length || 0) + (sp.next?.length || 0)) > 0;
@@ -465,16 +468,6 @@ export default function Leaderboard() {
             <button type="button" style={styles.expandAllBtn} onClick={toggleAll}>
               {allExpanded ? 'Dölj senaste & kommande tips' : 'Visa senaste & kommande tips'}
             </button>
-          </div>
-        )}
-
-        {hasBadges && (
-          <div style={styles.legend}>
-            {Object.values(BADGE_META).map((m) => (
-              <span key={m.label} style={{ marginRight: '12px', whiteSpace: 'nowrap' }}>
-                {m.emoji} {m.label} – {m.desc}
-              </span>
-            ))}
           </div>
         )}
 
@@ -565,6 +558,21 @@ export default function Leaderboard() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {(hasStars || hasBadges) && (
+          <div style={styles.legend}>
+            {hasStars && (
+              <span style={{ marginRight: '12px', whiteSpace: 'nowrap' }}>
+                ⭐ Stjärna – tidigare seger i Trivseltipset
+              </span>
+            )}
+            {hasBadges && Object.values(BADGE_META).map((m) => (
+              <span key={m.label} style={{ marginRight: '12px', whiteSpace: 'nowrap' }}>
+                {m.emoji} {m.label} – {m.desc}
+              </span>
+            ))}
           </div>
         )}
 

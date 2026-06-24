@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { api } from '../api.js';
 import { KICKOFF_TS, NAME_LOCKOUT_TS, TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
+import { ACHIEVEMENTS } from '../lib/achievements.js';
 
 const styles = {
   page: {
@@ -181,6 +182,56 @@ const styles = {
     textAlign: 'center',
     marginTop: '12px',
   },
+  achRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    padding: '10px 0',
+    borderBottom: '1px solid var(--border)',
+  },
+  achLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '9px',
+    minWidth: 0,
+  },
+  achEmoji: {
+    fontSize: '17px',
+    lineHeight: 1,
+    flexShrink: 0,
+  },
+  achLabel: {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: 'var(--text)',
+  },
+  achVals: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '2px',
+    flexShrink: 0,
+    textAlign: 'right',
+  },
+  achMine: {
+    fontSize: '14px',
+    fontWeight: 700,
+    color: 'var(--text)',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  achMineLead: {
+    color: 'var(--green)',
+  },
+  achLeader: {
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+    fontVariantNumeric: 'tabular-nums',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: '180px',
+  },
   logoutBtn: {
     width: '100%',
     padding: '12px',
@@ -288,6 +339,8 @@ export default function Profile() {
           groupPoints: me?.groupPoints ?? 0,
           playoffPoints: me?.playoffPoints ?? 0,
           paid: me?.paid ?? false,
+          achievements: me?.achievements ?? null,
+          achievementLeaders: data.achievementLeaders ?? null,
         });
       })
       .catch(() => { /* stats are best-effort */ });
@@ -322,6 +375,9 @@ export default function Profile() {
 
   const groupDone = (stats?.groupCount ?? 0) >= TOTAL_MATCHES;
   const playoffDone = (stats?.playoffCount ?? 0) >= TOTAL_PLAYOFF;
+
+  // A "–" for missing/non-positive values; signed categories (Raketen) only count climbs up.
+  const fmtAch = (v, signed) => (v == null ? '–' : signed ? (v > 0 ? `+${v}` : '–') : `${v}`);
 
   return (
     <div style={styles.page}>
@@ -422,6 +478,38 @@ export default function Profile() {
           <p style={styles.breakdown}>
             Grupp {stats.groupPoints} · Slutspel {stats.playoffPoints}
           </p>
+        </div>
+      )}
+
+      {locked && stats?.achievements && (
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Utmärkelser</div>
+          {ACHIEVEMENTS.map((a, i) => {
+            const mine = stats.achievements[a.field];
+            const leader = stats.achievementLeaders?.[a.key];
+            const leaderIsMe = !!leader && leader.userIds.includes(user.userId);
+            const leaderText = leader
+              ? `${leaderIsMe ? 'Du' : leader.names[0]}${leader.names.length > 1 ? ' m.fl.' : ''} · ${fmtAch(leader.value, a.signed)}`
+              : 'Ingen ännu';
+            return (
+              <div
+                key={a.key}
+                style={{ ...styles.achRow, ...(i === ACHIEVEMENTS.length - 1 ? { borderBottom: 'none' } : {}) }}
+                title={a.desc}
+              >
+                <span style={styles.achLeft}>
+                  <span style={styles.achEmoji} aria-hidden="true">{a.emoji}</span>
+                  <span style={styles.achLabel}>{a.label}</span>
+                </span>
+                <div style={styles.achVals}>
+                  <span style={{ ...styles.achMine, ...(leaderIsMe ? styles.achMineLead : {}) }}>
+                    Du {fmtAch(mine, a.signed)}
+                  </span>
+                  <span style={styles.achLeader}>🏆 {leaderText}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

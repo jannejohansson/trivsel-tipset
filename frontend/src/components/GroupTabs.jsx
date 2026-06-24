@@ -157,7 +157,7 @@ export default function GroupTabs({ matches, locked, readOnly = false, predictio
               group={activeGroup}
               matches={groupMatches}
               predictions={predictions}
-              title="Min tabell"
+              title="· Mitt tips"
               countNoun="tippade"
             />
           </div>
@@ -166,7 +166,7 @@ export default function GroupTabs({ matches, locked, readOnly = false, predictio
               group={activeGroup}
               matches={groupMatches}
               predictions={results}
-              title="Verklig"
+              title="· Verklig tabell"
               countNoun="spelade"
             />
           </div>

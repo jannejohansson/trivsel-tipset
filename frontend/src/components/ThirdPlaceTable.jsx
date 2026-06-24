@@ -116,11 +116,20 @@ const styles = {
   goesToOut: { color: 'var(--text-muted)' },
 };
 
-export default function ThirdPlaceTable({ matches, predictions }) {
+// `thirdOrder` (optional) overrides the automatic ranking — used on the public
+// results page so the table matches the admin's manually-curated order. `pendingHint`
+// customises the banner text shown while the table is still provisional.
+export default function ThirdPlaceTable({
+  matches,
+  predictions,
+  thirdOrder,
+  title = 'Grupptreor · Tabell',
+  pendingHint = 'Preliminär – fyll i alla grupper',
+}) {
   const isMobile = useIsMobile();
   const all = computeAllStandings(matches, predictions);
-  const thirds = rankThirdPlace(all);
-  // Provisional until every group is fully predicted — third place can still move.
+  const thirds = rankThirdPlace(all, thirdOrder);
+  // Provisional until every group is fully resolved — third place can still move.
   const allComplete = GROUP_LETTERS.every((g) => all[g] && all[g].complete);
 
   // Annex C slotting for the eight qualifiers: group letter -> R32 slot.
@@ -136,8 +145,8 @@ export default function ThirdPlaceTable({ matches, predictions }) {
   return (
     <div style={styles.wrap}>
       <div style={styles.banner}>
-        <span>Grupptreor · Tabell</span>
-        <span style={styles.hint}>{allComplete ? '8 bästa går vidare' : 'Preliminär – fyll i alla grupper'}</span>
+        <span>{title}</span>
+        <span style={styles.hint}>{allComplete ? '8 bästa går vidare' : pendingHint}</span>
       </div>
       <table style={styles.table}>
         <colgroup>

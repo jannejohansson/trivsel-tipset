@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../api.js';
 import GroupStandings from '../components/GroupStandings.jsx';
+import ThirdPlaceTable from '../components/ThirdPlaceTable.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
 import useAutoRefresh from '../hooks/useAutoRefresh.js';
 
@@ -66,7 +67,13 @@ const styles = {
     boxShadow: 'var(--shadow-card)',
     overflow: 'hidden',
   },
-  resultsBanner: {
+  // The results banner doubles as the expand/collapse toggle for the match list.
+  resultsToggle: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '10px',
     background: 'var(--surface-2)',
     color: 'var(--text-muted)',
     padding: '8px 14px',
@@ -74,6 +81,35 @@ const styles = {
     fontWeight: 700,
     letterSpacing: '0.5px',
     textTransform: 'uppercase',
+    border: 'none',
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontFamily: 'inherit',
+  },
+  resultsToggleMeta: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    textTransform: 'none',
+    fontWeight: 600,
+    letterSpacing: 0,
+  },
+  chevron: { fontSize: '12px', lineHeight: 1 },
+  toolbar: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: '16px',
+  },
+  toolbarBtn: {
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderRadius: '999px',
+    padding: '7px 14px',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--text)',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
   },
   row: {
     display: 'grid',
@@ -100,14 +136,21 @@ const styles = {
     fontWeight: 500, fontSize: '12px', color: 'var(--text-muted)',
     minWidth: '52px', textAlign: 'center',
   },
+  // Best-third-placed-teams ranking (spans full width below the group grid).
+  thirdSection: { marginTop: '36px' },
 };
 
 // Public view of the real, admin-entered group standings + match results.
 export default function GroupTables() {
   const [matches, setMatches] = useState([]);
   const [results, setResults] = useState(new Map());
+  // Admin's curated ranking of the third-placed teams (may override the automatic
+  // points/goals order); empty array means "rank automatically".
+  const [thirdOrder, setThirdOrder] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Match results are collapsed by default; this holds the groups currently expanded.
+  const [openGroups, setOpenGroups] = useState(() => new Set());
   const isMobile = useIsMobile();
 
   // Reload group matches + real results; runs on mount and on the auto-refresh
@@ -118,6 +161,7 @@ export default function GroupTables() {
       .then(([m, r]) => {
         setMatches(m.matches);
         setResults(new Map(Object.entries(r.groupResults || {})));
+        setThirdOrder(r.thirdOrder || []);
       })
       .catch(() => setError('Kunde inte ladda tabellerna. Försök igen.'))
       .finally(() => setLoading(false));
@@ -140,6 +184,14 @@ export default function GroupTables() {
   const sortMatches = (list) => list.slice().sort(
     (a, b) => a.matchday - b.matchday || a.matchNumber - b.matchNumber
   );
+
+  const toggleGroup = (g) => setOpenGroups((prev) => {
+    const next = new Set(prev);
+    if (next.has(g)) next.delete(g); else next.add(g);
+    return next;
+  });
+  const allOpen = groupKeys.length > 0 && groupKeys.every((g) => openGroups.has(g));
+  const toggleAll = () => setOpenGroups(allOpen ? new Set() : new Set(groupKeys));
 
   if (loading) {
     return (
@@ -168,9 +220,19 @@ export default function GroupTables() {
           <div style={styles.notice}>Inga resultat inlagda ännu.</div>
         )}
 
+        {hasResults && (
+          <div style={styles.toolbar}>
+            <button type="button" style={styles.toolbarBtn} onClick={toggleAll}>
+              {allOpen ? 'Dölj alla resultat' : 'Visa alla resultat'}
+            </button>
+          </div>
+        )}
+
         <div style={isMobile ? styles.gridMobile : styles.grid}>
           {groupKeys.map((g) => {
             const groupMatches = sortMatches(groups.get(g) || []);
+            const playedCount = groupMatches.filter((m) => results.get(m.id)).length;
+            const isOpen = openGroups.has(g);
             return (
               <div key={g} style={styles.groupBlock}>
                 <GroupStandings
@@ -181,8 +243,19 @@ export default function GroupTables() {
                 />
 
                 <div style={styles.resultsWrap}>
-                  <div style={styles.resultsBanner}>Resultat</div>
-                  {groupMatches.map((m) => {
+                  <button
+                    type="button"
+                    style={styles.resultsToggle}
+                    onClick={() => toggleGroup(g)}
+                    aria-expanded={isOpen}
+                  >
+                    <span>Resultat</span>
+                    <span style={styles.resultsToggleMeta}>
+                      {playedCount} / {groupMatches.length} spelade
+                      <span style={styles.chevron} aria-hidden="true">{isOpen ? '▲' : '▼'}</span>
+                    </span>
+                  </button>
+                  {isOpen && groupMatches.map((m) => {
                     const res = results.get(m.id);
                     return (
                       <div key={m.id} style={styles.row}>
@@ -207,6 +280,18 @@ export default function GroupTables() {
             );
           })}
         </div>
+
+        {hasResults && (
+          <div style={styles.thirdSection}>
+            <ThirdPlaceTable
+              matches={matches}
+              predictions={results}
+              thirdOrder={thirdOrder}
+              title="Grupptreor · Tabell – baserad på verkliga resultat"
+              pendingHint="Preliminär – alla grupper inte avgjorda"
+            />
+          </div>
+        )}
       </div>
     </>
   );

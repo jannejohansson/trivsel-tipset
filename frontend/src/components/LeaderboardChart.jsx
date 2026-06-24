@@ -264,7 +264,11 @@ export default function LeaderboardChart({ checkpoints, series, zoom = false }) 
       </div>
 
       <div style={styles.legend}>
-        {series.map((s, idx) => {
+        {/* Legend lists participants alphabetically by name (the series itself is in
+            points order); colours are keyed by userId so this re-sort is cosmetic. */}
+        {[...series]
+          .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'sv'))
+          .map((s, idx) => {
           const color = colorOf(s);
           const isActive = active === s.userId;
           return (

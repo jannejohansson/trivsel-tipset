@@ -280,7 +280,11 @@ export default function Matches({ view = 'group' }) {
               placeras i slutspelsträdet enligt Fifas schema (Annex C). Vill du ändra ordningen? Justera dina
               resultat under <strong>Gruppspel</strong> så uppdateras tabellen direkt.
             </div>
-            <ThirdPlaceTable matches={matches} predictions={predictions} />
+            <ThirdPlaceTable
+              matches={matches}
+              predictions={predictions}
+              title="Grupptreor · Tabell – uträknad efter dina tips"
+            />
           </>
         ) : (
           <>

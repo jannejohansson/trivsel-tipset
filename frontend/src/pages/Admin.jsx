@@ -62,6 +62,10 @@ const styles = {
   chipDone: { background: 'var(--green-dim)', color: 'var(--green-text)' },
   chipWarn: { background: 'rgba(184,134,11,0.14)', color: 'var(--yellow)', border: '1px solid rgba(184,134,11,0.35)' },
   paidLabel: { display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text)', cursor: 'pointer', flexShrink: 0, fontWeight: 600 },
+  titlesBox: { display: 'inline-flex', alignItems: 'center', gap: '6px', flexShrink: 0 },
+  titlesLabel: { fontSize: '13px', color: 'var(--text)', fontWeight: 600 },
+  stepBtn: { width: '24px', height: '24px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text)', fontSize: '15px', fontWeight: 700, lineHeight: 1, cursor: 'pointer', fontFamily: 'inherit', padding: 0 },
+  titlesVal: { minWidth: '20px', textAlign: 'center', fontSize: '13px', fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' },
   removeBtn: { flexShrink: 0, background: 'none', border: '1px solid var(--border)', color: 'var(--danger)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   restoreBtn: { flexShrink: 0, background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
 };
@@ -194,6 +198,11 @@ export default function Admin() {
   };
 
   const togglePaid = (u) => patchUser(u, { paid: !u.paid });
+  // Previous-edition wins, shown as stars on the leaderboard. Clamp to the API's 0–20 range.
+  const setTitles = (u, delta) => {
+    const next = Math.max(0, Math.min(20, (u.titles || 0) + delta));
+    if (next !== (u.titles || 0)) patchUser(u, { titles: next });
+  };
   const setHidden = (u, hidden) => {
     if (hidden && !window.confirm(`Ta bort ${u.displayName} från ställningen? Tipsen sparas men deltagaren döljs.`)) return;
     patchUser(u, { hidden });
@@ -336,6 +345,12 @@ export default function Admin() {
                     );
                   })()}
                 </div>
+              </div>
+              <div style={styles.titlesBox} title="Tidigare segrar i Trivseltipset (visas som stjärnor)">
+                <span style={styles.titlesLabel}>⭐ Segrar</span>
+                <button type="button" style={styles.stepBtn} onClick={() => setTitles(u, -1)} disabled={(u.titles || 0) === 0} aria-label="Minska segrar">−</button>
+                <span style={styles.titlesVal}>{u.titles || 0}</span>
+                <button type="button" style={styles.stepBtn} onClick={() => setTitles(u, 1)} aria-label="Öka segrar">+</button>
               </div>
               <label style={styles.paidLabel}>
                 <input type="checkbox" checked={u.paid} onChange={() => togglePaid(u)} />

@@ -51,6 +51,7 @@ app.http('adminListUsers', {
         displayName: e.displayName || e.rowKey,
         paid: e.paid === true,
         hidden: e.hidden === true,
+        titles: Number(e.titles) || 0,
         createdAt: e.createdAt,
         lastLoginAt: e.lastLoginAt,
         groupPredictionCount: Object.keys(preds).length,

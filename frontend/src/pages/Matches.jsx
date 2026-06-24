@@ -283,7 +283,7 @@ export default function Matches({ view = 'group' }) {
             <ThirdPlaceTable
               matches={matches}
               predictions={predictions}
-              title="Grupptreor · Tabell – uträknad efter dina tips"
+              title="Grupptreor · Tabell – baserad på ditt tips"
             />
           </>
         ) : (

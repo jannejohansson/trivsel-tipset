@@ -96,7 +96,7 @@ const styles = {
   thirdRow: { background: 'rgba(184,134,11,0.08)' },
 };
 
-export default function GroupStandings({ group, matches, predictions, title = 'Tabell', countNoun = 'tippade' }) {
+export default function GroupStandings({ group, matches, predictions, title = '', countNoun = 'tippade' }) {
   const rows = computeGroupStandings(matches, predictions);
   const played = rows.reduce((s, r) => s + r.P, 0) / 2;
   const isMobile = useIsMobile();
@@ -104,7 +104,7 @@ export default function GroupStandings({ group, matches, predictions, title = 'T
   return (
     <div style={styles.wrap}>
       <div style={styles.banner}>
-        <span>Grupp {group} · {title}</span>
+        <span>Grupp {group} {title}</span>
         <span style={styles.hint}>{played} / {matches.length} {countNoun}</span>
       </div>
       <table style={styles.table}>

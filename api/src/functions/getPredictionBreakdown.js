@@ -51,7 +51,12 @@ app.http('getPredictionBreakdown', {
   route: 'prediction-breakdown',
   handler: async () => {
     const results = await loadResults();
-    const { recent, inProgress } = resolveSpotlight(results.groupResults);
+    // Show more history here than the leaderboard spotlight: up to the six most recent
+    // finished matches, but only those from the last 24 hours.
+    const { recent, inProgress } = resolveSpotlight(results.groupResults, {
+      recentMax: 6,
+      recentWindowMs: 24 * 60 * 60 * 1000,
+    });
     // In-progress first (the live match is the most interesting), then most-recent finished.
     const targets = [...inProgress, ...[...recent].reverse()];
 

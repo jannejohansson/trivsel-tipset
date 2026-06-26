@@ -30,18 +30,22 @@ const sign = (h, a) => (h > a ? 1 : h < a ? -1 : 0);
 // Per-user group achievement counters, derived by walking the chronologically-ordered
 // list of completed group matches (oldest → newest) against one user's predictions.
 //   exact   – exact-score hits (scoreGroup === 5)
-//   streak  – longest run of consecutive completed matches that scored > 0
+//   streak  – current ONGOING run of consecutive completed matches that scored > 0,
+//             counting back from the most recent completed match (resets to 0 the moment
+//             a 0-point match breaks it — so only users on a live hot streak qualify)
 //   outcome – correct 1X2 outcomes (→ Stryktipparen)
 //   lucky   – outcome WRONG yet exactly one goal side matched (→ Tursam); when the outcome
 //             is wrong both sides can't match (that would be an exact score), so this is a
 //             goal point won "by luck"
 function groupAchievements(preds, completed, groupResults) {
-  let exact = 0, outcome = 0, lucky = 0, streak = 0, run = 0;
+  let exact = 0, outcome = 0, lucky = 0, run = 0;
   for (const m of completed) {
     const p = preds[m.id];
     const a = groupResults[m.id];
     const pts = scoreGroup(p, a);
-    if (pts > 0) { run += 1; if (run > streak) streak = run; } else run = 0;
+    // `run` is the live ongoing streak: a 0-point match resets it, so after the loop it
+    // reflects only the unbroken run ending at the most recent completed match.
+    if (pts > 0) run += 1; else run = 0;
     if (!p || !a) continue;
     const ph = Number(p.homeScore), pa = Number(p.awayScore);
     const ah = Number(a.homeScore), aa = Number(a.awayScore);
@@ -51,7 +55,7 @@ function groupAchievements(preds, completed, groupResults) {
     if (outcomeRight) outcome += 1;
     else if ((ph === ah) !== (pa === aa)) lucky += 1;
   }
-  return { exact, streak, outcome, lucky };
+  return { exact, streak: run, outcome, lucky };
 }
 
 // Real-UTC instant of the most recent Europe/Stockholm midnight (start of "today"
@@ -195,7 +199,13 @@ app.http('getLeaderboard', {
 
     // Public per-user achievement numbers (profile page shows everyone their own values).
     users.forEach((u) => {
-      u.achievements = { exact: u._ach.exact, streak: u._ach.streak, outcome: u._ach.outcome, lucky: u._ach.lucky, climb: u._climbDelta };
+      u.achievements = {
+        exact: u._ach.exact, streak: u._ach.streak, outcome: u._ach.outcome, lucky: u._ach.lucky,
+        climb: u._climbDelta,
+        // Positions lost over the same window (for "Ankaret"): a positive count when the user
+        // dropped, so the shared max-resolver below picks the biggest faller. null/≤0 = didn't fall.
+        anchor: u._climbDelta != null ? -u._climbDelta : null,
+      };
     });
 
     // Resolve each achievement category: the user(s) with the max value win the badge and define
@@ -203,10 +213,11 @@ app.http('getLeaderboard', {
     // Ties → every tied user gets the badge and appears as a co-leader.
     const CATEGORIES = [
       { key: 'prickskytt', label: 'Prickskytt', field: 'exact', floor: 1 },
-      { key: 'streak', label: 'Längsta svit', field: 'streak', floor: 3 },
+      { key: 'streak', label: 'Hetast just nu', field: 'streak', floor: 3 },
       { key: 'stryktipparen', label: 'Stryktipparen', field: 'outcome', floor: 1 },
       { key: 'tursam', label: 'Tursam', field: 'lucky', floor: 1 },
       { key: 'raket', label: 'Raketen', field: 'climb', floor: 1 },
+      { key: 'ankaret', label: 'Ankaret', field: 'anchor', floor: 1 },
     ];
     const achievementLeaders = {};
     for (const cat of CATEGORIES) {

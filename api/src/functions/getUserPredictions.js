@@ -11,7 +11,9 @@ const {
 const { loadResults } = require('../shared/results');
 const { MATCHES } = require('../shared/matchData');
 const { buildBracket, PLAYOFF_LOCKOUT } = require('../shared/bracket');
-const { scoreGroup, scorePlayoff } = require('../shared/scoring');
+const { scoreGroup, scorePlayoff, reachedSets } = require('../shared/scoring');
+const { isPlayoffMode } = require('../shared/phase');
+const { actualFixtures } = require('../shared/playoffView');
 
 // Read ANOTHER participant's predictions. Visibility is enforced here, server-side:
 //   - group matches: a prediction is included only once that match has locked
@@ -91,19 +93,37 @@ app.http('getUserPredictions', {
     }
     matches.sort((a, b) => a.matchNumber - b.matchNumber);
 
-    // Playoff bracket: revealed as a whole once group play is done (or admin/self).
+    // Playoff bracket: revealed as a whole once group play is done (or admin/self), or
+    // whenever playoff mode is on (the admin's scoring switch can flip it for testing).
     const playoffLocked = now >= PLAYOFF_LOCKOUT;
+    const playoffMode = isPlayoffMode(results, now);
     let playoff = null;
     let playoffScore = null;
-    if (playoffLocked || revealAll) {
+    let playoffFixtures = null;
+    if (playoffMode || revealAll) {
       const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
       playoff = { matches: predictedBracket.matches, champion: predictedBracket.champion };
+      // Actual (admin-curated) bracket: resolves the real fixtures + entered winners.
+      const actualBracket = buildBracket(MATCHES, results.groupResults, results.knockoutWinners, {
+        thirdOrder: results.thirdOrder, allowPartial: true,
+      });
       // Playoff points only count once the admin enables scoring (playoff started).
       if (results.playoffScoring) {
-        const actualBracket = buildBracket(MATCHES, results.groupResults, results.knockoutWinners, {
-          thirdOrder: results.thirdOrder, allowPartial: true,
-        });
         playoffScore = scorePlayoff(predictedBracket, actualBracket);
+      }
+      // Per-fixture view for the home dashboard: which side this user has advancing + points.
+      if (playoffMode) {
+        const userReached = reachedSets(predictedBracket);
+        playoffFixtures = actualFixtures(actualBracket, results.knockoutWinners, now).map((f) => {
+          const reached = userReached[f.advanceRound];
+          const correct = f.status === 'completed' && f.actualWinner && reached.has(f.actualWinner);
+          return {
+            ...f,
+            predictedHome: reached.has(f.home.team),
+            predictedAway: reached.has(f.away.team),
+            points: correct ? f.advancePoints : 0,
+          };
+        });
       }
     }
 
@@ -114,7 +134,9 @@ app.http('getUserPredictions', {
         matches,
         playoff,
         playoffScore,
+        playoffFixtures,
         playoffLocked,
+        playoffMode,
         revealed: revealAll,
         viewerIsAdmin,
         isSelf,

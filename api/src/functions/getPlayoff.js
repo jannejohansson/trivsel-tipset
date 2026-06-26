@@ -5,6 +5,8 @@ const { tryAuth } = require('../shared/authMiddleware');
 const { getPredictionsTable, getPlayoffTable } = require('../shared/tableClient');
 const { MATCHES } = require('../shared/matchData');
 const { buildBracket, PLAYOFF_LOCKOUT } = require('../shared/bracket');
+const { loadResults } = require('../shared/results');
+const { isPlayoffMode } = require('../shared/phase');
 
 app.http('getPlayoff', {
   methods: ['GET'],
@@ -12,7 +14,8 @@ app.http('getPlayoff', {
   route: 'playoff',
   handler: async (request) => {
     const user = tryAuth(request);
-    const locked = Date.now() >= PLAYOFF_LOCKOUT;
+    // Locked at the lockout time OR whenever the admin has flipped playoff mode on (testing).
+    const locked = isPlayoffMode(await loadResults());
 
     const predictions = {};
     const picks = {};

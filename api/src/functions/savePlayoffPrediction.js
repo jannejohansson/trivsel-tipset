@@ -4,7 +4,9 @@ const { app } = require('@azure/functions');
 const { verifyAuth } = require('../shared/authMiddleware');
 const { getPredictionsTable, getPlayoffTable } = require('../shared/tableClient');
 const { MATCHES } = require('../shared/matchData');
-const { buildBracket, PLAYOFF_LOCKOUT, KO_IDS } = require('../shared/bracket');
+const { buildBracket, KO_IDS } = require('../shared/bracket');
+const { loadResults } = require('../shared/results');
+const { isPlayoffMode } = require('../shared/phase');
 
 app.http('savePlayoffPrediction', {
   methods: ['POST'],
@@ -18,7 +20,8 @@ app.http('savePlayoffPrediction', {
       return { status: err.status || 401, jsonBody: { error: err.message } };
     }
 
-    if (Date.now() >= PLAYOFF_LOCKOUT) {
+    // Locked at the lockout time OR whenever the admin has flipped playoff mode on.
+    if (isPlayoffMode(await loadResults())) {
       return { status: 403, jsonBody: { error: 'Playoff picks are locked' } };
     }
 

@@ -122,6 +122,14 @@ const styles = {
     whiteSpace: 'nowrap',
     cursor: 'help',
   },
+  championFlag: {
+    flexShrink: 0,
+    width: '20px',
+    height: '15px',
+    borderRadius: '2px',
+    boxShadow: '0 1px 2px rgba(13,27,42,0.18)',
+    cursor: 'help',
+  },
   pointsRow: {
     display: 'flex',
     alignItems: 'center',
@@ -428,6 +436,11 @@ export default function Leaderboard() {
   // Whether any user has winner stars (drives the star legend's visibility).
   const hasStars = sortedUsers.some((u) => u.titles > 0);
 
+  // Playoff mode: name links jump straight to the bracket, and each row shows the
+  // user's predicted champion flag (picks are public once locked).
+  const playoffMode = !!data?.playoffMode;
+  const hasChampions = playoffMode && sortedUsers.some((u) => u.champion?.flag);
+
   // Whether there are any spotlight fixtures to reveal (same set for everyone).
   const sp = data?.spotlight;
   const hasSpotlight = !!sp && ((sp.recent?.length || 0) + (sp.inProgress?.length || 0) + (sp.next?.length || 0)) > 0;
@@ -503,13 +516,21 @@ export default function Leaderboard() {
                     <div style={styles.middle}>
                       <div style={styles.nameRow}>
                         <Link
-                          to={`/predictions/${u.userId}`}
+                          to={playoffMode ? `/predictions/${u.userId}?view=playoff` : `/predictions/${u.userId}`}
                           style={styles.nameLink}
                           onClick={(e) => e.stopPropagation()}
                           title={`Visa ${u.displayName}s tips`}
                         >
                           {u.displayName}
                         </Link>
+                        {playoffMode && u.champion?.flag && (
+                          <span
+                            className={`fi fi-${u.champion.flag}`}
+                            style={styles.championFlag}
+                            title={`Tippad världsmästare: ${u.champion.team}`}
+                            aria-label={`Tippad världsmästare: ${u.champion.team}`}
+                          />
+                        )}
                         {u.titles > 0 && (
                           <span
                             style={styles.titleStars}
@@ -569,8 +590,13 @@ export default function Leaderboard() {
           </div>
         )}
 
-        {(hasStars || hasBadges) && (
+        {(hasStars || hasBadges || hasChampions) && (
           <div style={styles.legend}>
+            {hasChampions && (
+              <span style={styles.legendItem}>
+                🏆 Flagga vid namnet – deltagarens tippade världsmästare
+              </span>
+            )}
             {hasStars && (
               <span style={styles.legendItem}>
                 ⭐ Stjärna – tidigare seger i Trivseltipset

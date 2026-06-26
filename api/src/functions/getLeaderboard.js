@@ -8,6 +8,18 @@ const { MATCHES } = require('../shared/matchData');
 const { resolveSpotlight } = require('../shared/spotlight');
 const { buildBracket } = require('../shared/bracket');
 const { scoreGroupTotal, scorePlayoff, scoreGroup } = require('../shared/scoring');
+const { isPlayoffMode } = require('../shared/phase');
+
+// A bracket's predicted champion as { team, flag } (flag pulled from the final's slots),
+// or null when no final winner is picked yet.
+function championOf(bracket) {
+  if (!bracket.champion) return null;
+  const final = bracket.matches.find((m) => m.id === 'ko_104');
+  if (!final) return { team: bracket.champion, flag: null };
+  const flag = final.home.team === bracket.champion ? final.home.flag
+    : final.away.team === bracket.champion ? final.away.flag : null;
+  return { team: bracket.champion, flag };
+}
 
 // Public-only fixture fields (no predictions) shared across all rows.
 function fixtureMeta(m) {
@@ -115,6 +127,8 @@ app.http('getLeaderboard', {
     });
     // Admin master-switch: while off, no playoff points are awarded to users.
     const playoffOn = results.playoffScoring;
+    // Playoff display mode (scoring switch OR lockout time) — gates champion exposure etc.
+    const playoffMode = isPlayoffMode(results);
     const prevPlayoffOn = prevResults.playoffScoring;
     const weekPlayoffOn = weekResults.playoffScoring;
     // Only surface movement once there was a standing to move from (≥1 result before today).
@@ -171,6 +185,8 @@ app.http('getLeaderboard', {
         _weekPoints: weekPoints,
         _ach: ach,
         spotlight,
+        // Predicted champion is public only in playoff mode (picks are locked by then).
+        champion: playoffMode ? championOf(predictedBracket) : null,
       };
     });
 
@@ -241,6 +257,7 @@ app.http('getLeaderboard', {
         count: users.length,
         users,
         achievementLeaders,
+        playoffMode,
         spotlight: {
           recent: recent.map((m) => ({ ...fixtureMeta(m), actual: results.groupResults[m.id] })),
           inProgress: inProgress.map(fixtureMeta),

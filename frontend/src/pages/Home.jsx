@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import MatchCard from '../components/MatchCard.jsx';
+import PlayoffFixtureCard from '../components/PlayoffFixtureCard.jsx';
 
 const styles = {
   hero: {
@@ -249,6 +250,16 @@ export default function Home() {
     .sort(byKickoff);
   const groupStageOver = matches.length > 0 && matches.every((m) => m.locked);
 
+  // Playoff mode: the dashboard switches from group scorelines to knockout advancement.
+  const playoffMode = !!data.playoffMode;
+  const pFixtures = data.playoffFixtures || [];
+  const pCompleted = pFixtures.filter((f) => f.status === 'completed').sort((a, b) => byKickoff(b, a)).slice(0, 6);
+  const pInProgress = pFixtures.filter((f) => f.status === 'inProgress').sort(byKickoff);
+  const pUpcomingAll = pFixtures.filter((f) => f.status === 'upcoming').sort(byKickoff);
+  // Prefer today's/tomorrow's knockout games; if there's a gap day, fall back to the next two.
+  const pUpcomingSoon = pUpcomingAll.filter((f) => keyOf(f) === todayKey || keyOf(f) === tomorrowKey);
+  const pUpcoming = pUpcomingSoon.length ? pUpcomingSoon : pUpcomingAll.slice(0, 2);
+
   // Push an edited scoreline into local state so the bracket/derived views stay
   // in sync; the actual save is handled (debounced) inside ScoreInput.
   const handlePredictionChange = (matchId, pred) =>
@@ -280,13 +291,66 @@ export default function Home() {
       <section style={styles.hero}>
         <div style={styles.eyebrow}>Trivseltipset · FIFA World Cup 2026</div>
         <h1 style={styles.title}>{displayName ? `Hej ${displayName}!` : 'Välkommen'}</h1>
-        <p style={styles.sub}>Din översikt – senaste resultat och dagens matcher</p>
+        <p style={styles.sub}>
+          {playoffMode
+            ? 'Slutspelet – dina lag i matcherna och hur det går'
+            : 'Din översikt – senaste resultat och dagens matcher'}
+        </p>
       </section>
 
       <div style={styles.page}>
         {/* Din placering */}
         {standing && <PlacementCard rank={standing.rank} total={standing.total} prevRank={standing.prevRank} />}
 
+        {playoffMode ? (
+          <>
+            {/* Senaste slutspelsresultat */}
+            <section style={styles.section}>
+              <div style={styles.sectionHead}>
+                <h2 style={styles.sectionTitle}>Senaste slutspelsresultat</h2>
+                <Link to="/leaderboard" style={styles.sectionLink}>Ställning →</Link>
+              </div>
+              {pCompleted.length > 0 ? (
+                <div style={styles.list}>
+                  {pCompleted.map((f) => <PlayoffFixtureCard key={f.id} fixture={f} />)}
+                </div>
+              ) : (
+                <EmptyState to="/slutspel" cta="Till slutspelet →">
+                  Inga avgjorda slutspelsmatcher ännu. Håll utkik här när slutspelet drar igång!
+                </EmptyState>
+              )}
+            </section>
+
+            {/* Pågående slutspelsmatcher */}
+            {pInProgress.length > 0 && (
+              <section style={styles.section}>
+                <div style={styles.sectionHead}>
+                  <h2 style={styles.sectionTitle}>Pågående</h2>
+                </div>
+                <div style={styles.list}>
+                  {pInProgress.map((f) => <PlayoffFixtureCard key={f.id} fixture={f} />)}
+                </div>
+              </section>
+            )}
+
+            {/* Kommande slutspelsmatcher */}
+            <section style={styles.section}>
+              <div style={styles.sectionHead}>
+                <h2 style={styles.sectionTitle}>Kommande slutspelsmatcher</h2>
+              </div>
+              {pUpcoming.length > 0 ? (
+                <div style={styles.list}>
+                  {pUpcoming.map((f) => <PlayoffFixtureCard key={f.id} fixture={f} />)}
+                </div>
+              ) : (
+                <EmptyState to="/slutspel" cta="Till slutspelet →">
+                  Inga fler slutspelsmatcher med kända lag just nu.
+                </EmptyState>
+              )}
+            </section>
+          </>
+        ) : (
+          <>
         {/* Senaste resultat */}
         <section style={styles.section}>
           <div style={styles.sectionHead}>
@@ -342,6 +406,8 @@ export default function Home() {
               <EmptyState>Inga matcher att tippa idag eller imorgon. Passa på att fylla i kommande omgångar.</EmptyState>
             )}
           </section>
+        )}
+          </>
         )}
       </div>
     </>

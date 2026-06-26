@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api.js';
 import { useIsMobile } from '../lib/useIsMobile.js';
 import useAutoRefresh from '../hooks/useAutoRefresh.js';
+import { ROUND_LABELS } from '../lib/bracket.js';
 
 const styles = {
   hero: {
@@ -114,6 +115,14 @@ const styles = {
   },
   ptsPillPos: { background: 'var(--green-dim)', color: 'var(--green-text)', border: '1px solid rgba(21,163,74,0.3)' },
   ptsPillZero: { background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' },
+  // ── Playoff additions ────────────────────────────────────────
+  panelTitle: { fontSize: '15px', fontWeight: 800, color: 'var(--text)' },
+  advName: {
+    flex: 1, minWidth: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text)',
+    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+  },
+  advNameLost: { opacity: 0.55 },
+  noPredsInline: { fontSize: '11px', fontStyle: 'italic', color: 'var(--text-muted)' },
 };
 
 function formatKickoff(utc) {
@@ -229,8 +238,108 @@ function MatchCard({ match, isMobile }) {
   );
 }
 
+// Predicted-champion distribution: a bar per team the field picked to win it all.
+function ChampionPanel({ champions, total, isMobile }) {
+  if (!champions || champions.length === 0) return null;
+  const max = champions.reduce((m, c) => Math.max(m, c.count), 0);
+  return (
+    <div style={styles.card}>
+      <div style={styles.cardHead}>
+        <span style={styles.panelTitle}>🏆 Tippad världsmästare</span>
+        <span style={{ ...styles.kickoff, marginLeft: 'auto' }}>{total} deltagare</span>
+      </div>
+      <div style={styles.chart}>
+        {champions.map((c) => {
+          const barPct = max > 0 ? (c.count / max) * 100 : 0;
+          return (
+            <div key={c.team} style={styles.barBlock}>
+              <div style={styles.barRow}>
+                <span className={`fi fi-${c.flag}`} style={styles.flag} aria-hidden="true" />
+                <span style={styles.advName}>{c.team}</span>
+                <div style={styles.track}><div style={{ ...styles.fill, width: `${barPct}%` }} /></div>
+                <div style={styles.stat}><span style={styles.pct}>{c.pct}%</span><span style={styles.cnt}>{c.count} st</span></div>
+              </div>
+              <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
+                {c.users.map((n, i) => <span key={i} style={styles.nameChip}>{n}</span>)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// One knockout fixture: a bar per side showing how many tipped that team to advance,
+// the actual winner highlighted once the tie is decided.
+function FixtureCard({ fixture, isMobile }) {
+  const { round, status, actualWinner } = fixture;
+  const sides = [fixture.home, fixture.away];
+  const max = Math.max(fixture.home.count, fixture.away.count, 1);
+  return (
+    <div style={styles.card}>
+      <div style={styles.cardHead}>
+        <span style={styles.groupBadge}>{ROUND_LABELS[round] || round}</span>
+        <div style={styles.teams}>
+          <span className={`fi fi-${fixture.home.flag}`} style={styles.flag} aria-hidden="true" />
+          <span style={styles.teamName}>{fixture.home.team}</span>
+          <span style={styles.vs}>–</span>
+          <span style={styles.teamName}>{fixture.away.team}</span>
+          <span className={`fi fi-${fixture.away.flag}`} style={styles.flag} aria-hidden="true" />
+        </div>
+        <div style={styles.meta}>
+          <span style={styles.kickoff}>{formatKickoff(fixture.kickoffUtc)}</span>
+          {status === 'completed' && <span style={styles.statusDone}>{actualWinner} vidare</span>}
+          {status === 'inProgress' && <span style={styles.statusLive}>● Pågår</span>}
+        </div>
+      </div>
+      <div style={styles.chart}>
+        {sides.map((side) => {
+          const barPct = (side.count / max) * 100;
+          const isWinner = status === 'completed' && actualWinner === side.team;
+          const isLoser = status === 'completed' && actualWinner && actualWinner !== side.team;
+          const fillStyle = isWinner ? styles.fillExact : isLoser ? styles.fillMuted : {};
+          return (
+            <div key={side.team} style={styles.barBlock}>
+              <div style={styles.barRow}>
+                <span className={`fi fi-${side.flag}`} style={styles.flag} aria-hidden="true" />
+                <span style={{ ...styles.advName, ...(isWinner ? styles.scoreCorrect : {}), ...(isLoser ? styles.advNameLost : {}) }}>
+                  {side.team}
+                </span>
+                <div style={styles.track}><div style={{ ...styles.fill, ...fillStyle, width: `${barPct}%` }} /></div>
+                <div style={styles.stat}><span style={styles.pct}>{side.pct}%</span><span style={styles.cnt}>{side.count} st</span></div>
+              </div>
+              <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
+                {side.users.length === 0
+                  ? <span style={styles.noPredsInline}>Ingen tippade {side.team} vidare</span>
+                  : side.users.map((n, i) => <span key={i} style={{ ...styles.nameChip, ...(isWinner ? styles.nameChipExact : {}) }}>{n}</span>)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Knockout fixtures grouped by day, earliest first (reads R32 → Final, completed first).
+function groupFixturesByDay(fixtures) {
+  const groups = new Map();
+  for (const f of fixtures) {
+    const key = dayKey(f.kickoffUtc);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(f);
+  }
+  for (const items of groups.values()) {
+    items.sort((a, b) => new Date(a.kickoffUtc) - new Date(b.kickoffUtc));
+  }
+  return [...groups.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([key, items]) => ({ key, label: dayLabel(items[0].kickoffUtc), items }));
+}
+
 export default function PredictionBreakdown() {
-  const [matches, setMatches] = useState(null);
+  const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const isMobile = useIsMobile();
 
@@ -238,29 +347,63 @@ export default function PredictionBreakdown() {
   // revealed (kicked-off) matches without a manual reload.
   const load = useCallback(() => {
     return api.getPredictionBreakdown()
-      .then((data) => setMatches(data.matches || []))
+      .then((d) => setData(d))
       .catch(() => setError('Kunde inte ladda tippstatistiken.'));
   }, []);
 
   useEffect(() => { load(); }, [load]);
   useAutoRefresh(load, 60000);
 
+  const playoff = !!data?.playoff;
+  const matches = data?.matches || [];
+  const fixtures = data?.fixtures || [];
+
   return (
     <>
       <section style={styles.hero}>
         <div style={styles.eyebrow}>Trivseltipset · FIFA World Cup 2026</div>
         <h1 style={styles.title}>Vad tippar andra?</h1>
-        <p style={styles.sub}>Så har deltagarna tippat de senaste och pågående matcherna.</p>
+        <p style={styles.sub}>
+          {playoff
+            ? 'Så har deltagarna tippat slutspelet – vilka lag som går vidare och vem som blir mästare.'
+            : 'Så har deltagarna tippat de senaste och pågående matcherna.'}
+        </p>
       </section>
 
       <div style={styles.page}>
         {error && <p style={styles.error}>{error}</p>}
 
-        {!error && matches && matches.length === 0 && (
+        {/* ── Playoff view ── */}
+        {!error && playoff && (
+          <>
+            <ChampionPanel champions={data.champions} total={data.totalUsers} isMobile={isMobile} />
+            {fixtures.length === 0 ? (
+              <p style={styles.empty}>Slutspelsmatcherna visas här när lagen är klara.</p>
+            ) : (
+              <>
+                <p style={styles.legend}>
+                  Slutspelstipsen är låsta och visas för alla. Varje stapel visar hur många som tippat laget vidare.
+                </p>
+                {groupFixturesByDay(fixtures).map((day) => (
+                  <div key={day.key}>
+                    <div style={styles.dayHeader}>
+                      <span style={styles.dayLabel}>{day.label}</span>
+                      <span style={styles.dayRule} aria-hidden="true" />
+                    </div>
+                    {day.items.map((f) => <FixtureCard key={f.id} fixture={f} isMobile={isMobile} />)}
+                  </div>
+                ))}
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Group-stage view ── */}
+        {!error && !playoff && data && matches.length === 0 && (
           <p style={styles.empty}>Inga matcher har startat än. Kom tillbaka när första avsparken gått!</p>
         )}
 
-        {!error && matches && matches.length > 0 && (
+        {!error && !playoff && matches.length > 0 && (
           <>
             <p style={styles.legend}>
               Tipsen visas först när matchen sparkats igång. Varje stapel visar ett tippat resultat och vilka som tippat det.

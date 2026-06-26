@@ -12,52 +12,55 @@ const THIRD_PLACE_MATRIX = require('./thirdPlaceMatrix.json');
 
 const GROUP_LETTERS = 'ABCDEFGHIJKL'.split('');
 
-// First knockout kickoff — 28 June 2026 21:00 Swedish local time (CEST, UTC+2).
-// At this moment the predicted bracket becomes final, so playoff picks lock here.
-const PLAYOFF_LOCKOUT = new Date('2026-06-28T19:00:00Z').getTime();
-
 // Slot descriptors:
 //   { t:'1'|'2', g:'A' }      group winner / runner-up
 //   { t:'3', w:'1E' }         a best-third, looked up in the matrix by winner column
 //   { t:'W', from:'ko_74' }   winner of an earlier knockout match
+// kickoffUtc/venue: official FIFA 2026 knockout schedule (en.wikipedia.org/wiki/
+// 2026_FIFA_World_Cup_knockout_stage), local kickoffs converted to UTC. Venue strings
+// reuse the metro-area naming from matchData.js. Match 103 (bronze) is omitted from tips.
 const KO_MATCHES = [
   // Round of 32
-  { id: 'ko_73', num: 73, round: 'R32', a: { t: '2', g: 'A' }, b: { t: '2', g: 'B' } },
-  { id: 'ko_74', num: 74, round: 'R32', a: { t: '1', g: 'E' }, b: { t: '3', w: '1E' } },
-  { id: 'ko_75', num: 75, round: 'R32', a: { t: '1', g: 'F' }, b: { t: '2', g: 'C' } },
-  { id: 'ko_76', num: 76, round: 'R32', a: { t: '1', g: 'C' }, b: { t: '2', g: 'F' } },
-  { id: 'ko_77', num: 77, round: 'R32', a: { t: '1', g: 'I' }, b: { t: '3', w: '1I' } },
-  { id: 'ko_78', num: 78, round: 'R32', a: { t: '2', g: 'E' }, b: { t: '2', g: 'I' } },
-  { id: 'ko_79', num: 79, round: 'R32', a: { t: '1', g: 'A' }, b: { t: '3', w: '1A' } },
-  { id: 'ko_80', num: 80, round: 'R32', a: { t: '1', g: 'L' }, b: { t: '3', w: '1L' } },
-  { id: 'ko_81', num: 81, round: 'R32', a: { t: '1', g: 'D' }, b: { t: '3', w: '1D' } },
-  { id: 'ko_82', num: 82, round: 'R32', a: { t: '1', g: 'G' }, b: { t: '3', w: '1G' } },
-  { id: 'ko_83', num: 83, round: 'R32', a: { t: '2', g: 'K' }, b: { t: '2', g: 'L' } },
-  { id: 'ko_84', num: 84, round: 'R32', a: { t: '1', g: 'H' }, b: { t: '2', g: 'J' } },
-  { id: 'ko_85', num: 85, round: 'R32', a: { t: '1', g: 'B' }, b: { t: '3', w: '1B' } },
-  { id: 'ko_86', num: 86, round: 'R32', a: { t: '1', g: 'J' }, b: { t: '2', g: 'H' } },
-  { id: 'ko_87', num: 87, round: 'R32', a: { t: '1', g: 'K' }, b: { t: '3', w: '1K' } },
-  { id: 'ko_88', num: 88, round: 'R32', a: { t: '2', g: 'D' }, b: { t: '2', g: 'G' } },
+  { id: 'ko_73', num: 73, round: 'R32', kickoffUtc: '2026-06-28T19:00:00Z', venue: 'SoFi Stadium, Los Angeles', a: { t: '2', g: 'A' }, b: { t: '2', g: 'B' } },
+  { id: 'ko_74', num: 74, round: 'R32', kickoffUtc: '2026-06-29T20:30:00Z', venue: 'Gillette Stadium, Boston', a: { t: '1', g: 'E' }, b: { t: '3', w: '1E' } },
+  { id: 'ko_75', num: 75, round: 'R32', kickoffUtc: '2026-06-30T01:00:00Z', venue: 'Estadio BBVA, Monterrey', a: { t: '1', g: 'F' }, b: { t: '2', g: 'C' } },
+  { id: 'ko_76', num: 76, round: 'R32', kickoffUtc: '2026-06-29T17:00:00Z', venue: 'NRG Stadium, Houston', a: { t: '1', g: 'C' }, b: { t: '2', g: 'F' } },
+  { id: 'ko_77', num: 77, round: 'R32', kickoffUtc: '2026-06-30T21:00:00Z', venue: 'MetLife Stadium, New York/New Jersey', a: { t: '1', g: 'I' }, b: { t: '3', w: '1I' } },
+  { id: 'ko_78', num: 78, round: 'R32', kickoffUtc: '2026-06-30T17:00:00Z', venue: 'AT&T Stadium, Dallas', a: { t: '2', g: 'E' }, b: { t: '2', g: 'I' } },
+  { id: 'ko_79', num: 79, round: 'R32', kickoffUtc: '2026-07-01T01:00:00Z', venue: 'Estadio Azteca, Mexico City', a: { t: '1', g: 'A' }, b: { t: '3', w: '1A' } },
+  { id: 'ko_80', num: 80, round: 'R32', kickoffUtc: '2026-07-01T16:00:00Z', venue: 'Mercedes-Benz Stadium, Atlanta', a: { t: '1', g: 'L' }, b: { t: '3', w: '1L' } },
+  { id: 'ko_81', num: 81, round: 'R32', kickoffUtc: '2026-07-02T00:00:00Z', venue: "Levi's Stadium, San Francisco Bay Area", a: { t: '1', g: 'D' }, b: { t: '3', w: '1D' } },
+  { id: 'ko_82', num: 82, round: 'R32', kickoffUtc: '2026-07-01T20:00:00Z', venue: 'Lumen Field, Seattle', a: { t: '1', g: 'G' }, b: { t: '3', w: '1G' } },
+  { id: 'ko_83', num: 83, round: 'R32', kickoffUtc: '2026-07-02T23:00:00Z', venue: 'BMO Field, Toronto', a: { t: '2', g: 'K' }, b: { t: '2', g: 'L' } },
+  { id: 'ko_84', num: 84, round: 'R32', kickoffUtc: '2026-07-02T19:00:00Z', venue: 'SoFi Stadium, Los Angeles', a: { t: '1', g: 'H' }, b: { t: '2', g: 'J' } },
+  { id: 'ko_85', num: 85, round: 'R32', kickoffUtc: '2026-07-03T03:00:00Z', venue: 'BC Place, Vancouver', a: { t: '1', g: 'B' }, b: { t: '3', w: '1B' } },
+  { id: 'ko_86', num: 86, round: 'R32', kickoffUtc: '2026-07-03T22:00:00Z', venue: 'Hard Rock Stadium, Miami', a: { t: '1', g: 'J' }, b: { t: '2', g: 'H' } },
+  { id: 'ko_87', num: 87, round: 'R32', kickoffUtc: '2026-07-04T01:30:00Z', venue: 'Arrowhead Stadium, Kansas City', a: { t: '1', g: 'K' }, b: { t: '3', w: '1K' } },
+  { id: 'ko_88', num: 88, round: 'R32', kickoffUtc: '2026-07-03T18:00:00Z', venue: 'AT&T Stadium, Dallas', a: { t: '2', g: 'D' }, b: { t: '2', g: 'G' } },
   // Round of 16
-  { id: 'ko_89', num: 89, round: 'R16', a: { t: 'W', from: 'ko_74' }, b: { t: 'W', from: 'ko_77' } },
-  { id: 'ko_90', num: 90, round: 'R16', a: { t: 'W', from: 'ko_73' }, b: { t: 'W', from: 'ko_75' } },
-  { id: 'ko_91', num: 91, round: 'R16', a: { t: 'W', from: 'ko_76' }, b: { t: 'W', from: 'ko_78' } },
-  { id: 'ko_92', num: 92, round: 'R16', a: { t: 'W', from: 'ko_79' }, b: { t: 'W', from: 'ko_80' } },
-  { id: 'ko_93', num: 93, round: 'R16', a: { t: 'W', from: 'ko_83' }, b: { t: 'W', from: 'ko_84' } },
-  { id: 'ko_94', num: 94, round: 'R16', a: { t: 'W', from: 'ko_81' }, b: { t: 'W', from: 'ko_82' } },
-  { id: 'ko_95', num: 95, round: 'R16', a: { t: 'W', from: 'ko_86' }, b: { t: 'W', from: 'ko_88' } },
-  { id: 'ko_96', num: 96, round: 'R16', a: { t: 'W', from: 'ko_85' }, b: { t: 'W', from: 'ko_87' } },
+  { id: 'ko_89', num: 89, round: 'R16', kickoffUtc: '2026-07-04T21:00:00Z', venue: 'Lincoln Financial Field, Philadelphia', a: { t: 'W', from: 'ko_74' }, b: { t: 'W', from: 'ko_77' } },
+  { id: 'ko_90', num: 90, round: 'R16', kickoffUtc: '2026-07-04T17:00:00Z', venue: 'NRG Stadium, Houston', a: { t: 'W', from: 'ko_73' }, b: { t: 'W', from: 'ko_75' } },
+  { id: 'ko_91', num: 91, round: 'R16', kickoffUtc: '2026-07-05T20:00:00Z', venue: 'MetLife Stadium, New York/New Jersey', a: { t: 'W', from: 'ko_76' }, b: { t: 'W', from: 'ko_78' } },
+  { id: 'ko_92', num: 92, round: 'R16', kickoffUtc: '2026-07-06T00:00:00Z', venue: 'Estadio Azteca, Mexico City', a: { t: 'W', from: 'ko_79' }, b: { t: 'W', from: 'ko_80' } },
+  { id: 'ko_93', num: 93, round: 'R16', kickoffUtc: '2026-07-06T19:00:00Z', venue: 'AT&T Stadium, Dallas', a: { t: 'W', from: 'ko_83' }, b: { t: 'W', from: 'ko_84' } },
+  { id: 'ko_94', num: 94, round: 'R16', kickoffUtc: '2026-07-07T00:00:00Z', venue: 'Lumen Field, Seattle', a: { t: 'W', from: 'ko_81' }, b: { t: 'W', from: 'ko_82' } },
+  { id: 'ko_95', num: 95, round: 'R16', kickoffUtc: '2026-07-07T16:00:00Z', venue: 'Mercedes-Benz Stadium, Atlanta', a: { t: 'W', from: 'ko_86' }, b: { t: 'W', from: 'ko_88' } },
+  { id: 'ko_96', num: 96, round: 'R16', kickoffUtc: '2026-07-07T20:00:00Z', venue: 'BC Place, Vancouver', a: { t: 'W', from: 'ko_85' }, b: { t: 'W', from: 'ko_87' } },
   // Quarter-finals
-  { id: 'ko_97', num: 97, round: 'QF', a: { t: 'W', from: 'ko_89' }, b: { t: 'W', from: 'ko_90' } },
-  { id: 'ko_98', num: 98, round: 'QF', a: { t: 'W', from: 'ko_93' }, b: { t: 'W', from: 'ko_94' } },
-  { id: 'ko_99', num: 99, round: 'QF', a: { t: 'W', from: 'ko_91' }, b: { t: 'W', from: 'ko_92' } },
-  { id: 'ko_100', num: 100, round: 'QF', a: { t: 'W', from: 'ko_95' }, b: { t: 'W', from: 'ko_96' } },
+  { id: 'ko_97', num: 97, round: 'QF', kickoffUtc: '2026-07-09T20:00:00Z', venue: 'Gillette Stadium, Boston', a: { t: 'W', from: 'ko_89' }, b: { t: 'W', from: 'ko_90' } },
+  { id: 'ko_98', num: 98, round: 'QF', kickoffUtc: '2026-07-10T19:00:00Z', venue: 'SoFi Stadium, Los Angeles', a: { t: 'W', from: 'ko_93' }, b: { t: 'W', from: 'ko_94' } },
+  { id: 'ko_99', num: 99, round: 'QF', kickoffUtc: '2026-07-11T21:00:00Z', venue: 'Hard Rock Stadium, Miami', a: { t: 'W', from: 'ko_91' }, b: { t: 'W', from: 'ko_92' } },
+  { id: 'ko_100', num: 100, round: 'QF', kickoffUtc: '2026-07-12T01:00:00Z', venue: 'Arrowhead Stadium, Kansas City', a: { t: 'W', from: 'ko_95' }, b: { t: 'W', from: 'ko_96' } },
   // Semi-finals
-  { id: 'ko_101', num: 101, round: 'SF', a: { t: 'W', from: 'ko_97' }, b: { t: 'W', from: 'ko_98' } },
-  { id: 'ko_102', num: 102, round: 'SF', a: { t: 'W', from: 'ko_99' }, b: { t: 'W', from: 'ko_100' } },
+  { id: 'ko_101', num: 101, round: 'SF', kickoffUtc: '2026-07-14T19:00:00Z', venue: 'AT&T Stadium, Dallas', a: { t: 'W', from: 'ko_97' }, b: { t: 'W', from: 'ko_98' } },
+  { id: 'ko_102', num: 102, round: 'SF', kickoffUtc: '2026-07-15T19:00:00Z', venue: 'Mercedes-Benz Stadium, Atlanta', a: { t: 'W', from: 'ko_99' }, b: { t: 'W', from: 'ko_100' } },
   // Final (match 103, the bronze game, is intentionally omitted)
-  { id: 'ko_104', num: 104, round: 'F', a: { t: 'W', from: 'ko_101' }, b: { t: 'W', from: 'ko_102' } },
+  { id: 'ko_104', num: 104, round: 'F', kickoffUtc: '2026-07-19T19:00:00Z', venue: 'MetLife Stadium, New York/New Jersey', a: { t: 'W', from: 'ko_101' }, b: { t: 'W', from: 'ko_102' } },
 ];
+
+// First knockout kickoff (match 73) — the moment the predicted bracket becomes final,
+// so playoff picks lock here. Single source of truth: derived from the schedule above.
+const PLAYOFF_LOCKOUT = new Date(KO_MATCHES.find((m) => m.id === 'ko_73').kickoffUtc).getTime();
 
 const KO_IDS = new Set(KO_MATCHES.map((m) => m.id));
 const ROUND_ORDER = ['R32', 'R16', 'QF', 'SF', 'F'];
@@ -200,7 +203,7 @@ const slotLabel = (slot) => {
 //   predictions  Map|object of group matchId -> { homeScore, awayScore }
 //   picks        Map|object of ko matchId -> winning team name
 //   opts.thirdOrder  optional ranked group letters for the third-place table
-// Returns { matches: [{ id,num,round, home, away, pick, complete }], champion }.
+// Returns { matches: [{ id,num,round,kickoffUtc,venue, home, away, pick, complete }], champion }.
 function buildBracket(matches, predictions, picks, opts = {}) {
   const getPick = predGetter(picks);
   const all = computeAllStandings(matches, predictions);
@@ -253,7 +256,7 @@ function buildBracket(matches, predictions, picks, opts = {}) {
     // A pick is only valid if it is one of the two resolved teams.
     if (pick && pick !== home.team && pick !== away.team) pick = null;
     resolved[ko.id] = { home, away, pick };
-    out.push({ id: ko.id, num: ko.num, round: ko.round, home, away, pick, complete: !!(home.team && away.team) });
+    out.push({ id: ko.id, num: ko.num, round: ko.round, kickoffUtc: ko.kickoffUtc, venue: ko.venue, home, away, pick, complete: !!(home.team && away.team) });
   }
 
   const champion = resolved['ko_104'] ? resolved['ko_104'].pick : null;

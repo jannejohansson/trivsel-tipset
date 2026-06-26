@@ -186,11 +186,19 @@ const styles = {
     cursor: 'help',
   },
   legend: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
     color: 'var(--text-muted)',
     fontSize: '11px',
-    lineHeight: 1.6,
+    lineHeight: 1.4,
     marginBottom: '12px',
     textAlign: 'center',
+  },
+  legendItem: {
+    // Each entry on its own line; descriptions wrap instead of overflowing on narrow screens.
+    maxWidth: '100%',
   },
   right: {
     textAlign: 'right',
@@ -564,12 +572,12 @@ export default function Leaderboard() {
         {(hasStars || hasBadges) && (
           <div style={styles.legend}>
             {hasStars && (
-              <span style={{ marginRight: '12px', whiteSpace: 'nowrap' }}>
+              <span style={styles.legendItem}>
                 ⭐ Stjärna – tidigare seger i Trivseltipset
               </span>
             )}
             {hasBadges && Object.values(BADGE_META).map((m) => (
-              <span key={m.label} style={{ marginRight: '12px', whiteSpace: 'nowrap' }}>
+              <span key={m.label} style={styles.legendItem}>
                 {m.emoji} {m.label} – {m.desc}
               </span>
             ))}

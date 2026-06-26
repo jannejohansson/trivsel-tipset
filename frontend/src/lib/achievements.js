@@ -4,8 +4,9 @@
 // keyed lookup used when rendering a winner's badge.
 export const ACHIEVEMENTS = [
   { key: 'prickskytt', emoji: '🎯', label: 'Prickskytt', desc: 'flest exakta resultat', field: 'exact' },
-  { key: 'streak', emoji: '🔥', label: 'Längsta svit', desc: 'längst poängsvit i rad', field: 'streak' },
+  { key: 'streak', emoji: '🔥', label: 'Hetast just nu', desc: 'längst pågående poängsvit (nollas vid 0-poängsmatch)', field: 'streak' },
   { key: 'raket', emoji: '🚀', label: 'Raketen', desc: 'störst klättring senaste 3 dagarna', field: 'climb', signed: true },
+  { key: 'ankaret', emoji: '⚓', label: 'Ankaret', desc: 'störst tapp senaste 3 dagarna', field: 'anchor', down: true },
   { key: 'stryktipparen', emoji: '✅', label: 'Stryktipparen', desc: 'flest rätt tecken (1X2)', field: 'outcome' },
   { key: 'tursam', emoji: '🍀', label: 'Tursam', desc: 'tippat helt fel men fått poäng ändå', field: 'lucky' },
 ];

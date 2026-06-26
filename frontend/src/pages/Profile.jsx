@@ -376,8 +376,13 @@ export default function Profile() {
   const groupDone = (stats?.groupCount ?? 0) >= TOTAL_MATCHES;
   const playoffDone = (stats?.playoffCount ?? 0) >= TOTAL_PLAYOFF;
 
-  // A "–" for missing/non-positive values; signed categories (Raketen) only count climbs up.
-  const fmtAch = (v, signed) => (v == null ? '–' : signed ? (v > 0 ? `+${v}` : '–') : `${v}`);
+  // A "–" for missing/non-positive values; signed categories only count moves in their
+  // direction — Raketen (signed) shows climbs as +N, Ankaret (down) shows drops as -N.
+  const fmtAch = (v, a) =>
+    v == null ? '–'
+      : a.signed ? (v > 0 ? `+${v}` : '–')
+      : a.down ? (v > 0 ? `-${v}` : '–')
+      : `${v}`;
 
   return (
     <div style={styles.page}>
@@ -489,7 +494,7 @@ export default function Profile() {
             const leader = stats.achievementLeaders?.[a.key];
             const leaderIsMe = !!leader && leader.userIds.includes(user.userId);
             const leaderText = leader
-              ? `${leaderIsMe ? 'Du' : leader.names[0]}${leader.names.length > 1 ? ' m.fl.' : ''} · ${fmtAch(leader.value, a.signed)}`
+              ? `${leaderIsMe ? 'Du' : leader.names[0]}${leader.names.length > 1 ? ' m.fl.' : ''} · ${fmtAch(leader.value, a)}`
               : 'Ingen ännu';
             return (
               <div
@@ -503,7 +508,7 @@ export default function Profile() {
                 </span>
                 <div style={styles.achVals}>
                   <span style={{ ...styles.achMine, ...(leaderIsMe ? styles.achMineLead : {}) }}>
-                    Du {fmtAch(mine, a.signed)}
+                    Du {fmtAch(mine, a)}
                   </span>
                   <span style={styles.achLeader}>🏆 {leaderText}</span>
                 </div>

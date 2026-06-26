@@ -13,7 +13,7 @@ const { MATCHES } = require('../shared/matchData');
 const { buildBracket, PLAYOFF_LOCKOUT } = require('../shared/bracket');
 const { scoreGroup, scorePlayoff, reachedSets } = require('../shared/scoring');
 const { isPlayoffMode } = require('../shared/phase');
-const { actualFixtures } = require('../shared/playoffView');
+const { actualFixtures, r32Map } = require('../shared/playoffView');
 
 // Read ANOTHER participant's predictions. Visibility is enforced here, server-side:
 //   - group matches: a prediction is included only once that match has locked
@@ -100,6 +100,7 @@ app.http('getUserPredictions', {
     let playoff = null;
     let playoffScore = null;
     let playoffFixtures = null;
+    let playoffR32 = null;
     if (playoffMode || revealAll) {
       const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
       playoff = { matches: predictedBracket.matches, champion: predictedBracket.champion };
@@ -113,6 +114,13 @@ app.http('getUserPredictions', {
       }
       // Per-fixture view for the home dashboard: which side this user has advancing + points.
       if (playoffMode) {
+        // Teams this user predicted to reach the Round of 32 (qualify from the groups),
+        // each flagged with whether they actually made it.
+        const actualR32 = new Set(r32Map(actualBracket).keys());
+        playoffR32 = [...r32Map(predictedBracket).entries()]
+          .map(([team, flag]) => ({ team, flag, qualified: actualR32.has(team) }))
+          .sort((a, b) => a.team.localeCompare(b.team, 'sv'));
+
         const userReached = reachedSets(predictedBracket);
         playoffFixtures = actualFixtures(actualBracket, results.knockoutWinners, now).map((f) => {
           const reached = userReached[f.advanceRound];
@@ -135,6 +143,7 @@ app.http('getUserPredictions', {
         playoff,
         playoffScore,
         playoffFixtures,
+        playoffR32,
         playoffLocked,
         playoffMode,
         revealed: revealAll,

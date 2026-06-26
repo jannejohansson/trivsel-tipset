@@ -238,30 +238,40 @@ function MatchCard({ match, isMobile }) {
   );
 }
 
-// Predicted-champion distribution: a bar per team the field picked to win it all.
-function ChampionPanel({ champions, total, isMobile }) {
-  if (!champions || champions.length === 0) return null;
-  const max = champions.reduce((m, c) => Math.max(m, c.count), 0);
+// A "how the field tipped" panel: one bar per team. Used for both the champion pick
+// and the Round-of-32 qualifiers. `showNames` lists each team's predictors; when an
+// item carries `qualified` (R32) the row is tinted green (through) or dimmed (out).
+function DistributionPanel({ title, subtitle, items, isMobile, showNames = false }) {
+  if (!items || items.length === 0) return null;
+  const max = items.reduce((m, c) => Math.max(m, c.count), 0);
   return (
     <div style={styles.card}>
       <div style={styles.cardHead}>
-        <span style={styles.panelTitle}>🏆 Tippad världsmästare</span>
-        <span style={{ ...styles.kickoff, marginLeft: 'auto' }}>{total} deltagare</span>
+        <span style={styles.panelTitle}>{title}</span>
+        {subtitle && <span style={{ ...styles.kickoff, marginLeft: 'auto' }}>{subtitle}</span>}
       </div>
       <div style={styles.chart}>
-        {champions.map((c) => {
+        {items.map((c) => {
           const barPct = max > 0 ? (c.count / max) * 100 : 0;
+          const through = c.qualified === true;
+          const out = c.qualified === false;
           return (
             <div key={c.team} style={styles.barBlock}>
               <div style={styles.barRow}>
                 <span className={`fi fi-${c.flag}`} style={styles.flag} aria-hidden="true" />
-                <span style={styles.advName}>{c.team}</span>
-                <div style={styles.track}><div style={{ ...styles.fill, width: `${barPct}%` }} /></div>
+                <span style={{ ...styles.advName, ...(through ? styles.scoreCorrect : {}), ...(out ? styles.advNameLost : {}) }}>
+                  {c.team}
+                </span>
+                <div style={styles.track}>
+                  <div style={{ ...styles.fill, ...(through ? styles.fillExact : out ? styles.fillMuted : {}), width: `${barPct}%` }} />
+                </div>
                 <div style={styles.stat}><span style={styles.pct}>{c.pct}%</span><span style={styles.cnt}>{c.count} st</span></div>
               </div>
-              <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
-                {c.users.map((n, i) => <span key={i} style={styles.nameChip}>{n}</span>)}
-              </div>
+              {showNames && c.users && (
+                <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
+                  {c.users.map((n, i) => <span key={i} style={styles.nameChip}>{n}</span>)}
+                </div>
+              )}
             </div>
           );
         })}
@@ -376,7 +386,19 @@ export default function PredictionBreakdown() {
         {/* ── Playoff view ── */}
         {!error && playoff && (
           <>
-            <ChampionPanel champions={data.champions} total={data.totalUsers} isMobile={isMobile} />
+            <DistributionPanel
+              title="🏆 Tippad världsmästare"
+              subtitle={`${data.totalUsers} deltagare`}
+              items={data.champions}
+              showNames
+              isMobile={isMobile}
+            />
+            <DistributionPanel
+              title="Tippade till sextondelsfinal"
+              subtitle="grön = gick vidare"
+              items={data.r32}
+              isMobile={isMobile}
+            />
             {fixtures.length === 0 ? (
               <p style={styles.empty}>Slutspelsmatcherna visas här när lagen är klara.</p>
             ) : (

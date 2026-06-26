@@ -78,7 +78,17 @@ async function playoffBreakdown(results) {
     .map((c) => ({ team: c.team, flag: c.flag, count: c.users.length, pct: pct(c.users.length), users: c.users.sort(svSort) }))
     .sort((a, b) => b.count - a.count || a.team.localeCompare(b.team, 'sv'));
 
-  return { playoff: true, playoffMode: true, totalUsers: total, fixtures, champions };
+  // How many predicted each team to reach the Round of 32 (qualify from the groups).
+  const flagByTeam = new Map();
+  for (const m of MATCHES) { flagByTeam.set(m.homeTeam, m.homeFlag); flagByTeam.set(m.awayTeam, m.awayFlag); }
+  const actualR32 = new Set([...actualBracket.matches.filter((m) => m.round === 'R32').flatMap((m) => [m.home.team, m.away.team])].filter(Boolean));
+  const r32Count = new Map();
+  for (const p of perUser) for (const team of p.reached.R32) r32Count.set(team, (r32Count.get(team) || 0) + 1);
+  const r32 = [...r32Count.entries()]
+    .map(([team, count]) => ({ team, flag: flagByTeam.get(team) || null, count, pct: pct(count), qualified: actualR32.has(team) }))
+    .sort((a, b) => b.count - a.count || a.team.localeCompare(b.team, 'sv'));
+
+  return { playoff: true, playoffMode: true, totalUsers: total, fixtures, champions, r32 };
 }
 
 // Outcome bucket: 0 = home win, 1 = draw, 2 = away win.

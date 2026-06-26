@@ -121,6 +121,39 @@ const styles = {
     flexDirection: 'column',
     gap: '10px',
   },
+  qualGrid: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+  },
+  qualChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '7px',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--text)',
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    borderRadius: '999px',
+    padding: '4px 11px 4px 8px',
+  },
+  qualChipThrough: {
+    background: 'var(--green-dim)',
+    borderColor: 'var(--green)',
+    color: 'var(--green-text)',
+  },
+  qualChipOut: { opacity: 0.5 },
+  qualFlag: {
+    width: '20px', height: '15px', borderRadius: '2px', flexShrink: 0,
+    boxShadow: '0 1px 2px rgba(13,27,42,0.18)',
+  },
+  qualCount: {
+    fontSize: '13px',
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    fontVariantNumeric: 'tabular-nums',
+  },
   empty: {
     background: 'var(--surface)',
     border: '1px solid var(--border)',
@@ -259,6 +292,10 @@ export default function Home() {
   // Prefer today's/tomorrow's knockout games; if there's a gap day, fall back to the next two.
   const pUpcomingSoon = pUpcomingAll.filter((f) => keyOf(f) === todayKey || keyOf(f) === tomorrowKey);
   const pUpcoming = pUpcomingSoon.length ? pUpcomingSoon : pUpcomingAll.slice(0, 2);
+  // The teams this user predicted to reach the Round of 32 (qualify from the groups).
+  const pR32 = data.playoffR32 || [];
+  const pR32Through = pR32.filter((t) => t.qualified).length;
+  const pR32HasResult = pR32.some((t) => t.qualified);
 
   // Push an edited scoreline into local state so the bracket/derived views stay
   // in sync; the actual save is handled (debounced) inside ScoreInput.
@@ -348,6 +385,33 @@ export default function Home() {
                 </EmptyState>
               )}
             </section>
+
+            {/* Dina lag till sextondelsfinalen (gruppspelets kval enligt dina tips) */}
+            {pR32.length > 0 && (
+              <section style={styles.section}>
+                <div style={styles.sectionHead}>
+                  <h2 style={styles.sectionTitle}>Dina lag till sextondelsfinalen</h2>
+                  {pR32HasResult && (
+                    <span style={styles.qualCount}>{pR32Through}/{pR32.length} vidare</span>
+                  )}
+                </div>
+                <div style={styles.qualGrid}>
+                  {pR32.map((t) => (
+                    <span
+                      key={t.team}
+                      style={{
+                        ...styles.qualChip,
+                        ...(t.qualified ? styles.qualChipThrough : pR32HasResult ? styles.qualChipOut : {}),
+                      }}
+                      title={pR32HasResult ? (t.qualified ? `${t.team} – vidare` : `${t.team} – utslagen`) : t.team}
+                    >
+                      <span className={`fi fi-${t.flag}`} style={styles.qualFlag} aria-hidden="true" />
+                      {t.team}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         ) : (
           <>

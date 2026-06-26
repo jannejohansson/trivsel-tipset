@@ -35,4 +35,16 @@ function actualFixtures(actualBracket, knockoutWinners, now = Date.now()) {
   return out;
 }
 
-module.exports = { actualFixtures, NEXT_ROUND };
+// Teams a bracket sends to the Round of 32 (i.e. predicted to qualify from the groups),
+// as an ordered Map name -> flag. Mirrors reachedSets(...).R32 but keeps the flags.
+function r32Map(bracket) {
+  const map = new Map();
+  for (const m of bracket.matches) {
+    if (m.round !== 'R32') continue;
+    if (m.home.team) map.set(m.home.team, m.home.flag);
+    if (m.away.team) map.set(m.away.team, m.away.flag);
+  }
+  return map;
+}
+
+module.exports = { actualFixtures, r32Map, NEXT_ROUND };

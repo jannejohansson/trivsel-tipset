@@ -78,17 +78,29 @@ async function playoffBreakdown(results) {
     .map((c) => ({ team: c.team, flag: c.flag, count: c.users.length, pct: pct(c.users.length), users: c.users.sort(svSort) }))
     .sort((a, b) => b.count - a.count || a.team.localeCompare(b.team, 'sv'));
 
-  // How many predicted each team to reach the Round of 32 (qualify from the groups).
+  // Per-user Round-of-32 accuracy: points (1 per team correctly predicted to qualify)
+  // and the teams they got wrong (predicted to qualify but didn't). Only meaningful once
+  // the actual qualifiers are known, so it's empty until then.
   const flagByTeam = new Map();
   for (const m of MATCHES) { flagByTeam.set(m.homeTeam, m.homeFlag); flagByTeam.set(m.awayTeam, m.awayFlag); }
-  const actualR32 = new Set([...actualBracket.matches.filter((m) => m.round === 'R32').flatMap((m) => [m.home.team, m.away.team])].filter(Boolean));
-  const r32Count = new Map();
-  for (const p of perUser) for (const team of p.reached.R32) r32Count.set(team, (r32Count.get(team) || 0) + 1);
-  const r32 = [...r32Count.entries()]
-    .map(([team, count]) => ({ team, flag: flagByTeam.get(team) || null, count, pct: pct(count), qualified: actualR32.has(team) }))
-    .sort((a, b) => b.count - a.count || a.team.localeCompare(b.team, 'sv'));
+  const actualR32 = new Set(actualBracket.matches.filter((m) => m.round === 'R32').flatMap((m) => [m.home.team, m.away.team]).filter(Boolean));
+  let r32ByUser = [];
+  if (actualR32.size > 0) {
+    r32ByUser = perUser
+      .map((p) => {
+        const predicted = [...p.reached.R32];
+        if (predicted.length === 0) return null; // hasn't predicted the groups
+        const misses = predicted
+          .filter((team) => !actualR32.has(team))
+          .map((team) => ({ team, flag: flagByTeam.get(team) || null }))
+          .sort((a, b) => a.team.localeCompare(b.team, 'sv'));
+        return { name: p.name, points: predicted.length - misses.length, total: actualR32.size, misses };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'sv'));
+  }
 
-  return { playoff: true, playoffMode: true, totalUsers: total, fixtures, champions, r32 };
+  return { playoff: true, playoffMode: true, totalUsers: total, fixtures, champions, r32ByUser };
 }
 
 // Outcome bucket: 0 = home win, 1 = draw, 2 = away win.

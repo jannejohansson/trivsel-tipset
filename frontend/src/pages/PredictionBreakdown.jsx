@@ -123,6 +123,28 @@ const styles = {
   },
   advNameLost: { opacity: 0.55 },
   noPredsInline: { fontSize: '11px', fontStyle: 'italic', color: 'var(--text-muted)' },
+  // ── R32 per-user list ────────────────────────────────────────
+  r32Row: { padding: '10px 0', borderTop: '1px solid var(--border)' },
+  r32RowFirst: { borderTop: 'none' },
+  r32Top: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px' },
+  r32Name: {
+    fontSize: '15px', fontWeight: 700, color: 'var(--text)',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
+  },
+  r32Score: {
+    flexShrink: 0, fontWeight: 800, fontSize: '13px', color: 'var(--green-text)',
+    background: 'var(--green-dim)', border: '1px solid var(--green)',
+    borderRadius: '999px', padding: '2px 10px', fontVariantNumeric: 'tabular-nums',
+  },
+  r32MissRow: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', marginTop: '7px' },
+  r32MissLabel: { fontSize: '12px', color: 'var(--text-muted)', marginRight: '2px' },
+  r32MissChip: {
+    display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600,
+    color: 'var(--danger)', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)',
+    borderRadius: '999px', padding: '2px 8px 2px 6px',
+  },
+  r32MissFlag: { width: '18px', height: '13px', borderRadius: '2px', flexShrink: 0 },
+  r32AllRight: { fontSize: '12px', color: 'var(--green-text)', fontWeight: 700, marginTop: '6px' },
 };
 
 function formatKickoff(utc) {
@@ -238,43 +260,70 @@ function MatchCard({ match, isMobile }) {
   );
 }
 
-// A "how the field tipped" panel: one bar per team. Used for both the champion pick
-// and the Round-of-32 qualifiers. `showNames` lists each team's predictors; when an
-// item carries `qualified` (R32) the row is tinted green (through) or dimmed (out).
-function DistributionPanel({ title, subtitle, items, isMobile, showNames = false }) {
-  if (!items || items.length === 0) return null;
-  const max = items.reduce((m, c) => Math.max(m, c.count), 0);
+// Predicted-champion distribution: a bar per team the field picked to win it all,
+// with each team's predictors listed below.
+function ChampionPanel({ champions, total, isMobile }) {
+  if (!champions || champions.length === 0) return null;
+  const max = champions.reduce((m, c) => Math.max(m, c.count), 0);
   return (
     <div style={styles.card}>
       <div style={styles.cardHead}>
-        <span style={styles.panelTitle}>{title}</span>
-        {subtitle && <span style={{ ...styles.kickoff, marginLeft: 'auto' }}>{subtitle}</span>}
+        <span style={styles.panelTitle}>🏆 Tippad världsmästare</span>
+        <span style={{ ...styles.kickoff, marginLeft: 'auto' }}>{total} deltagare</span>
       </div>
       <div style={styles.chart}>
-        {items.map((c) => {
+        {champions.map((c) => {
           const barPct = max > 0 ? (c.count / max) * 100 : 0;
-          const through = c.qualified === true;
-          const out = c.qualified === false;
           return (
             <div key={c.team} style={styles.barBlock}>
               <div style={styles.barRow}>
                 <span className={`fi fi-${c.flag}`} style={styles.flag} aria-hidden="true" />
-                <span style={{ ...styles.advName, ...(through ? styles.scoreCorrect : {}), ...(out ? styles.advNameLost : {}) }}>
-                  {c.team}
-                </span>
-                <div style={styles.track}>
-                  <div style={{ ...styles.fill, ...(through ? styles.fillExact : out ? styles.fillMuted : {}), width: `${barPct}%` }} />
-                </div>
+                <span style={styles.advName}>{c.team}</span>
+                <div style={styles.track}><div style={{ ...styles.fill, width: `${barPct}%` }} /></div>
                 <div style={styles.stat}><span style={styles.pct}>{c.pct}%</span><span style={styles.cnt}>{c.count} st</span></div>
               </div>
-              {showNames && c.users && (
-                <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
-                  {c.users.map((n, i) => <span key={i} style={styles.nameChip}>{n}</span>)}
-                </div>
-              )}
+              <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
+                {c.users.map((n, i) => <span key={i} style={styles.nameChip}>{n}</span>)}
+              </div>
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// Per-user Round-of-32 accuracy: each participant's points (correct qualifiers) and
+// the teams they got wrong. Best readers of the group stage first.
+function R32Panel({ rows }) {
+  if (!rows || rows.length === 0) return null;
+  return (
+    <div style={styles.card}>
+      <div style={styles.cardHead}>
+        <span style={styles.panelTitle}>Sextondelsfinal – vem läste gruppspelet bäst?</span>
+      </div>
+      <div>
+        {rows.map((u, i) => (
+          <div key={u.name + i} style={{ ...styles.r32Row, ...(i === 0 ? styles.r32RowFirst : {}) }}>
+            <div style={styles.r32Top}>
+              <span style={styles.r32Name}>{u.name}</span>
+              <span style={styles.r32Score}>{u.points}/{u.total} rätt</span>
+            </div>
+            {u.misses.length > 0 ? (
+              <div style={styles.r32MissRow}>
+                <span style={styles.r32MissLabel}>Missade:</span>
+                {u.misses.map((m) => (
+                  <span key={m.team} style={styles.r32MissChip}>
+                    <span className={`fi fi-${m.flag}`} style={styles.r32MissFlag} aria-hidden="true" />
+                    {m.team}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div style={styles.r32AllRight}>Alla rätt! 🎯</div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -386,19 +435,8 @@ export default function PredictionBreakdown() {
         {/* ── Playoff view ── */}
         {!error && playoff && (
           <>
-            <DistributionPanel
-              title="🏆 Tippad världsmästare"
-              subtitle={`${data.totalUsers} deltagare`}
-              items={data.champions}
-              showNames
-              isMobile={isMobile}
-            />
-            <DistributionPanel
-              title="Tippade till sextondelsfinal"
-              subtitle="grön = gick vidare"
-              items={data.r32}
-              isMobile={isMobile}
-            />
+            <ChampionPanel champions={data.champions} total={data.totalUsers} isMobile={isMobile} />
+            <R32Panel rows={data.r32ByUser} />
             {fixtures.length === 0 ? (
               <p style={styles.empty}>Slutspelsmatcherna visas här när lagen är klara.</p>
             ) : (

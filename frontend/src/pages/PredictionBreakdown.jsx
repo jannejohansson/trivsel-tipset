@@ -145,6 +145,46 @@ const styles = {
   },
   r32MissFlag: { width: '18px', height: '13px', borderRadius: '2px', flexShrink: 0 },
   r32AllRight: { fontSize: '12px', color: 'var(--green-text)', fontWeight: 700, marginTop: '6px' },
+  // ── Collapsible panel header ─────────────────────────────────
+  collapseHead: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    margin: 0,
+    cursor: 'pointer',
+    textAlign: 'left',
+    color: 'inherit',
+    font: 'inherit',
+  },
+  collapseSub: { fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' },
+  chevron: { marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '13px', flexShrink: 0 },
+  collapseBody: { marginTop: '14px' },
+  ptsBadge: {
+    flexShrink: 0, fontSize: '11px', fontWeight: 800, color: 'var(--green-text)',
+    background: 'var(--green-dim)', border: '1px solid var(--green)',
+    borderRadius: '999px', padding: '1px 8px', fontVariantNumeric: 'tabular-nums',
+  },
+  // ── Compact champion row (names inline with the team) ────────
+  champItem: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    gap: '4px 8px',
+    padding: '7px 0',
+    borderTop: '1px solid var(--border)',
+  },
+  champItemFirst: { borderTop: 'none' },
+  champTeam: {
+    display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0,
+    fontSize: '14px', fontWeight: 700, color: 'var(--text)',
+  },
+  champFlag: { width: '20px', height: '15px', borderRadius: '2px', flexShrink: 0, boxShadow: '0 1px 2px rgba(13,27,42,0.15)' },
+  champStat: { fontSize: '12px', fontWeight: 700, color: 'var(--green-text)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 },
+  champNames: { fontSize: '12px', color: 'var(--text-muted)', flex: '1 1 140px', minWidth: 0 },
 };
 
 function formatKickoff(utc) {
@@ -260,36 +300,44 @@ function MatchCard({ match, isMobile }) {
   );
 }
 
-// Predicted-champion distribution: a bar per team the field picked to win it all,
-// with each team's predictors listed below.
-function ChampionPanel({ champions, total, isMobile }) {
-  if (!champions || champions.length === 0) return null;
-  const max = champions.reduce((m, c) => Math.max(m, c.count), 0);
+// A card whose body collapses behind a header toggle. `defaultOpen` sets the initial state.
+function CollapsibleCard({ title, subtitle, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div style={styles.card}>
-      <div style={styles.cardHead}>
-        <span style={styles.panelTitle}>🏆 Tippad världsmästare</span>
-        <span style={{ ...styles.kickoff, marginLeft: 'auto' }}>{total} deltagare</span>
-      </div>
-      <div style={styles.chart}>
-        {champions.map((c) => {
-          const barPct = max > 0 ? (c.count / max) * 100 : 0;
-          return (
-            <div key={c.team} style={styles.barBlock}>
-              <div style={styles.barRow}>
-                <span className={`fi fi-${c.flag}`} style={styles.flag} aria-hidden="true" />
-                <span style={styles.advName}>{c.team}</span>
-                <div style={styles.track}><div style={{ ...styles.fill, width: `${barPct}%` }} /></div>
-                <div style={styles.stat}><span style={styles.pct}>{c.pct}%</span><span style={styles.cnt}>{c.count} st</span></div>
-              </div>
-              <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
-                {c.users.map((n, i) => <span key={i} style={styles.nameChip}>{n}</span>)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <button type="button" style={styles.collapseHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span style={styles.panelTitle}>{title}</span>
+        {subtitle && <span style={styles.collapseSub}>{subtitle}</span>}
+        <span style={styles.chevron} aria-hidden="true">{open ? '▴' : '▾'}</span>
+      </button>
+      {open && <div style={styles.collapseBody}>{children}</div>}
     </div>
+  );
+}
+
+// Predicted-champion distribution. Compact: each team's predictors are listed inline on
+// the same row as the team name (wraps below on narrow screens). Collapsible.
+function ChampionPanel({ champions, total, champPoints }) {
+  if (!champions || champions.length === 0) return null;
+  return (
+    <CollapsibleCard
+      title="🏆 Tippad världsmästare"
+      subtitle={`${champPoints} p för rätt · ${total} deltagare`}
+      defaultOpen={false}
+    >
+      <div>
+        {champions.map((c, i) => (
+          <div key={c.team} style={{ ...styles.champItem, ...(i === 0 ? styles.champItemFirst : {}) }}>
+            <span style={styles.champTeam}>
+              <span className={`fi fi-${c.flag}`} style={styles.champFlag} aria-hidden="true" />
+              {c.team}
+            </span>
+            <span style={styles.champStat}>{c.count} st · {c.pct}%</span>
+            <span style={styles.champNames}>{c.users.join(', ')}</span>
+          </div>
+        ))}
+      </div>
+    </CollapsibleCard>
   );
 }
 
@@ -298,10 +346,7 @@ function ChampionPanel({ champions, total, isMobile }) {
 function R32Panel({ rows }) {
   if (!rows || rows.length === 0) return null;
   return (
-    <div style={styles.card}>
-      <div style={styles.cardHead}>
-        <span style={styles.panelTitle}>Sextondelsfinal – vem läste gruppspelet bäst?</span>
-      </div>
+    <CollapsibleCard title="Sextondelsfinal – vem läste gruppspelet bäst?" defaultOpen={false}>
       <div>
         {rows.map((u, i) => (
           <div key={u.name + i} style={{ ...styles.r32Row, ...(i === 0 ? styles.r32RowFirst : {}) }}>
@@ -325,7 +370,7 @@ function R32Panel({ rows }) {
           </div>
         ))}
       </div>
-    </div>
+    </CollapsibleCard>
   );
 }
 
@@ -339,6 +384,9 @@ function FixtureCard({ fixture, isMobile }) {
     <div style={styles.card}>
       <div style={styles.cardHead}>
         <span style={styles.groupBadge}>{ROUND_LABELS[round] || round}</span>
+        {fixture.advancePoints != null && (
+          <span style={styles.ptsBadge} title="Poäng för rätt lag vidare">{fixture.advancePoints} p</span>
+        )}
         <div style={styles.teams}>
           <span className={`fi fi-${fixture.home.flag}`} style={styles.flag} aria-hidden="true" />
           <span style={styles.teamName}>{fixture.home.team}</span>
@@ -435,7 +483,7 @@ export default function PredictionBreakdown() {
         {/* ── Playoff view ── */}
         {!error && playoff && (
           <>
-            <ChampionPanel champions={data.champions} total={data.totalUsers} isMobile={isMobile} />
+            <ChampionPanel champions={data.champions} total={data.totalUsers} champPoints={data.champPoints} />
             <R32Panel rows={data.r32ByUser} />
             {fixtures.length === 0 ? (
               <p style={styles.empty}>Slutspelsmatcherna visas här när lagen är klara.</p>

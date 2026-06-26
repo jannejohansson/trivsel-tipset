@@ -4,7 +4,7 @@ const { app } = require('@azure/functions');
 const { getUsersTable, getPredictionsTable, getPlayoffTable } = require('../shared/tableClient');
 const { loadResults } = require('../shared/results');
 const { resolveSpotlight } = require('../shared/spotlight');
-const { scoreGroup, reachedSets } = require('../shared/scoring');
+const { scoreGroup, reachedSets, TIER_POINTS } = require('../shared/scoring');
 const { MATCHES } = require('../shared/matchData');
 const { buildBracket } = require('../shared/bracket');
 const { isPlayoffMode } = require('../shared/phase');
@@ -100,7 +100,7 @@ async function playoffBreakdown(results) {
       .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'sv'));
   }
 
-  return { playoff: true, playoffMode: true, totalUsers: total, fixtures, champions, r32ByUser };
+  return { playoff: true, playoffMode: true, totalUsers: total, champPoints: TIER_POINTS.CHAMP, fixtures, champions, r32ByUser };
 }
 
 // Outcome bucket: 0 = home win, 1 = draw, 2 = away win.

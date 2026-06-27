@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
 import useAutoRefresh from '../hooks/useAutoRefresh.js';
 import { BADGE_META } from '../lib/achievements.js';
+import { ROUND_LABELS } from '../lib/bracket.js';
 
 const styles = {
   hero: {
@@ -120,6 +121,14 @@ const styles = {
     fontSize: '12px',
     letterSpacing: '1px',
     whiteSpace: 'nowrap',
+    cursor: 'help',
+  },
+  championFlag: {
+    flexShrink: 0,
+    width: '20px',
+    height: '15px',
+    borderRadius: '2px',
+    boxShadow: '0 1px 2px rgba(13,27,42,0.18)',
     cursor: 'help',
   },
   pointsRow: {
@@ -332,6 +341,36 @@ const styles = {
     color: 'var(--text-muted)',
     fontStyle: 'italic',
   },
+  // ── Playoff spotlight cell ───────────────────────────────────
+  poWinner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '7px',
+    minWidth: 0,
+  },
+  poWinnerName: {
+    fontSize: '14px',
+    fontWeight: 800,
+    color: 'var(--green-text)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    minWidth: 0,
+  },
+  poBeat: {
+    fontSize: '10px',
+    color: 'var(--text-muted)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  poPick: {
+    fontSize: '10px',
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
+  },
+  poPickRight: { color: 'var(--green-text)' },
+  poPickWrong: { color: 'var(--text-muted)' },
 };
 
 function formatKickoff(utc) {
@@ -390,6 +429,45 @@ function SpotlightStrip({ shared, mine }) {
   );
 }
 
+// One decided knockout tie in the playoff-mode spotlight: the team that advanced, who
+// it beat, this user's pick correctness and the points earned. `mine` is this user's
+// per-fixture data { predictedHome, predictedAway, points }.
+function PlayoffSpotlightCell({ fixture, mine }) {
+  const { home, away, actualWinner } = fixture;
+  const loser = actualWinner === home.team ? away : actualWinner === away.team ? home : null;
+  const winnerFlag = actualWinner === home.team ? home.flag : actualWinner === away.team ? away.flag : null;
+  const points = mine?.points || 0;
+  const picked = mine?.predictedHome ? home.team : mine?.predictedAway ? away.team : null;
+  const right = !!picked && picked === actualWinner;
+  return (
+    <div style={styles.cell}>
+      <div style={styles.cellLabel}>{ROUND_LABELS[fixture.round] || fixture.round} · {formatKickoff(fixture.kickoffUtc)}</div>
+      <div style={styles.poWinner}>
+        {winnerFlag && <span className={`fi fi-${winnerFlag}`} style={styles.cellFlag} aria-hidden="true" />}
+        <span style={styles.poWinnerName}>{actualWinner}</span>
+        <span style={styles.cellLabel}>vidare</span>
+      </div>
+      {loser && <div style={styles.poBeat}>slog {loser.team}</div>}
+      <div style={styles.cellMeta}>
+        <span style={{ ...styles.poPick, ...(right ? styles.poPickRight : styles.poPickWrong) }}>
+          {picked ? (right ? '✓ Du tippade rätt' : `✗ Du: ${picked}`) : 'Ingen gissning'}
+        </span>
+        <span style={{ ...styles.pointsPill, ...(points > 0 ? {} : styles.pointsPillZero) }}>+{points} p</span>
+      </div>
+    </div>
+  );
+}
+
+// Playoff-mode per-row strip: the last few decided knockout ties (newest first).
+function PlayoffSpotlightStrip({ shared, mine }) {
+  if (!shared || shared.length === 0) return null;
+  return (
+    <div style={styles.strip}>
+      {shared.map((f) => <PlayoffSpotlightCell key={f.id} fixture={f} mine={mine?.[f.id]} />)}
+    </div>
+  );
+}
+
 export default function Leaderboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
@@ -428,9 +506,18 @@ export default function Leaderboard() {
   // Whether any user has winner stars (drives the star legend's visibility).
   const hasStars = sortedUsers.some((u) => u.titles > 0);
 
-  // Whether there are any spotlight fixtures to reveal (same set for everyone).
+  // Playoff mode: name links jump straight to the bracket, and each row shows the
+  // user's predicted champion flag (picks are public once locked).
+  const playoffMode = !!data?.playoffMode;
+  const hasChampions = playoffMode && sortedUsers.some((u) => u.champion?.flag);
+
+  // Whether there are any spotlight fixtures to reveal (same set for everyone). In playoff
+  // mode the strip shows recently decided knockout ties instead of group fixtures.
   const sp = data?.spotlight;
-  const hasSpotlight = !!sp && ((sp.recent?.length || 0) + (sp.inProgress?.length || 0) + (sp.next?.length || 0)) > 0;
+  const poSpotlight = data?.playoffSpotlight;
+  const hasSpotlight = playoffMode
+    ? !!poSpotlight && poSpotlight.length > 0
+    : !!sp && ((sp.recent?.length || 0) + (sp.inProgress?.length || 0) + (sp.next?.length || 0)) > 0;
 
   const allExpanded = sortedUsers.length > 0 && sortedUsers.every((u) => expanded.has(u.userId));
 
@@ -474,7 +561,9 @@ export default function Leaderboard() {
         {sortedUsers.length > 0 && hasSpotlight && (
           <div style={styles.toolbar}>
             <button type="button" style={styles.expandAllBtn} onClick={toggleAll}>
-              {allExpanded ? 'Dölj senaste & kommande tips' : 'Visa senaste & kommande tips'}
+              {playoffMode
+                ? (allExpanded ? 'Dölj senaste slutspelsresultat' : 'Visa senaste slutspelsresultat')
+                : (allExpanded ? 'Dölj senaste & kommande tips' : 'Visa senaste & kommande tips')}
             </button>
           </div>
         )}
@@ -503,13 +592,21 @@ export default function Leaderboard() {
                     <div style={styles.middle}>
                       <div style={styles.nameRow}>
                         <Link
-                          to={`/predictions/${u.userId}`}
+                          to={playoffMode ? `/predictions/${u.userId}?view=playoff` : `/predictions/${u.userId}`}
                           style={styles.nameLink}
                           onClick={(e) => e.stopPropagation()}
                           title={`Visa ${u.displayName}s tips`}
                         >
                           {u.displayName}
                         </Link>
+                        {playoffMode && u.champion?.flag && (
+                          <span
+                            className={`fi fi-${u.champion.flag}`}
+                            style={styles.championFlag}
+                            title={`Tippad världsmästare: ${u.champion.team}`}
+                            aria-label={`Tippad världsmästare: ${u.champion.team}`}
+                          />
+                        )}
                         {u.titles > 0 && (
                           <span
                             style={styles.titleStars}
@@ -562,15 +659,22 @@ export default function Leaderboard() {
                       <span style={styles.chevron} aria-hidden="true">{isExpanded ? '▴' : '▾'}</span>
                     )}
                   </div>
-                  {isExpanded && <SpotlightStrip shared={data.spotlight} mine={u.spotlight} />}
+                  {isExpanded && (playoffMode
+                    ? <PlayoffSpotlightStrip shared={data.playoffSpotlight} mine={u.playoffSpotlight} />
+                    : <SpotlightStrip shared={data.spotlight} mine={u.spotlight} />)}
                 </div>
               );
             })}
           </div>
         )}
 
-        {(hasStars || hasBadges) && (
+        {(hasStars || hasBadges || hasChampions) && (
           <div style={styles.legend}>
+            {hasChampions && (
+              <span style={styles.legendItem}>
+                🏆 Flagga vid namnet – deltagarens tippade världsmästare
+              </span>
+            )}
             {hasStars && (
               <span style={styles.legendItem}>
                 ⭐ Stjärna – tidigare seger i Trivseltipset

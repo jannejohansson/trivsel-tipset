@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import GroupTabs from '../components/GroupTabs.jsx';
 import BracketTree from '../components/BracketTree.jsx';
@@ -63,11 +63,14 @@ const styles = {
 
 export default function UserPredictions() {
   const { userId } = useParams();
+  const [params] = useSearchParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reveal, setReveal] = useState(false);
-  const [view, setView] = useState('group'); // 'group' | 'playoff'
+  // Default to the playoff tab when linked with ?view=playoff (e.g. from the leaderboard
+  // in playoff mode); otherwise start on the group tab.
+  const [view, setView] = useState(params.get('view') === 'playoff' ? 'playoff' : 'group'); // 'group' | 'playoff'
 
   useEffect(() => {
     api.getUserPredictions(userId, reveal)

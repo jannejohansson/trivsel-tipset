@@ -7,7 +7,20 @@ const { loadResults } = require('../shared/results');
 const { MATCHES } = require('../shared/matchData');
 const { resolveSpotlight } = require('../shared/spotlight');
 const { buildBracket } = require('../shared/bracket');
-const { scoreGroupTotal, scorePlayoff, scoreGroup } = require('../shared/scoring');
+const { scoreGroupTotal, scorePlayoff, scoreGroup, reachedSets } = require('../shared/scoring');
+const { isPlayoffMode } = require('../shared/phase');
+const { actualFixtures } = require('../shared/playoffView');
+
+// A bracket's predicted champion as { team, flag } (flag pulled from the final's slots),
+// or null when no final winner is picked yet.
+function championOf(bracket) {
+  if (!bracket.champion) return null;
+  const final = bracket.matches.find((m) => m.id === 'ko_104');
+  if (!final) return { team: bracket.champion, flag: null };
+  const flag = final.home.team === bracket.champion ? final.home.flag
+    : final.away.team === bracket.champion ? final.away.flag : null;
+  return { team: bracket.champion, flag };
+}
 
 // Public-only fixture fields (no predictions) shared across all rows.
 function fixtureMeta(m) {
@@ -115,6 +128,16 @@ app.http('getLeaderboard', {
     });
     // Admin master-switch: while off, no playoff points are awarded to users.
     const playoffOn = results.playoffScoring;
+    // Playoff display mode (scoring switch OR lockout time) — gates champion exposure etc.
+    const playoffMode = isPlayoffMode(results);
+    // Shared per-row spotlight for playoff mode: the last few decided knockout ties
+    // (newest first), each with the team that advanced. Per-user picks/points added below.
+    const playoffCompleted = playoffMode
+      ? actualFixtures(actualBracket, results.knockoutWinners)
+          .filter((f) => f.status === 'completed')
+          .sort((a, b) => new Date(b.kickoffUtc) - new Date(a.kickoffUtc))
+          .slice(0, 5)
+      : [];
     const prevPlayoffOn = prevResults.playoffScoring;
     const weekPlayoffOn = weekResults.playoffScoring;
     // Only surface movement once there was a standing to move from (≥1 result before today).
@@ -156,6 +179,23 @@ app.http('getLeaderboard', {
         if (preds[m.id]) spotlight[m.id] = { ...preds[m.id] };
       }
 
+      // Playoff-mode spotlight: for each recently decided tie, which side this user had
+      // advancing and the points it earned (the team reaching the next round).
+      let playoffSpotlight = null;
+      if (playoffMode && playoffCompleted.length) {
+        const reached = reachedSets(predictedBracket);
+        playoffSpotlight = {};
+        for (const f of playoffCompleted) {
+          const adv = reached[f.advanceRound];
+          const correct = !!(f.actualWinner && adv.has(f.actualWinner));
+          playoffSpotlight[f.id] = {
+            predictedHome: adv.has(f.home.team),
+            predictedAway: adv.has(f.away.team),
+            points: correct ? f.advancePoints : 0,
+          };
+        }
+      }
+
       return {
         ...u,
         predictionCount: Object.keys(preds).length,
@@ -171,6 +211,9 @@ app.http('getLeaderboard', {
         _weekPoints: weekPoints,
         _ach: ach,
         spotlight,
+        playoffSpotlight,
+        // Predicted champion is public only in playoff mode (picks are locked by then).
+        champion: playoffMode ? championOf(predictedBracket) : null,
       };
     });
 
@@ -241,11 +284,17 @@ app.http('getLeaderboard', {
         count: users.length,
         users,
         achievementLeaders,
+        playoffMode,
         spotlight: {
           recent: recent.map((m) => ({ ...fixtureMeta(m), actual: results.groupResults[m.id] })),
           inProgress: inProgress.map(fixtureMeta),
           next: next.map(fixtureMeta),
         },
+        // Shared metadata for the playoff-mode per-row spotlight (newest decided ties first).
+        playoffSpotlight: playoffCompleted.map((f) => ({
+          id: f.id, round: f.round, kickoffUtc: f.kickoffUtc, venue: f.venue,
+          home: f.home, away: f.away, actualWinner: f.actualWinner,
+        })),
       },
     };
   },

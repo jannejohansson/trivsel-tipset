@@ -1,5 +1,10 @@
 import { BRACKET_LAYOUT, ROUND_ORDER, ROUND_LABELS } from '../lib/bracket.js';
 
+// Compact kickoff stamp in Swedish local time, e.g. "28 jun 21:00".
+const fmtKickoff = (utc) => new Date(utc).toLocaleString('sv-SE', {
+  day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm',
+});
+
 function Row({ slot, decided, locked, selected, hasPick, onPick }) {
   const clickable = decided && !locked;
   const cls = [
@@ -43,6 +48,7 @@ export default function BracketTree({ matches, locked, onPick }) {
                   <div className="bracket-match" key={id}>
                     <div className="bracket-box">
                       <div className="bracket-num">Match {m.num}</div>
+                      {m.kickoffUtc && <div className="bracket-num">{fmtKickoff(m.kickoffUtc)}</div>}
                       <Row slot={m.home} decided={decided} locked={locked} hasPick={hasPick}
                         selected={hasPick && m.pick === m.home.team} onPick={() => onPick(m.id, m.home.team)} />
                       <Row slot={m.away} decided={decided} locked={locked} hasPick={hasPick}

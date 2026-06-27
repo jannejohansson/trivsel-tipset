@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../api.js';
 import GroupStandings from '../components/GroupStandings.jsx';
 import ThirdPlaceTable from '../components/ThirdPlaceTable.jsx';
+import BracketTree from '../components/BracketTree.jsx';
+import { buildBracket } from '../lib/bracket.js';
 import { useIsMobile } from '../lib/useIsMobile.js';
 import useAutoRefresh from '../hooks/useAutoRefresh.js';
 
@@ -36,6 +38,25 @@ const styles = {
     maxWidth: '1080px',
     padding: '24px 20px 60px',
   },
+  segment: { display: 'flex', gap: '8px', marginBottom: '20px', justifyContent: 'center' },
+  segBtn: {
+    flex: 1, maxWidth: '220px', background: 'var(--surface)', border: '1px solid var(--border)',
+    color: 'var(--text-muted)', padding: '10px 16px', borderRadius: 'var(--radius)',
+    fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+  },
+  segBtnActive: {
+    background: 'linear-gradient(135deg, #0d1b2a 0%, #15a34a 100%)', borderColor: 'transparent',
+    color: '#ffffff', boxShadow: '0 4px 10px rgba(21,163,74,0.25)',
+  },
+  scroller: { display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '12px' },
+  champ: {
+    marginBottom: '20px', padding: '10px 18px', background: 'rgba(21,163,74,0.10)',
+    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap',
+  },
+  champLabel: { fontSize: '11px', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 },
+  champName: { fontSize: '26px', fontWeight: 800, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: '10px' },
+  champFlag: { width: '32px', height: '24px', borderRadius: '3px', backgroundSize: 'cover', backgroundPosition: 'center', display: 'inline-block', boxShadow: '0 1px 3px rgba(13,27,42,0.2)' },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -147,10 +168,15 @@ export default function GroupTables() {
   // Admin's curated ranking of the third-placed teams (may override the automatic
   // points/goals order); empty array means "rank automatically".
   const [thirdOrder, setThirdOrder] = useState([]);
+  // Admin-entered knockout winners, feeding the actual-result bracket.
+  const [knockoutWinners, setKnockoutWinners] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   // Match results are collapsed by default; this holds the groups currently expanded.
   const [openGroups, setOpenGroups] = useState(() => new Set());
+  // Default to the slutspel (playoff) tree — it's the focus as the tournament
+  // enters the knockout stage.
+  const [tab, setTab] = useState('playoff');
   const isMobile = useIsMobile();
 
   // Reload group matches + real results; runs on mount and on the auto-refresh
@@ -162,6 +188,7 @@ export default function GroupTables() {
         setMatches(m.matches);
         setResults(new Map(Object.entries(r.groupResults || {})));
         setThirdOrder(r.thirdOrder || []);
+        setKnockoutWinners(r.knockoutWinners || {});
       })
       .catch(() => setError('Kunde inte ladda tabellerna. Försök igen.'))
       .finally(() => setLoading(false));
@@ -180,6 +207,14 @@ export default function GroupTables() {
   }, [matches]);
 
   const groupKeys = [...groups.keys()].sort();
+
+  // The real, admin-curated knockout bracket: group qualifiers from actual results,
+  // winners walked through KO_MATCHES. allowPartial fills the Round-of-32 from
+  // results so far so the tree populates as the group stage finishes.
+  const actualBracket = useMemo(
+    () => buildBracket(matches, results, knockoutWinners, { thirdOrder, allowPartial: true }),
+    [matches, results, knockoutWinners, thirdOrder]
+  );
 
   const sortMatches = (list) => list.slice().sort(
     (a, b) => a.matchday - b.matchday || a.matchNumber - b.matchNumber
@@ -206,16 +241,63 @@ export default function GroupTables() {
   }
 
   const hasResults = results.size > 0;
+  const isPlayoff = tab === 'playoff';
+  const champ = actualBracket.matches.find((m) => m.id === 'ko_104');
+  const champFlag = actualBracket.champion && champ
+    ? (champ.home.team === actualBracket.champion ? champ.home.flag : champ.away.flag)
+    : null;
 
   return (
     <>
       <section style={styles.hero}>
-        <div style={styles.eyebrow}>Gruppspel · FIFA World Cup 2026</div>
-        <h1 style={styles.title}>Tabeller</h1>
-        <p style={styles.sub}>Verkliga tabeller och resultat</p>
+        <div style={styles.eyebrow}>FIFA World Cup 2026</div>
+        <h1 style={styles.title}>Resultat</h1>
+        <p style={styles.sub}>Slutspelsträd, tabeller och resultat</p>
       </section>
 
       <div style={styles.page}>
+        <div style={styles.segment}>
+          <button
+            type="button"
+            style={{ ...styles.segBtn, ...(isPlayoff ? styles.segBtnActive : {}) }}
+            onClick={() => setTab('playoff')}
+            aria-pressed={isPlayoff}
+          >
+            Slutspel
+          </button>
+          <button
+            type="button"
+            style={{ ...styles.segBtn, ...(!isPlayoff ? styles.segBtnActive : {}) }}
+            onClick={() => setTab('tables')}
+            aria-pressed={!isPlayoff}
+          >
+            Grupptabeller
+          </button>
+        </div>
+
+        {isPlayoff ? (
+          <>
+            <div style={styles.champ}>
+              <div style={styles.champLabel}>Världsmästare</div>
+              <div style={styles.champName}>
+                {actualBracket.champion ? (
+                  <>
+                    <span className={`fi fi-${champFlag}`} style={styles.champFlag} aria-hidden="true" />
+                    {actualBracket.champion}
+                  </>
+                ) : (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '16px', fontWeight: 500 }}>Inte avgjort än</span>
+                )}
+              </div>
+            </div>
+            <div style={styles.scroller}>
+              <div style={{ minWidth: 'min-content' }}>
+                <BracketTree matches={actualBracket.matches} locked onPick={() => {}} />
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
         {!hasResults && (
           <div style={styles.notice}>Inga resultat inlagda ännu.</div>
         )}
@@ -291,6 +373,8 @@ export default function GroupTables() {
               pendingHint="Preliminär – alla grupper inte avgjorda"
             />
           </div>
+        )}
+          </>
         )}
       </div>
     </>

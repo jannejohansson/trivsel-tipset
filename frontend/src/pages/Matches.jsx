@@ -271,6 +271,12 @@ export default function Matches({ view = 'group' }) {
             )}
             {saveError && <div style={styles.notice}>Kunde inte spara senaste valet. Kontrollera anslutningen.</div>}
 
+            {!playoffLocked && (
+              <div style={styles.infoNote}>
+                Klicka på laget du tror går vidare i varje match. Sextondelsfinalerna fylls i utifrån dina gruppspelstips – ändra dem under <strong>Gruppspel</strong> för att flytta lagen.
+              </div>
+            )}
+
             <div style={styles.champ}>
               <div style={styles.champLabel}>Din världsmästare</div>
               <div style={styles.champName}>

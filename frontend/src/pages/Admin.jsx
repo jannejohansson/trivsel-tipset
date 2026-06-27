@@ -15,6 +15,17 @@ function formatKickoff(utc) {
   });
 }
 
+// Day bucket key in Swedish local time (matches Home.jsx). sv-SE renders 'YYYY-MM-DD',
+// so plain string comparison orders days chronologically.
+const dayKey = (d) => new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit',
+}).format(d);
+
+// Human day heading from a dayKey, e.g. "onsdag 11 juni" (Swedish local time).
+const dayLabel = (key) => new Date(`${key}T12:00:00Z`).toLocaleDateString('sv-SE', {
+  weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Stockholm',
+});
+
 const styles = {
   hero: { background: 'linear-gradient(135deg, #0d1b2a 0%, #7a1f1f 100%)', color: '#fff', padding: '28px 20px', textAlign: 'center' },
   title: { fontSize: '24px', fontWeight: 800, margin: 0 },
@@ -49,6 +60,18 @@ const styles = {
   clearBtn: { width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 },
   clearBtnHidden: { width: '26px', flexShrink: 0, visibility: 'hidden' },
   flag: { width: '22px', height: '16px', borderRadius: '2px', backgroundSize: 'cover', backgroundPosition: 'center', display: 'inline-block', flexShrink: 0 },
+  subHead: { fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text-muted)', margin: '18px 0 8px' },
+  subHeadFirst: { marginTop: '4px' },
+  emptyDay: { fontSize: '13px', color: 'var(--text-muted)', padding: '2px 2px 6px', margin: 0 },
+  dayPanel: { border: '1px solid var(--border)', borderRadius: '10px', marginBottom: '8px', overflow: 'hidden', background: 'var(--surface)' },
+  dayHeader: { display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 14px', background: 'var(--surface-2)', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: 'var(--text)' },
+  dayChevron: { display: 'inline-block', fontSize: '10px', color: 'var(--text-muted)', transition: 'transform .15s ease', flexShrink: 0 },
+  dayChevronOpen: { transform: 'rotate(90deg)' },
+  dayTitle: { fontWeight: 800, fontSize: '14px', textTransform: 'capitalize' },
+  todayBadge: { fontSize: '10px', fontWeight: 800, padding: '2px 7px', borderRadius: '999px', background: 'var(--green-dim)', color: 'var(--green-text)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  dayCount: { marginLeft: 'auto', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' },
+  dayCountDone: { color: 'var(--green-text)' },
+  dayBody: { padding: '0 14px 6px' },
   scroller: { display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '12px' },
   status: { fontSize: '12px', color: 'var(--text-muted)', minHeight: '16px' },
   userRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderTop: '1px solid var(--border)' },
@@ -81,6 +104,9 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
+  // Per-day collapse state for the group-results list, keyed by dayKey.
+  // Absent ⇒ falls back to the day's default (past collapsed, today/upcoming open).
+  const [openDays, setOpenDays] = useState({});
 
   useEffect(() => {
     Promise.all([api.getMatches(), api.getResults(), api.getUsers().catch(() => ({ users: [] }))])
@@ -148,6 +174,78 @@ export default function Admin() {
       return next;
     });
     save({ groupResults: { [id]: { homeScore: null, awayScore: null } } });
+  };
+
+  // Bucket group matches by Swedish-local day, then split into past / today / upcoming
+  // so the admin can collapse already-played days and focus on what's current.
+  const groupsByDay = new Map();
+  for (const m of sortedMatches) {
+    const k = dayKey(new Date(m.kickoffUtc));
+    if (!groupsByDay.has(k)) groupsByDay.set(k, []);
+    groupsByDay.get(k).push(m);
+  }
+  const todayKey = dayKey(new Date());
+  const dayEntries = [...groupsByDay.entries()];
+  const pastDays = dayEntries.filter(([k]) => k < todayKey);
+  const todayMatches = groupsByDay.get(todayKey) || [];
+  const upcomingDays = dayEntries.filter(([k]) => k > todayKey);
+
+  const isFilled = (m) => {
+    const r = groupResults[m.id];
+    return r && Number.isInteger(r.homeScore) && Number.isInteger(r.awayScore);
+  };
+  const filledCount = (ms) => ms.filter(isFilled).length;
+
+  // One editable result row. A plain function (not a component) so React keeps the
+  // <input>s mounted across re-renders and typing doesn't lose focus.
+  const renderMatchRow = (m) => {
+    const r = groupResults[m.id] || {};
+    return (
+      <div key={m.id} style={{ ...styles.matchRow, ...(isMobile ? styles.matchRowMobile : {}) }}>
+        <div style={{ ...styles.matchMeta, ...(isMobile ? styles.matchMetaMobile : {}) }}>
+          <span style={{ ...styles.matchTime, ...(isMobile ? styles.matchTimeMobile : {}) }}>{formatKickoff(m.kickoffUtc)}</span>
+          <span style={styles.groupBadge}>{isMobile ? m.group : `Grupp ${m.group}`}</span>
+        </div>
+        {!isMobile && <span style={styles.teamL}>{m.homeTeam}</span>}
+        <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
+        <input style={styles.input} value={r.homeScore ?? ''} onChange={(e) => setScore(m.id, 'homeScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
+        <span style={{ color: 'var(--text-muted)' }}>–</span>
+        <input style={styles.input} value={r.awayScore ?? ''} onChange={(e) => setScore(m.id, 'awayScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
+        <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
+        {!isMobile && <span style={styles.teamR}>{m.awayTeam}</span>}
+        {Number.isInteger(r.homeScore) && Number.isInteger(r.awayScore) ? (
+          <button style={styles.clearBtn} onClick={() => clearScore(m.id)} title="Rensa resultat (låser upp matchen)">✕</button>
+        ) : (
+          <span style={styles.clearBtnHidden} aria-hidden="true" />
+        )}
+      </div>
+    );
+  };
+
+  // Collapsible per-day panel with a filled/total badge. `defaultOpen` applies until
+  // the admin toggles the day (tracked in openDays).
+  const renderDayPanel = (k, ms, defaultOpen) => {
+    const open = openDays[k] ?? defaultOpen;
+    const filled = filledCount(ms);
+    const done = filled === ms.length;
+    return (
+      <div key={k} style={styles.dayPanel}>
+        <button
+          type="button"
+          style={styles.dayHeader}
+          onClick={() => setOpenDays((p) => ({ ...p, [k]: !open }))}
+          aria-expanded={open}
+        >
+          <span style={{ ...styles.dayChevron, ...(open ? styles.dayChevronOpen : {}) }}>▶</span>
+          <span style={styles.dayTitle}>{dayLabel(k)}</span>
+          {k === todayKey && <span style={styles.todayBadge}>Idag</span>}
+          <span style={{ ...styles.dayCount, ...(done ? styles.dayCountDone : {}) }}>
+            {filled}/{ms.length}{done ? ' ✓' : ''}
+          </span>
+        </button>
+        {open && <div style={styles.dayBody}>{ms.map(renderMatchRow)}</div>}
+      </div>
+    );
   };
 
   const moveThird = (i, dir) => {
@@ -218,39 +316,68 @@ export default function Admin() {
       <div style={styles.page}>
         <div style={styles.status}>{status}</div>
 
-        {/* 1. Group results */}
-        <div style={styles.section}>
-          <h2 style={styles.h2}>1. Gruppspelsresultat</h2>
-          <p style={styles.hint}>Alla matcher i spelordning. Faktiska slutresultat — tabellen och slutspelsträdet uppdateras automatiskt.</p>
-          {sortedMatches.map((m) => {
-            const r = groupResults[m.id] || {};
-            return (
-              <div key={m.id} style={{ ...styles.matchRow, ...(isMobile ? styles.matchRowMobile : {}) }}>
-                <div style={{ ...styles.matchMeta, ...(isMobile ? styles.matchMetaMobile : {}) }}>
-                  <span style={{ ...styles.matchTime, ...(isMobile ? styles.matchTimeMobile : {}) }}>{formatKickoff(m.kickoffUtc)}</span>
-                  <span style={styles.groupBadge}>{isMobile ? m.group : `Grupp ${m.group}`}</span>
-                </div>
-                {!isMobile && <span style={styles.teamL}>{m.homeTeam}</span>}
-                <span className={`fi fi-${m.homeFlag}`} style={styles.flag} aria-hidden="true" />
-                <input style={styles.input} value={r.homeScore ?? ''} onChange={(e) => setScore(m.id, 'homeScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
-                <span style={{ color: 'var(--text-muted)' }}>–</span>
-                <input style={styles.input} value={r.awayScore ?? ''} onChange={(e) => setScore(m.id, 'awayScore', e.target.value)} onBlur={() => commitScore(m.id)} inputMode="numeric" />
-                <span className={`fi fi-${m.awayFlag}`} style={styles.flag} aria-hidden="true" />
-                {!isMobile && <span style={styles.teamR}>{m.awayTeam}</span>}
-                {Number.isInteger(r.homeScore) && Number.isInteger(r.awayScore) ? (
-                  <button style={styles.clearBtn} onClick={() => clearScore(m.id)} title="Rensa resultat (låser upp matchen)">✕</button>
-                ) : (
-                  <span style={styles.clearBtnHidden} aria-hidden="true" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* 2. Third-place ranking */}
+        {/* 1. Knockout / playoff tree — kept at the top in preparation for playoff start */}
         <div style={styles.section}>
           <div style={styles.sectionHead}>
-            <h2 style={{ ...styles.h2, margin: 0 }}>2. Ranka trean i grupperna</h2>
+            <h2 style={{ ...styles.h2, margin: 0 }}>1. Slutspel</h2>
+            <button
+              style={{ ...styles.resetBtn, ...(hasKnockoutWinners ? {} : styles.resetBtnDisabled) }}
+              onClick={resetKnockout}
+              disabled={!hasKnockoutWinners}
+              title="Rensa alla slutspelsvinnare"
+            >
+              ↺ Rensa trädet
+            </button>
+          </div>
+          <p style={styles.hint}>Klicka på laget som faktiskt gick vidare i varje match. Sextondelsfinalerna fylls i utifrån resultaten hittills.</p>
+          <label style={styles.scoringToggle}>
+            <input
+              type="checkbox"
+              checked={playoffScoring}
+              onChange={(e) => togglePlayoffScoring(e.target.checked)}
+              style={styles.scoringCheckbox}
+            />
+            <span>
+              <strong>Räkna slutspelspoäng till deltagarna</strong>
+              <span style={styles.scoringHint}>
+                {playoffScoring
+                  ? 'På – deltagarna får poäng för sina slutspelstips utifrån resultaten ovan.'
+                  : 'Av – inga slutspelspoäng delas ut än. Slå på när slutspelet startar (eller för att testa poängräkningen).'}
+              </span>
+            </span>
+          </label>
+          <BracketTree matches={bracket.matches} locked={false} onPick={pickKo} />
+        </div>
+
+        {/* 2. Group results — grouped by day; played days collapsed, today + upcoming open */}
+        <div style={styles.section}>
+          <h2 style={styles.h2}>2. Gruppspelsresultat</h2>
+          <p style={styles.hint}>Matcherna är grupperade per dag. Spelade dagar är hopfällda – klicka på en dag för att öppna. Faktiska slutresultat; tabellen och slutspelsträdet uppdateras automatiskt.</p>
+
+          <div style={{ ...styles.subHead, ...styles.subHeadFirst }}>Idag</div>
+          {todayMatches.length > 0
+            ? renderDayPanel(todayKey, todayMatches, true)
+            : <p style={styles.emptyDay}>Inga matcher idag.</p>}
+
+          {upcomingDays.length > 0 && (
+            <>
+              <div style={styles.subHead}>Kommande</div>
+              {upcomingDays.map(([k, ms]) => renderDayPanel(k, ms, true))}
+            </>
+          )}
+
+          {pastDays.length > 0 && (
+            <>
+              <div style={styles.subHead}>Tidigare (spelade)</div>
+              {pastDays.map(([k, ms]) => renderDayPanel(k, ms, false))}
+            </>
+          )}
+        </div>
+
+        {/* 3. Third-place ranking */}
+        <div style={styles.section}>
+          <div style={styles.sectionHead}>
+            <h2 style={{ ...styles.h2, margin: 0 }}>3. Ranka trean i grupperna</h2>
             <span style={{ ...styles.modeBadge, ...(manualThirdOrder ? styles.modeManual : styles.modeAuto) }}>
               {manualThirdOrder ? 'Manuell ordning' : 'Automatisk ordning'}
             </span>
@@ -279,39 +406,6 @@ export default function Admin() {
               <button style={styles.arrowBtn} onClick={() => moveThird(i, 1)} disabled={i === thirds.length - 1}>↓</button>
             </div>
           ))}
-        </div>
-
-        {/* 3. Knockout winners */}
-        <div style={styles.section}>
-          <div style={styles.sectionHead}>
-            <h2 style={{ ...styles.h2, margin: 0 }}>3. Slutspelsvinnare</h2>
-            <button
-              style={{ ...styles.resetBtn, ...(hasKnockoutWinners ? {} : styles.resetBtnDisabled) }}
-              onClick={resetKnockout}
-              disabled={!hasKnockoutWinners}
-              title="Rensa alla slutspelsvinnare"
-            >
-              ↺ Rensa trädet
-            </button>
-          </div>
-          <p style={styles.hint}>Klicka på laget som faktiskt gick vidare i varje match. Sextondelsfinalerna fylls i utifrån resultaten hittills.</p>
-          <label style={styles.scoringToggle}>
-            <input
-              type="checkbox"
-              checked={playoffScoring}
-              onChange={(e) => togglePlayoffScoring(e.target.checked)}
-              style={styles.scoringCheckbox}
-            />
-            <span>
-              <strong>Räkna slutspelspoäng till deltagarna</strong>
-              <span style={styles.scoringHint}>
-                {playoffScoring
-                  ? 'På – deltagarna får poäng för sina slutspelstips utifrån resultaten ovan.'
-                  : 'Av – inga slutspelspoäng delas ut än. Slå på när slutspelet startar (eller för att testa poängräkningen).'}
-              </span>
-            </span>
-          </label>
-          <BracketTree matches={bracket.matches} locked={false} onPick={pickKo} />
         </div>
 
         {/* 4. Participants */}

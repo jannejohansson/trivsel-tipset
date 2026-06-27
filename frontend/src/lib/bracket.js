@@ -185,7 +185,7 @@ const slotLabel = (slot) => {
   if (slot.t === '1') return `1${slot.g}`;
   if (slot.t === '2') return `2${slot.g}`;
   if (slot.t === '3') return '3:a';
-  return `V${slot.from.replace('ko_', '')}`;
+  return `M${slot.from.replace('ko_', '')}`;
 };
 
 export function buildBracket(matches, predictions, picks, opts = {}) {

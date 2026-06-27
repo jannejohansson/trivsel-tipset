@@ -136,6 +136,15 @@ const styles = {
     borderColor: 'rgba(184,134,11,0.6)',
     fontWeight: 600,
   },
+  noticeLocked: {
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    color: 'var(--text-muted)',
+    borderRadius: 'var(--radius)',
+    padding: '12px 16px',
+    fontSize: '14px',
+    marginBottom: '16px',
+  },
   noticeText: { minWidth: 0 },
   noticeCta: {
     color: 'var(--green)',
@@ -321,11 +330,13 @@ export default function Home() {
     .sort(byKickoff);
   const groupStageOver = matches.length > 0 && matches.every((m) => m.locked);
 
-  // Reminders to finish predicting. Group play is still open until every match has
-  // locked; playoff picks stay editable until the bracket lockout. Mirrors the
-  // "X av Y" notices on the Tippa page so the landing page nudges the same gaps.
+  // Reminders to finish predicting. Group matches lock individually at kickoff, so
+  // split unpredicted ones into still-tippable vs already-kicked-off (locked — can no
+  // longer be tipped). Playoff picks all lock together at the bracket lockout.
+  // Mirrors the notices on the Tippa page so the landing page nudges the same gaps.
   const groupPredicted = matches.filter((m) => m.prediction).length;
-  const groupRemaining = Math.max(0, TOTAL_MATCHES - groupPredicted);
+  const groupOpenRemaining = matches.filter((m) => !m.locked && !m.prediction).length;
+  const groupMissed = matches.filter((m) => m.locked && !m.prediction).length;
   const playoffPicks = data.playoff ? data.playoff.matches.filter((m) => m.pick).length : 0;
   const playoffRemaining = Math.max(0, TOTAL_PLAYOFF - playoffPicks);
   const playoffOpen = !data.playoffLocked;
@@ -392,10 +403,20 @@ export default function Home() {
             ⚠ Du har tippat {playoffPicks} av {TOTAL_PLAYOFF} slutspelsval – {playoffRemaining} kvar. Tippa klart slutspelet!
           </NoticeLink>
         )}
-        {!groupStageOver && groupRemaining > 0 && (
+        {!playoffOpen && playoffRemaining > 0 && (
+          <div style={styles.noticeLocked}>
+            🔒 Slutspelet är låst – du hann tippa {playoffPicks} av {TOTAL_PLAYOFF} slutspelsval.
+          </div>
+        )}
+        {!groupStageOver && groupOpenRemaining > 0 && (
           <NoticeLink to="/matches">
-            ⚠ Du har tippat {groupPredicted} av {TOTAL_MATCHES} gruppspelsmatcher – {groupRemaining} kvar att tippa.
+            ⚠ Du har tippat {groupPredicted} av {TOTAL_MATCHES} gruppspelsmatcher – {groupOpenRemaining} kvar att tippa.
           </NoticeLink>
+        )}
+        {!groupStageOver && groupMissed > 0 && (
+          <div style={styles.noticeLocked}>
+            🔒 {groupMissed} {groupMissed === 1 ? 'gruppspelsmatch' : 'gruppspelsmatcher'} har redan startat och kan inte längre tippas.
+          </div>
         )}
 
         {playoffMode ? (

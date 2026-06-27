@@ -75,6 +75,11 @@ const styles = {
     color: 'var(--text-muted)', borderRadius: 'var(--radius)', padding: '12px 16px',
     fontSize: '14px', marginBottom: '20px',
   },
+  lockBanner: {
+    background: 'var(--green-dim)', border: '1px solid var(--green)', color: 'var(--green)',
+    padding: '12px 20px', borderRadius: 'var(--radius)', textAlign: 'center',
+    margin: '0 0 24px', fontSize: '14px',
+  },
   infoNote: {
     background: 'var(--surface)', border: '1px solid var(--border)',
     color: 'var(--text-muted)', borderRadius: 'var(--radius)', padding: '12px 16px',
@@ -248,12 +253,15 @@ export default function Matches({ view = 'group' }) {
 
         {isPlayoff ? (
           <>
-            {playoffLocked ? <LockBanner /> : <LockCountdown lockoutUtc={playoffLockoutUtc} />}
+            {playoffLocked ? (
+              <div style={styles.lockBanner}>
+                🔒 Slutspelet är låst.{playoffRemaining > 0 ? ` Du hann tippa ${playoffPredicted} av ${TOTAL_PLAYOFF} slutspelsval.` : ''} Du kan fortfarande se dina tips.
+              </div>
+            ) : (
+              <LockCountdown lockoutUtc={playoffLockoutUtc} />
+            )}
             {!playoffLocked && playoffRemaining > 0 && (
               <div style={styles.notice}>⚠ Du har tippat {playoffPredicted} av {TOTAL_PLAYOFF} slutspelsval. {playoffRemaining} kvar att tippa.</div>
-            )}
-            {playoffLocked && playoffRemaining > 0 && (
-              <div style={styles.noticeLocked}>🔒 Slutspelet är låst – du hann tippa {playoffPredicted} av {TOTAL_PLAYOFF} slutspelsval och kan inte längre ändra.</div>
             )}
             {!bracket.allComplete && (
               <div style={styles.notice}>

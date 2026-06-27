@@ -403,11 +403,6 @@ export default function Home() {
             ⚠ Du har tippat {playoffPicks} av {TOTAL_PLAYOFF} slutspelsval – {playoffRemaining} kvar. Tippa klart slutspelet!
           </NoticeLink>
         )}
-        {!playoffOpen && playoffRemaining > 0 && (
-          <div style={styles.noticeLocked}>
-            🔒 Slutspelet är låst – du hann tippa {playoffPicks} av {TOTAL_PLAYOFF} slutspelsval.
-          </div>
-        )}
         {!groupStageOver && groupOpenRemaining > 0 && (
           <NoticeLink to="/matches">
             ⚠ Du har tippat {groupPredicted} av {TOTAL_MATCHES} gruppspelsmatcher – {groupOpenRemaining} kvar att tippa.

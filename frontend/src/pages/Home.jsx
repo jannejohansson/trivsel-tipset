@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import MatchCard from '../components/MatchCard.jsx';
 import PlayoffFixtureCard from '../components/PlayoffFixtureCard.jsx';
+import { TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 
 const styles = {
   hero: {
@@ -116,6 +117,32 @@ const styles = {
     fontSize: '11px',
     color: 'var(--text-muted)',
   },
+  notice: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    background: 'rgba(184,134,11,0.10)',
+    border: '1px solid rgba(184,134,11,0.35)',
+    color: 'var(--text)',
+    borderRadius: 'var(--radius)',
+    padding: '12px 16px',
+    fontSize: '14px',
+    marginBottom: '16px',
+    textDecoration: 'none',
+  },
+  noticeStrong: {
+    background: 'rgba(184,134,11,0.16)',
+    borderColor: 'rgba(184,134,11,0.6)',
+    fontWeight: 600,
+  },
+  noticeText: { minWidth: 0 },
+  noticeCta: {
+    color: 'var(--green)',
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  },
   list: {
     display: 'flex',
     flexDirection: 'column',
@@ -214,6 +241,17 @@ function PlacementCard({ rank, total, prevRank }) {
   );
 }
 
+// A clickable reminder banner nudging the user to finish their predictions.
+// `strong` gives the playoff reminder extra visual weight.
+function NoticeLink({ to, strong, children }) {
+  return (
+    <Link to={to} style={{ ...styles.notice, ...(strong ? styles.noticeStrong : {}) }}>
+      <span style={styles.noticeText}>{children}</span>
+      <span style={styles.noticeCta}>Tippa →</span>
+    </Link>
+  );
+}
+
 // A muted card prompting the user onward when a section has nothing to show.
 function EmptyState({ children, to = '/matches', cta = 'Till alla tips →' }) {
   return (
@@ -283,6 +321,15 @@ export default function Home() {
     .sort(byKickoff);
   const groupStageOver = matches.length > 0 && matches.every((m) => m.locked);
 
+  // Reminders to finish predicting. Group play is still open until every match has
+  // locked; playoff picks stay editable until the bracket lockout. Mirrors the
+  // "X av Y" notices on the Tippa page so the landing page nudges the same gaps.
+  const groupPredicted = matches.filter((m) => m.prediction).length;
+  const groupRemaining = Math.max(0, TOTAL_MATCHES - groupPredicted);
+  const playoffPicks = data.playoff ? data.playoff.matches.filter((m) => m.pick).length : 0;
+  const playoffRemaining = Math.max(0, TOTAL_PLAYOFF - playoffPicks);
+  const playoffOpen = !data.playoffLocked;
+
   // Playoff mode: the dashboard switches from group scorelines to knockout advancement.
   const playoffMode = !!data.playoffMode;
   const pFixtures = data.playoffFixtures || [];
@@ -338,6 +385,18 @@ export default function Home() {
       <div style={styles.page}>
         {/* Din placering */}
         {standing && <PlacementCard rank={standing.rank} total={standing.total} prevRank={standing.prevRank} />}
+
+        {/* Påminnelser om att tippa klart – slutspelet först (lättast att missa). */}
+        {playoffOpen && playoffRemaining > 0 && (
+          <NoticeLink to="/slutspel" strong>
+            ⚠ Du har tippat {playoffPicks} av {TOTAL_PLAYOFF} slutspelsval – {playoffRemaining} kvar. Tippa klart slutspelet!
+          </NoticeLink>
+        )}
+        {!groupStageOver && groupRemaining > 0 && (
+          <NoticeLink to="/matches">
+            ⚠ Du har tippat {groupPredicted} av {TOTAL_MATCHES} gruppspelsmatcher – {groupRemaining} kvar att tippa.
+          </NoticeLink>
+        )}
 
         {playoffMode ? (
           <>

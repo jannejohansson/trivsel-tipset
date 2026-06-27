@@ -70,6 +70,16 @@ const styles = {
     color: 'var(--text)', borderRadius: 'var(--radius)', padding: '12px 16px',
     fontSize: '14px', marginBottom: '20px',
   },
+  noticeLocked: {
+    background: 'var(--surface-2)', border: '1px solid var(--border)',
+    color: 'var(--text-muted)', borderRadius: 'var(--radius)', padding: '12px 16px',
+    fontSize: '14px', marginBottom: '20px',
+  },
+  lockBanner: {
+    background: 'var(--green-dim)', border: '1px solid var(--green)', color: 'var(--green)',
+    padding: '12px 20px', borderRadius: 'var(--radius)', textAlign: 'center',
+    margin: '0 0 24px', fontSize: '14px',
+  },
   infoNote: {
     background: 'var(--surface)', border: '1px solid var(--border)',
     color: 'var(--text-muted)', borderRadius: 'var(--radius)', padding: '12px 16px',
@@ -185,9 +195,12 @@ export default function Matches({ view = 'group' }) {
   const isPlayoff = view === 'playoff';
   const isThirds = view === 'thirds';
 
-  // Progress counters powering the "matches left to predict" notices.
+  // Progress counters powering the "matches left to predict" notices. Unpredicted
+  // group matches are split by whether they can still be tipped (kickoff not passed)
+  // or have already kicked off (locked — the tip window has closed for good).
   const groupPredicted = predictions.size;
-  const groupRemaining = Math.max(0, TOTAL_MATCHES - groupPredicted);
+  const groupOpenRemaining = matches.filter((m) => !m.locked && !predictions.has(m.id)).length;
+  const groupMissed = matches.filter((m) => m.locked && !predictions.has(m.id)).length;
   const playoffPredicted = bracket.matches.filter((m) => m.pick).length;
   const playoffRemaining = Math.max(0, TOTAL_PLAYOFF - playoffPredicted);
 
@@ -240,7 +253,13 @@ export default function Matches({ view = 'group' }) {
 
         {isPlayoff ? (
           <>
-            {playoffLocked ? <LockBanner /> : <LockCountdown lockoutUtc={playoffLockoutUtc} />}
+            {playoffLocked ? (
+              <div style={styles.lockBanner}>
+                🔒 Slutspelet är låst.{playoffRemaining > 0 ? ` Du hann tippa ${playoffPredicted} av ${TOTAL_PLAYOFF} slutspelsval.` : ''} Du kan fortfarande se dina tips.
+              </div>
+            ) : (
+              <LockCountdown lockoutUtc={playoffLockoutUtc} />
+            )}
             {!playoffLocked && playoffRemaining > 0 && (
               <div style={styles.notice}>⚠ Du har tippat {playoffPredicted} av {TOTAL_PLAYOFF} slutspelsval. {playoffRemaining} kvar att tippa.</div>
             )}
@@ -251,6 +270,12 @@ export default function Matches({ view = 'group' }) {
               </div>
             )}
             {saveError && <div style={styles.notice}>Kunde inte spara senaste valet. Kontrollera anslutningen.</div>}
+
+            {!playoffLocked && (
+              <div style={styles.infoNote}>
+                Klicka på laget du tror går vidare i varje match. Sextondelsfinalerna fylls i utifrån dina gruppspelstips – ändra dem under <strong>Gruppspel</strong> för att flytta lagen.
+              </div>
+            )}
 
             <div style={styles.champ}>
               <div style={styles.champLabel}>Din världsmästare</div>
@@ -289,8 +314,11 @@ export default function Matches({ view = 'group' }) {
         ) : (
           <>
             {groupLocked && <LockBanner />}
-            {!groupLocked && groupRemaining > 0 && (
-              <div style={styles.notice}>⚠ Du har tippat {groupPredicted} av {TOTAL_MATCHES} gruppspelsmatcher. {groupRemaining} kvar att tippa.</div>
+            {!groupLocked && groupOpenRemaining > 0 && (
+              <div style={styles.notice}>⚠ Du har tippat {groupPredicted} av {TOTAL_MATCHES} gruppspelsmatcher. {groupOpenRemaining} kvar att tippa.</div>
+            )}
+            {!groupLocked && groupMissed > 0 && (
+              <div style={styles.noticeLocked}>🔒 {groupMissed} {groupMissed === 1 ? 'match har' : 'matcher har'} redan startat och kan inte längre tippas.</div>
             )}
             <GroupTabs
               matches={matches}

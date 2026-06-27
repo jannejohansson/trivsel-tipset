@@ -195,7 +195,7 @@ const slotLabel = (slot) => {
   if (slot.t === '1') return `1${slot.g}`;
   if (slot.t === '2') return `2${slot.g}`;
   if (slot.t === '3') return '3rd';
-  return `V${slot.from.replace('ko_', '')}`; // "Vinnare match N"
+  return `M${slot.from.replace('ko_', '')}`; // "Match N" (vinnaren från match N)
 };
 
 // Build the full bracket from group predictions + the user's knockout winner picks.

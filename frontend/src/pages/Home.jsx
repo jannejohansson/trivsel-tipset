@@ -339,7 +339,10 @@ export default function Home() {
   const groupMissed = matches.filter((m) => m.locked && !m.prediction).length;
   const playoffPicks = data.playoff ? data.playoff.matches.filter((m) => m.pick).length : 0;
   const playoffRemaining = Math.max(0, TOTAL_PLAYOFF - playoffPicks);
-  const playoffOpen = !data.playoffLocked;
+  // Playoff picks close at the bracket lockout OR once the admin switches playoff
+  // mode on. data.playoffMode mirrors the server's isPlayoffMode (the same signal the
+  // Tippa page locks on), so use it rather than the time-only data.playoffLocked.
+  const playoffOpen = !data.playoffMode;
 
   // Playoff mode: the dashboard switches from group scorelines to knockout advancement.
   const playoffMode = !!data.playoffMode;

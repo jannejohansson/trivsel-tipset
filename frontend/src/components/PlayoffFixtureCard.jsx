@@ -101,7 +101,7 @@ export default function PlayoffFixtureCard({ fixture }) {
         <span className={`fi fi-${team.flag}`} style={flagStyle} aria-hidden="true" />
         <span style={{ ...styles.teamName, ...(won ? styles.teamNameWon : {}) }}>{team.team}</span>
         {won && <span style={styles.advancedBadge}>Vidare ✓</span>}
-        {!won && predicted && <span style={styles.guessChip}>Din gissning</span>}
+        {!won && predicted && <span style={styles.guessChip}>Ditt tips</span>}
       </div>
     );
   };

@@ -317,13 +317,13 @@ function CollapsibleCard({ title, subtitle, defaultOpen = false, children }) {
 
 // Predicted-champion distribution. Compact: each team's predictors are listed inline on
 // the same row as the team name (wraps below on narrow screens). Collapsible.
-function ChampionPanel({ champions, total, champPoints }) {
+function ChampionPanel({ champions, total, champPoints, defaultOpen = false }) {
   if (!champions || champions.length === 0) return null;
   return (
     <CollapsibleCard
       title="🏆 Tippad världsmästare"
       subtitle={`${champPoints} p för rätt · ${total} deltagare`}
-      defaultOpen={false}
+      defaultOpen={defaultOpen}
     >
       <div>
         {champions.map((c, i) => (
@@ -501,7 +501,7 @@ export default function PredictionBreakdown() {
         {/* ── Playoff view: picks revealed (after lockout) ── */}
         {!error && playoff && !picksHidden && (
           <>
-            <ChampionPanel champions={data.champions} total={data.totalUsers} champPoints={data.champPoints} />
+            <ChampionPanel champions={data.champions} total={data.totalUsers} champPoints={data.champPoints} defaultOpen />
             <R32Panel rows={data.r32ByUser} />
             {fixtures.length === 0 ? (
               <p style={styles.empty}>Slutspelsmatcherna visas här när lagen är klara.</p>

@@ -152,6 +152,34 @@ const styles = {
     whiteSpace: 'nowrap',
     flexShrink: 0,
   },
+  // Celebratory champion-reveal banner shown once the bracket locks.
+  reveal: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    background: 'linear-gradient(135deg, rgba(21,163,74,0.16), rgba(184,134,11,0.16))',
+    border: '1px solid var(--green)',
+    borderRadius: 'var(--radius)',
+    padding: '14px 16px',
+    marginBottom: '16px',
+    textDecoration: 'none',
+    color: 'var(--text)',
+  },
+  revealEmoji: { fontSize: '22px', flexShrink: 0, lineHeight: 1 },
+  revealBody: { minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' },
+  revealTitle: { fontWeight: 800, fontSize: '15px', color: 'var(--text)' },
+  revealSub: { fontSize: '13px', color: 'var(--text-muted)' },
+  revealCta: { color: 'var(--green)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 },
+  revealClose: {
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    fontSize: '17px',
+    lineHeight: 1,
+    padding: '4px',
+    flexShrink: 0,
+  },
   list: {
     display: 'flex',
     flexDirection: 'column',
@@ -246,6 +274,37 @@ function PlacementCard({ rank, total, prevRank }) {
           <span style={styles.placeSince}>sedan igår</span>
         </span>
       )}
+    </Link>
+  );
+}
+
+// localStorage key remembering that the user has seen (and dismissed) the one-time
+// champion-reveal banner that appears when the knockout bracket locks.
+const CHAMP_REVEAL_KEY = 'championRevealSeen';
+
+// One-time celebratory banner: once the bracket locks (match 73 kickoff), everyone's
+// predicted world champion becomes public. Links to "Vad tippar andra?"; dismissal is
+// remembered so it only nags once.
+function ChampionRevealBanner() {
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(CHAMP_REVEAL_KEY) === '1'; } catch { return false; }
+  });
+  if (dismissed) return null;
+  const close = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try { localStorage.setItem(CHAMP_REVEAL_KEY, '1'); } catch { /* ignore */ }
+    setDismissed(true);
+  };
+  return (
+    <Link to="/vad-tippar-andra" style={styles.reveal}>
+      <span style={styles.revealEmoji} aria-hidden="true">🏆</span>
+      <span style={styles.revealBody}>
+        <span style={styles.revealTitle}>Slutspelet är igång!</span>
+        <span style={styles.revealSub}>Allas tippade världsmästare är nu avslöjade.</span>
+      </span>
+      <span style={styles.revealCta}>Se allas tips →</span>
+      <button type="button" style={styles.revealClose} onClick={close} aria-label="Dölj">✕</button>
     </Link>
   );
 }
@@ -400,6 +459,9 @@ export default function Home() {
       <div style={styles.page}>
         {/* Din placering */}
         {standing && <PlacementCard rank={standing.rank} total={standing.total} prevRank={standing.prevRank} />}
+
+        {/* Slutspelet har låsts – allas mästartips avslöjade (visas en gång) */}
+        {data.playoffLocked && <ChampionRevealBanner />}
 
         {/* Påminnelser om att tippa klart – slutspelet först (lättast att missa). */}
         {playoffOpen && playoffRemaining > 0 && (

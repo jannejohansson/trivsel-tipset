@@ -511,13 +511,14 @@ export default function Leaderboard() {
   const playoffMode = !!data?.playoffMode;
   const hasChampions = playoffMode && sortedUsers.some((u) => u.champion?.flag);
 
-  // Whether there are any spotlight fixtures to reveal (same set for everyone). In playoff
-  // mode the strip shows recently decided knockout ties instead of group fixtures.
+  // Row expand content (same set for everyone). In playoff mode the strip shows recently
+  // decided knockout ties; before any are decided (e.g. scoring on but pre-lock) we fall
+  // back to the recent group matches, which are still the latest relevant tips.
   const sp = data?.spotlight;
   const poSpotlight = data?.playoffSpotlight;
-  const hasSpotlight = playoffMode
-    ? !!poSpotlight && poSpotlight.length > 0
-    : !!sp && ((sp.recent?.length || 0) + (sp.inProgress?.length || 0) + (sp.next?.length || 0)) > 0;
+  const hasGroupSpotlight = !!sp && ((sp.recent?.length || 0) + (sp.inProgress?.length || 0) + (sp.next?.length || 0)) > 0;
+  const usePlayoffStrip = playoffMode && !!poSpotlight && poSpotlight.length > 0;
+  const hasSpotlight = usePlayoffStrip || hasGroupSpotlight;
 
   const allExpanded = sortedUsers.length > 0 && sortedUsers.every((u) => expanded.has(u.userId));
 
@@ -561,7 +562,7 @@ export default function Leaderboard() {
         {sortedUsers.length > 0 && hasSpotlight && (
           <div style={styles.toolbar}>
             <button type="button" style={styles.expandAllBtn} onClick={toggleAll}>
-              {playoffMode
+              {usePlayoffStrip
                 ? (allExpanded ? 'Dölj senaste slutspelsresultat' : 'Visa senaste slutspelsresultat')
                 : (allExpanded ? 'Dölj senaste & kommande tips' : 'Visa senaste & kommande tips')}
             </button>
@@ -659,7 +660,7 @@ export default function Leaderboard() {
                       <span style={styles.chevron} aria-hidden="true">{isExpanded ? '▴' : '▾'}</span>
                     )}
                   </div>
-                  {isExpanded && (playoffMode
+                  {isExpanded && (usePlayoffStrip
                     ? <PlayoffSpotlightStrip shared={data.playoffSpotlight} mine={u.playoffSpotlight} />
                     : <SpotlightStrip shared={data.spotlight} mine={u.spotlight} />)}
                 </div>

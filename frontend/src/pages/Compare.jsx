@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
+import { ACHIEVEMENTS } from '../lib/achievements.js';
 import CompareMatchRow from '../components/CompareMatchRow.jsx';
 
 const styles = {
@@ -92,7 +93,79 @@ const styles = {
   },
   chevron: { marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '13px', flexShrink: 0 },
   sectionBody: { padding: '12px 12px 2px' },
+  // ── Achievements comparison ─────────────────────────────────
+  achCard: {
+    background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+    boxShadow: 'var(--shadow-card)', padding: '4px 14px', marginBottom: '20px',
+  },
+  achRow: {
+    display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0',
+    borderBottom: '1px solid var(--border)',
+  },
+  achRowLast: { borderBottom: 'none' },
+  achName: {
+    flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px',
+    fontSize: '14px', fontWeight: 600, color: 'var(--text)',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
+  achEmoji: { fontSize: '16px', flexShrink: 0, lineHeight: 1 },
+  achCol: {
+    width: '84px', flexShrink: 0, textAlign: 'center', fontSize: '15px', fontWeight: 800,
+    fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)',
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
+  achColLead: { color: 'var(--green)' },
+  achColHead: { fontSize: '12px', fontWeight: 700, color: 'var(--text)' },
 };
+
+// Achievement value formatting (mirrors the Profile page): signed/down categories only
+// show a value when it moved in their direction.
+function fmtAch(v, a) {
+  if (v == null) return '–';
+  if (a.signed) return v > 0 ? `+${v}` : '–';
+  if (a.down) return v > 0 ? `-${v}` : '–';
+  return `${v}`;
+}
+
+// Side-by-side season-achievement comparison. Each category's leader (the higher raw
+// value, which is how the badge is awarded server-side) is highlighted.
+function AchievementCompare({ aRow, bRow }) {
+  const aAch = aRow.achievements;
+  const bAch = bRow.achievements;
+  if (!aAch || !bAch) return null;
+  return (
+    <>
+      <h2 style={styles.sectionTitle}>Utmärkelser</h2>
+      <div style={styles.achCard}>
+        <div style={styles.achRow}>
+          <span style={styles.achName} />
+          <span style={{ ...styles.achCol, ...styles.achColHead }}>{aRow.displayName}</span>
+          <span style={{ ...styles.achCol, ...styles.achColHead }}>{bRow.displayName}</span>
+        </div>
+        {ACHIEVEMENTS.map((a, i) => {
+          const av = aAch[a.field];
+          const bv = bAch[a.field];
+          const an = av ?? -Infinity;
+          const bn = bv ?? -Infinity;
+          return (
+            <div
+              key={a.key}
+              style={{ ...styles.achRow, ...(i === ACHIEVEMENTS.length - 1 ? styles.achRowLast : {}) }}
+              title={a.desc}
+            >
+              <span style={styles.achName}>
+                <span style={styles.achEmoji} aria-hidden="true">{a.emoji}</span>
+                {a.label}
+              </span>
+              <span style={{ ...styles.achCol, ...(an > bn ? styles.achColLead : {}) }}>{fmtAch(av, a)}</span>
+              <span style={{ ...styles.achCol, ...(bn > an ? styles.achColLead : {}) }}>{fmtAch(bv, a)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
 
 // Count knockout ties where both have made a (different) winner pick.
 function bracketDivergence(aPlayoff, bPlayoff) {
@@ -323,6 +396,8 @@ function CompareInner({
               <div style={styles.vsMid}>VS</div>
               <PlayerColumn row={bRow} highlight={bId === user.userId} />
             </div>
+
+            <AchievementCompare aRow={aRow} bRow={bRow} />
 
             {loading && <p style={styles.empty}>Laddar tips…</p>}
 

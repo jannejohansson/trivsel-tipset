@@ -130,6 +130,7 @@ export default function Navbar() {
             <Link to="/tabeller" style={styles.mobileLink} onClick={close}>Resultat</Link>
             <Link to="/historik" style={styles.mobileLink} onClick={close}>Historik</Link>
             <Link to="/vad-tippar-andra" style={styles.mobileLink} onClick={close}>Vad tippar andra?</Link>
+            <Link to="/jamfor" style={styles.mobileLink} onClick={close}>Jämför</Link>
             <Link to="/regler" style={styles.mobileLink} onClick={close}>Regler</Link>
             {!loading && user?.isAdmin && (
               <Link to="/admin" style={styles.mobileLink} onClick={close}>Admin</Link>
@@ -159,6 +160,7 @@ export default function Navbar() {
         <Link to="/tabeller" style={styles.link}>Resultat</Link>
         <Link to="/historik" style={styles.link}>Historik</Link>
         <Link to="/vad-tippar-andra" style={styles.link}>Vad tippar andra?</Link>
+        <Link to="/jamfor" style={styles.link}>Jämför</Link>
         <Link to="/regler" style={styles.link}>Regler</Link>
         {!loading && user?.isAdmin && <Link to="/admin" style={styles.link}>Admin</Link>}
         {!loading && (

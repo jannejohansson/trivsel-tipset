@@ -5,8 +5,7 @@ const { verifyAuth } = require('../shared/authMiddleware');
 const { getPredictionsTable, getPlayoffTable } = require('../shared/tableClient');
 const { MATCHES } = require('../shared/matchData');
 const { buildBracket, KO_IDS } = require('../shared/bracket');
-const { loadResults } = require('../shared/results');
-const { isPlayoffMode } = require('../shared/phase');
+const { isPlayoffLocked } = require('../shared/phase');
 
 app.http('savePlayoffPrediction', {
   methods: ['POST'],
@@ -20,8 +19,8 @@ app.http('savePlayoffPrediction', {
       return { status: err.status || 401, jsonBody: { error: err.message } };
     }
 
-    // Locked at the lockout time OR whenever the admin has flipped playoff mode on.
-    if (isPlayoffMode(await loadResults())) {
+    // Locked only at the lockout time (match 73 kickoff) — not by the scoring switch.
+    if (isPlayoffLocked()) {
       return { status: 403, jsonBody: { error: 'Playoff picks are locked' } };
     }
 

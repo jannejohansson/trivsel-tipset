@@ -8,7 +8,7 @@ const { MATCHES } = require('../shared/matchData');
 const { resolveSpotlight } = require('../shared/spotlight');
 const { buildBracket } = require('../shared/bracket');
 const { scoreGroupTotal, scorePlayoff, scoreGroup, reachedSets } = require('../shared/scoring');
-const { isPlayoffMode } = require('../shared/phase');
+const { isPlayoffDisplay, isPlayoffLocked } = require('../shared/phase');
 const { actualFixtures } = require('../shared/playoffView');
 
 // A bracket's predicted champion as { team, flag } (flag pulled from the final's slots),
@@ -128,10 +128,14 @@ app.http('getLeaderboard', {
     });
     // Admin master-switch: while off, no playoff points are awarded to users.
     const playoffOn = results.playoffScoring;
-    // Playoff display mode (scoring switch OR lockout time) — gates champion exposure etc.
-    const playoffMode = isPlayoffMode(results);
+    // Display mode (scoring switch OR lockout) switches the board to playoff presentation.
+    const playoffMode = isPlayoffDisplay(results);
+    // Locked (lockout time only) gates exposure of each user's still-editable picks —
+    // their predicted champion and which side they had advancing.
+    const playoffLocked = isPlayoffLocked();
     // Shared per-row spotlight for playoff mode: the last few decided knockout ties
     // (newest first), each with the team that advanced. Per-user picks/points added below.
+    // (Knockout ties can't be decided before the lockout, so this is empty until then.)
     const playoffCompleted = playoffMode
       ? actualFixtures(actualBracket, results.knockoutWinners)
           .filter((f) => f.status === 'completed')
@@ -182,7 +186,7 @@ app.http('getLeaderboard', {
       // Playoff-mode spotlight: for each recently decided tie, which side this user had
       // advancing and the points it earned (the team reaching the next round).
       let playoffSpotlight = null;
-      if (playoffMode && playoffCompleted.length) {
+      if (playoffLocked && playoffCompleted.length) {
         const reached = reachedSets(predictedBracket);
         playoffSpotlight = {};
         for (const f of playoffCompleted) {
@@ -212,8 +216,9 @@ app.http('getLeaderboard', {
         _ach: ach,
         spotlight,
         playoffSpotlight,
-        // Predicted champion is public only in playoff mode (picks are locked by then).
-        champion: playoffMode ? championOf(predictedBracket) : null,
+        // Predicted champion is exposed only once picks lock at kickoff — not merely
+        // because scoring (display mode) is on.
+        champion: playoffLocked ? championOf(predictedBracket) : null,
       };
     });
 

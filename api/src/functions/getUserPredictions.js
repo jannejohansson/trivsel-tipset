@@ -10,9 +10,9 @@ const {
 } = require('../shared/tableClient');
 const { loadResults } = require('../shared/results');
 const { MATCHES } = require('../shared/matchData');
-const { buildBracket, PLAYOFF_LOCKOUT } = require('../shared/bracket');
+const { buildBracket } = require('../shared/bracket');
 const { scoreGroup, scorePlayoff, reachedSets } = require('../shared/scoring');
-const { isPlayoffMode } = require('../shared/phase');
+const { isPlayoffDisplay, isPlayoffLocked } = require('../shared/phase');
 const { actualFixtures, r32Map } = require('../shared/playoffView');
 
 // Read ANOTHER participant's predictions. Visibility is enforced here, server-side:
@@ -93,15 +93,18 @@ app.http('getUserPredictions', {
     }
     matches.sort((a, b) => a.matchNumber - b.matchNumber);
 
-    // Playoff bracket: revealed as a whole once group play is done (or admin/self), or
-    // whenever playoff mode is on (the admin's scoring switch can flip it for testing).
-    const playoffLocked = now >= PLAYOFF_LOCKOUT;
-    const playoffMode = isPlayoffMode(results, now);
+    // Two signals: `playoffDisplay` switches this user's own dashboard to the knockout
+    // view; `playoffLocked` (lockout time only) gates whether ANOTHER user's bracket may
+    // be revealed. Self and admin-reveal always see the bracket. The scoring switch shows
+    // the playoff UI but never reveals someone else's picks before kickoff.
+    const playoffLocked = isPlayoffLocked(now);
+    const playoffDisplay = isPlayoffDisplay(results, now);
+    const reveal = revealAll || playoffLocked;
     let playoff = null;
     let playoffScore = null;
     let playoffFixtures = null;
     let playoffR32 = null;
-    if (playoffMode || revealAll) {
+    if (reveal) {
       const predictedBracket = buildBracket(MATCHES, preds, picks, { allowPartial: true });
       playoff = { matches: predictedBracket.matches, champion: predictedBracket.champion };
       // Actual (admin-curated) bracket: resolves the real fixtures + entered winners.
@@ -113,7 +116,7 @@ app.http('getUserPredictions', {
         playoffScore = scorePlayoff(predictedBracket, actualBracket);
       }
       // Per-fixture view for the home dashboard: which side this user has advancing + points.
-      if (playoffMode) {
+      if (playoffDisplay) {
         // Teams this user predicted to reach the Round of 32 (qualify from the groups),
         // each flagged with whether they actually made it.
         const actualR32 = new Set(r32Map(actualBracket).keys());
@@ -145,7 +148,7 @@ app.http('getUserPredictions', {
         playoffFixtures,
         playoffR32,
         playoffLocked,
-        playoffMode,
+        playoffMode: playoffDisplay,
         revealed: revealAll,
         viewerIsAdmin,
         isSelf,

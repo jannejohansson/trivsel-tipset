@@ -339,12 +339,13 @@ export default function Home() {
   const groupMissed = matches.filter((m) => m.locked && !m.prediction).length;
   const playoffPicks = data.playoff ? data.playoff.matches.filter((m) => m.pick).length : 0;
   const playoffRemaining = Math.max(0, TOTAL_PLAYOFF - playoffPicks);
-  // Playoff picks close at the bracket lockout OR once the admin switches playoff
-  // mode on. data.playoffMode mirrors the server's isPlayoffMode (the same signal the
-  // Tippa page locks on), so use it rather than the time-only data.playoffLocked.
-  const playoffOpen = !data.playoffMode;
+  // Playoff picks stay editable until the bracket lockout (match 73 kickoff), even when
+  // playoff display mode is already on — so the "finish your bracket" nudge tracks the
+  // lock (mirrors the Tippa page), not the display switch.
+  const playoffOpen = !data.playoffLocked;
 
-  // Playoff mode: the dashboard switches from group scorelines to knockout advancement.
+  // Playoff display mode: the dashboard switches from group scorelines to knockout
+  // advancement (on once the admin enables scoring, or at the lockout time).
   const playoffMode = !!data.playoffMode;
   const pFixtures = data.playoffFixtures || [];
   const pCompleted = pFixtures.filter((f) => f.status === 'completed').sort((a, b) => byKickoff(b, a)).slice(0, 6);

@@ -343,10 +343,10 @@ function ChampionPanel({ champions, total, champPoints }) {
 
 // Per-user Round-of-32 accuracy: each participant's points (correct qualifiers) and
 // the teams they got wrong. Best readers of the group stage first.
-function R32Panel({ rows }) {
+function R32Panel({ rows, defaultOpen = false }) {
   if (!rows || rows.length === 0) return null;
   return (
-    <CollapsibleCard title="Sextondelsfinal – vem läste gruppspelet bäst?" defaultOpen={false}>
+    <CollapsibleCard title="Sextondelsfinal – vem läste gruppspelet bäst?" defaultOpen={defaultOpen}>
       <div>
         {rows.map((u, i) => (
           <div key={u.name + i} style={{ ...styles.r32Row, ...(i === 0 ? styles.r32RowFirst : {}) }}>
@@ -462,6 +462,9 @@ export default function PredictionBreakdown() {
   useAutoRefresh(load, 60000);
 
   const playoff = !!data?.playoff;
+  // Scoring (display mode) is on but the lockout hasn't passed: show the playoff framing
+  // and the group-derived R32 stats, but keep everyone's editable knockout picks hidden.
+  const picksHidden = !!data?.picksHidden;
   const matches = data?.matches || [];
   const fixtures = data?.fixtures || [];
 
@@ -472,7 +475,9 @@ export default function PredictionBreakdown() {
         <h1 style={styles.title}>Vad tippar andra?</h1>
         <p style={styles.sub}>
           {playoff
-            ? 'Så har deltagarna tippat slutspelet – vilka lag som går vidare och vem som blir mästare.'
+            ? (picksHidden
+                ? 'Slutspelspoängen räknas redan – men deltagarnas slutspelstips visas för alla först när slutspelet startar.'
+                : 'Så har deltagarna tippat slutspelet – vilka lag som går vidare och vem som blir mästare.')
             : 'Så har deltagarna tippat de senaste och pågående matcherna.'}
         </p>
       </section>
@@ -480,8 +485,21 @@ export default function PredictionBreakdown() {
       <div style={styles.page}>
         {error && <p style={styles.error}>{error}</p>}
 
-        {/* ── Playoff view ── */}
-        {!error && playoff && (
+        {/* ── Playoff view: picks still hidden (scoring on, before lockout) ── */}
+        {!error && playoff && picksHidden && (
+          <>
+            <p style={styles.legend}>
+              Slutspelstipsen visas för alla först när slutspelet startar (avspark i åttondelsfinalen).
+              Tills dess visas bara hur väl deltagarna läste gruppspelet.
+            </p>
+            {data.r32ByUser?.length > 0
+              ? <R32Panel rows={data.r32ByUser} defaultOpen />
+              : <p style={styles.empty}>Statistiken visas när gruppspelet är avgjort.</p>}
+          </>
+        )}
+
+        {/* ── Playoff view: picks revealed (after lockout) ── */}
+        {!error && playoff && !picksHidden && (
           <>
             <ChampionPanel champions={data.champions} total={data.totalUsers} champPoints={data.champPoints} />
             <R32Panel rows={data.r32ByUser} />

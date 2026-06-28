@@ -10,7 +10,7 @@ export default function LockBanner() {
       margin: '0 0 24px',
       fontSize: '14px',
     }}>
-      🔒 Tipsen är låsta — VM har startat. Du kan fortfarande se dina tips.
+      🔒 Tipsen är låsta — Du kan fortfarande se dina tips.
     </div>
   );
 }

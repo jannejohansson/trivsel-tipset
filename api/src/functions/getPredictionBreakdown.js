@@ -7,7 +7,7 @@ const { resolveSpotlight } = require('../shared/spotlight');
 const { scoreGroup, reachedSets, TIER_POINTS } = require('../shared/scoring');
 const { MATCHES } = require('../shared/matchData');
 const { buildBracket } = require('../shared/bracket');
-const { isPlayoffMode } = require('../shared/phase');
+const { isPlayoffDisplay, isPlayoffLocked } = require('../shared/phase');
 const { actualFixtures } = require('../shared/playoffView');
 const { collectUsers, collectByUser } = require('../shared/leaderboardData');
 
@@ -24,12 +24,15 @@ function championOf(bracket) {
   return { team: bracket.champion, flag };
 }
 
-// Aggregate the whole field's LOCKED playoff brackets into:
+// Aggregate the whole field's playoff brackets into:
 //   fixtures – per real knockout fixture (both teams known), how many predicted each side
 //              to advance (independent reached-set membership), with names + percentages
 //   champions – distribution of predicted world champions
-// Predictions are public here because playoff mode means the bracket is locked.
-async function playoffBreakdown(results) {
+//   r32ByUser – per-user Round-of-32 accuracy (derived from group predictions)
+// `revealed` (lockout time passed) controls whether the still-editable knockout picks
+// may be shown: until then, only r32ByUser is returned (it derives from group predictions,
+// which are already public per-match at kickoff), while fixtures + champions stay hidden.
+async function playoffBreakdown(results, revealed) {
   const [users, predsByUser, picksByUser] = await Promise.all([
     collectUsers(),
     collectByUser(getPredictionsTable(), (e) => ({ homeScore: e.homeScore, awayScore: e.awayScore })),
@@ -49,6 +52,35 @@ async function playoffBreakdown(results) {
   });
   const total = perUser.length;
   const pct = (n) => (total ? Math.round((100 * n) / total) : 0);
+
+  // Per-user Round-of-32 accuracy: points (1 per team correctly predicted to qualify)
+  // and the teams they got wrong (predicted to qualify but didn't). Derived purely from
+  // group predictions — already public per-match at kickoff — so it's safe to show before
+  // the lock. Only meaningful once the actual qualifiers are known, so empty until then.
+  const flagByTeam = new Map();
+  for (const m of MATCHES) { flagByTeam.set(m.homeTeam, m.homeFlag); flagByTeam.set(m.awayTeam, m.awayFlag); }
+  const actualR32 = new Set(actualBracket.matches.filter((m) => m.round === 'R32').flatMap((m) => [m.home.team, m.away.team]).filter(Boolean));
+  let r32ByUser = [];
+  if (actualR32.size > 0) {
+    r32ByUser = perUser
+      .map((p) => {
+        const predicted = [...p.reached.R32];
+        if (predicted.length === 0) return null; // hasn't predicted the groups
+        const misses = predicted
+          .filter((team) => !actualR32.has(team))
+          .map((team) => ({ team, flag: flagByTeam.get(team) || null }))
+          .sort((a, b) => a.team.localeCompare(b.team, 'sv'));
+        return { name: p.name, points: predicted.length - misses.length, total: actualR32.size, misses };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'sv'));
+  }
+
+  // Before the lockout the bracket and champion picks are still editable and private —
+  // expose only the group-derived R32 accuracy, never who-picked-what for the knockouts.
+  if (!revealed) {
+    return { playoff: true, playoffMode: true, picksHidden: true, totalUsers: total, champPoints: TIER_POINTS.CHAMP, fixtures: [], champions: [], r32ByUser };
+  }
 
   const fixtures = base.map((f) => {
     const homeUsers = [];
@@ -77,28 +109,6 @@ async function playoffBreakdown(results) {
   const champions = [...champMap.values()]
     .map((c) => ({ team: c.team, flag: c.flag, count: c.users.length, pct: pct(c.users.length), users: c.users.sort(svSort) }))
     .sort((a, b) => b.count - a.count || a.team.localeCompare(b.team, 'sv'));
-
-  // Per-user Round-of-32 accuracy: points (1 per team correctly predicted to qualify)
-  // and the teams they got wrong (predicted to qualify but didn't). Only meaningful once
-  // the actual qualifiers are known, so it's empty until then.
-  const flagByTeam = new Map();
-  for (const m of MATCHES) { flagByTeam.set(m.homeTeam, m.homeFlag); flagByTeam.set(m.awayTeam, m.awayFlag); }
-  const actualR32 = new Set(actualBracket.matches.filter((m) => m.round === 'R32').flatMap((m) => [m.home.team, m.away.team]).filter(Boolean));
-  let r32ByUser = [];
-  if (actualR32.size > 0) {
-    r32ByUser = perUser
-      .map((p) => {
-        const predicted = [...p.reached.R32];
-        if (predicted.length === 0) return null; // hasn't predicted the groups
-        const misses = predicted
-          .filter((team) => !actualR32.has(team))
-          .map((team) => ({ team, flag: flagByTeam.get(team) || null }))
-          .sort((a, b) => a.team.localeCompare(b.team, 'sv'));
-        return { name: p.name, points: predicted.length - misses.length, total: actualR32.size, misses };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'sv'));
-  }
 
   return { playoff: true, playoffMode: true, totalUsers: total, champPoints: TIER_POINTS.CHAMP, fixtures, champions, r32ByUser };
 }
@@ -149,9 +159,10 @@ app.http('getPredictionBreakdown', {
   handler: async () => {
     const results = await loadResults();
 
-    // In playoff mode the format changes from group scorelines to bracket advancement.
-    if (isPlayoffMode(results)) {
-      return { status: 200, jsonBody: await playoffBreakdown(results) };
+    // In playoff display mode the format changes from group scorelines to bracket
+    // advancement. Others' knockout picks are only revealed once the lockout has passed.
+    if (isPlayoffDisplay(results)) {
+      return { status: 200, jsonBody: await playoffBreakdown(results, isPlayoffLocked()) };
     }
 
     // Show more history here than the leaderboard spotlight: up to the six most recent

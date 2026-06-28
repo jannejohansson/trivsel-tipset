@@ -341,8 +341,8 @@ export default function Admin() {
               <strong>Räkna slutspelspoäng till deltagarna</strong>
               <span style={styles.scoringHint}>
                 {playoffScoring
-                  ? 'På – deltagarna får poäng för sina slutspelstips utifrån resultaten ovan.'
-                  : 'Av – inga slutspelspoäng delas ut än. Slå på när slutspelet startar (eller för att testa poängräkningen).'}
+                  ? 'På – deltagarna får poäng för sina slutspelstips utifrån resultaten ovan. Tipsen låses eller visas inte för andra förrän slutspelet startar (match 73).'
+                  : 'Av – inga slutspelspoäng delas ut än. Slå på för att börja räkna poäng – det varken låser eller avslöjar någons slutspelstips.'}
               </span>
             </span>
           </label>

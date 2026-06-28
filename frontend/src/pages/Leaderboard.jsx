@@ -342,36 +342,39 @@ const styles = {
     fontStyle: 'italic',
   },
   // ── Playoff spotlight cell ───────────────────────────────────
-  poWinner: {
+  poTeamRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '7px',
+    gap: '6px',
+    margin: '3px 0',
+  },
+  poTeam: {
+    flex: 1,
     minWidth: 0,
-  },
-  poWinnerName: {
-    fontSize: '14px',
-    fontWeight: 800,
-    color: 'var(--green-text)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    minWidth: 0,
-  },
-  poBeat: {
-    fontSize: '10px',
-    color: 'var(--text-muted)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  poPick: {
-    fontSize: '10px',
+    fontSize: '13px',
     fontWeight: 700,
+    color: 'var(--text)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  poPickRight: { color: 'var(--green-text)' },
-  poPickWrong: { color: 'var(--text-muted)' },
-  poPickPending: { color: 'var(--text)' },
+  poTeamWin: { color: 'var(--green-text)' },
+  poTeamOut: { color: 'var(--text-muted)', textDecoration: 'line-through' },
+  poAdv: {
+    fontSize: '9px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+    color: 'var(--green-text)',
+    background: 'var(--green-dim)',
+    borderRadius: '999px',
+    padding: '1px 6px',
+    flexShrink: 0,
+  },
+  poMark: { fontSize: '11px', fontWeight: 800, flexShrink: 0 },
+  poMarkRight: { color: 'var(--green-text)' },
+  poMarkWrong: { color: 'var(--danger)' },
+  poMarkPending: { color: 'var(--text-muted)' },
 };
 
 function formatKickoff(utc) {
@@ -430,52 +433,43 @@ function SpotlightStrip({ shared, mine }) {
   );
 }
 
-// One knockout tie in the playoff-mode spotlight. For a decided tie: the team that
-// advanced, who it beat, this user's pick correctness and the points earned. For an
-// in-progress / upcoming tie: the matchup and which side this user picked to go through.
-// `mine` is this user's per-fixture data { predictedHome, predictedAway, points }.
+// One team's line within a playoff spotlight cell. Green when the user correctly predicted
+// it to advance (predicted AND it actually went through); struck-through when predicted but
+// eliminated. A "vidare" tag marks the team that actually advanced. The per-team marker:
+// ✓ correct, ✗ predicted-but-out, 🎯 predicted (tie not decided yet).
+function PoTeam({ side, predicted, advanced, completed }) {
+  const correct = completed && predicted && advanced;
+  const wrong = completed && predicted && !advanced;
+  return (
+    <div style={styles.poTeamRow}>
+      <span className={`fi fi-${side.flag}`} style={styles.cellFlag} aria-hidden="true" />
+      <span style={{ ...styles.poTeam, ...(correct ? styles.poTeamWin : wrong ? styles.poTeamOut : {}) }}>{side.team}</span>
+      {completed && advanced && <span style={styles.poAdv}>vidare</span>}
+      {predicted && (
+        <span style={{ ...styles.poMark, ...(correct ? styles.poMarkRight : wrong ? styles.poMarkWrong : styles.poMarkPending) }}>
+          {completed ? (correct ? '✓' : '✗') : '🎯'}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// One knockout tie in the playoff-mode spotlight. Shows both teams; either, both or neither
+// may have been predicted to advance. Teams the user correctly tipped to go through are
+// green; the points earned for the tie are shown once it's decided.
 function PlayoffSpotlightCell({ fixture, mine }) {
   const { home, away, actualWinner, status } = fixture;
-  const picked = mine?.predictedHome ? home : mine?.predictedAway ? away : null;
-
-  if (status !== 'completed') {
-    return (
-      <div style={styles.cell}>
-        <div style={styles.cellLabel}>{ROUND_LABELS[fixture.round] || fixture.round} · {formatKickoff(fixture.kickoffUtc)}</div>
-        <div style={styles.poWinner}>
-          {picked?.flag && <span className={`fi fi-${picked.flag}`} style={styles.cellFlag} aria-hidden="true" />}
-          <span style={styles.poWinnerName}>{picked ? picked.team : '—'}</span>
-          <span style={styles.cellLabel}>{picked ? 'din gissning' : ''}</span>
-        </div>
-        <div style={styles.poBeat}>{home.team} – {away.team}</div>
-        <div style={styles.cellMeta}>
-          {picked
-            ? <span style={{ ...styles.poPick, ...styles.poPickPending }}>vidare?</span>
-            : <span style={{ ...styles.poPick, ...styles.poPickWrong }}>Ingen gissning</span>}
-          <span style={styles.caption}>{status === 'inProgress' ? '● Pågår' : 'Inväntar resultat'}</span>
-        </div>
-      </div>
-    );
-  }
-
-  const loser = actualWinner === home.team ? away : actualWinner === away.team ? home : null;
-  const winnerFlag = actualWinner === home.team ? home.flag : actualWinner === away.team ? away.flag : null;
+  const completed = status === 'completed';
   const points = mine?.points || 0;
-  const right = !!picked && picked.team === actualWinner;
   return (
     <div style={styles.cell}>
       <div style={styles.cellLabel}>{ROUND_LABELS[fixture.round] || fixture.round} · {formatKickoff(fixture.kickoffUtc)}</div>
-      <div style={styles.poWinner}>
-        {winnerFlag && <span className={`fi fi-${winnerFlag}`} style={styles.cellFlag} aria-hidden="true" />}
-        <span style={styles.poWinnerName}>{actualWinner}</span>
-        <span style={styles.cellLabel}>vidare</span>
-      </div>
-      {loser && <div style={styles.poBeat}>slog {loser.team}</div>}
+      <PoTeam side={home} predicted={!!mine?.predictedHome} advanced={actualWinner === home.team} completed={completed} />
+      <PoTeam side={away} predicted={!!mine?.predictedAway} advanced={actualWinner === away.team} completed={completed} />
       <div style={styles.cellMeta}>
-        <span style={{ ...styles.poPick, ...(right ? styles.poPickRight : styles.poPickWrong) }}>
-          {picked ? (right ? '✓ Du tippade rätt' : `✗ Du: ${picked.team}`) : 'Ingen gissning'}
-        </span>
-        <span style={{ ...styles.pointsPill, ...(points > 0 ? {} : styles.pointsPillZero) }}>+{points} p</span>
+        {completed
+          ? <span style={{ ...styles.pointsPill, ...(points > 0 ? {} : styles.pointsPillZero) }}>+{points} p</span>
+          : <span style={styles.caption}>{status === 'inProgress' ? '● Pågår' : 'Inväntar resultat'}</span>}
       </div>
     </div>
   );

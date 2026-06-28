@@ -397,12 +397,14 @@ export default function Profile() {
   const avgPerMatch = mp?.length ? (mp[mp.length - 1] / mp.length).toFixed(1).replace('.', ',') : null;
   const exactCount = stats?.achievements?.exact ?? null;
 
-  // Desktop lays the cards out in two columns to cut scrolling; mobile stays single column.
+  // Desktop flows the cards into two balanced columns (CSS multi-column, so cards of
+  // different heights pack tightly instead of leaving grid-row gaps); mobile stays single
+  // column. `breakInside: avoid` keeps each card whole within a column.
   const pageStyle = { ...styles.page, maxWidth: isMobile ? '480px' : '880px' };
-  const cardStyle = { ...styles.card, marginBottom: isMobile ? '16px' : 0 };
-  const gridStyle = isMobile
-    ? undefined
-    : { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' };
+  const cardStyle = isMobile
+    ? styles.card
+    : { ...styles.card, breakInside: 'avoid', WebkitColumnBreakInside: 'avoid' };
+  const gridStyle = isMobile ? undefined : { columnCount: 2, columnGap: '16px' };
 
   // A "–" for missing/non-positive values; signed categories only count moves in their
   // direction — Raketen (signed) shows climbs as +N, Ankaret (down) shows drops as -N.
@@ -502,8 +504,13 @@ export default function Profile() {
             total={progress?.total}
             isLeader={progress?.isLeader}
           />
-          {avgPerMatch != null && (
+          {stats && (
             <p style={styles.breakdown}>
+              Grupp {stats.groupPoints} · Slutspel {stats.playoffPoints}
+            </p>
+          )}
+          {avgPerMatch != null && (
+            <p style={{ ...styles.breakdown, marginTop: '4px' }}>
               Snitt {avgPerMatch} p/match{exactCount != null ? ` · ${exactCount} exakta resultat` : ''}
             </p>
           )}

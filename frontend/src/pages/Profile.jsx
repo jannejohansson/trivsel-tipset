@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { api } from '../api.js';
 import { KICKOFF_TS, NAME_LOCKOUT_TS, TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 import { ACHIEVEMENTS } from '../lib/achievements.js';
+import ProfileProgress from '../components/ProfileProgress.jsx';
 
 const styles = {
   page: {
@@ -232,6 +233,33 @@ const styles = {
     whiteSpace: 'nowrap',
     maxWidth: '180px',
   },
+  // ── Best / worst calls ───────────────────────────────────
+  callRow: { padding: '10px 0', borderBottom: '1px solid var(--border)' },
+  callRowLast: { borderBottom: 'none' },
+  callTop: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px',
+  },
+  callLabel: {
+    fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)',
+    textTransform: 'uppercase', letterSpacing: '0.5px',
+  },
+  callPts: {
+    fontSize: '12px', fontWeight: 800, padding: '1px 8px', borderRadius: '999px',
+    fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+  },
+  callPtsPos: { background: 'var(--green-dim)', color: 'var(--green-text)' },
+  callPtsZero: { background: 'var(--surface-2)', color: 'var(--text-muted)' },
+  callTeams: {
+    display: 'flex', alignItems: 'center', gap: '8px',
+    fontSize: '14px', fontWeight: 600, color: 'var(--text)',
+  },
+  callFlag: {
+    width: '22px', height: '16px', borderRadius: '2px', flexShrink: 0,
+    boxShadow: '0 1px 2px rgba(13,27,42,0.18)',
+  },
+  callTeamName: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 },
+  callScore: { fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: 'var(--text)', padding: '0 2px', flexShrink: 0 },
+  callMine: { fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' },
   logoutBtn: {
     width: '100%',
     padding: '12px',
@@ -300,6 +328,29 @@ function sortUsers(users) {
   );
 }
 
+// One "best/worst call" row: the match + actual result, the user's prediction, and the
+// points it earned. `m` is a match from getUserPredictions (has prediction + actual).
+function CallRow({ label, m, last }) {
+  return (
+    <div style={{ ...styles.callRow, ...(last ? styles.callRowLast : {}) }}>
+      <div style={styles.callTop}>
+        <span style={styles.callLabel}>{label}</span>
+        <span style={{ ...styles.callPts, ...(m.points > 0 ? styles.callPtsPos : styles.callPtsZero) }}>
+          {m.points > 0 ? `+${m.points}` : '0'} p
+        </span>
+      </div>
+      <div style={styles.callTeams}>
+        <span className={`fi fi-${m.homeFlag}`} style={styles.callFlag} aria-hidden="true" />
+        <span style={styles.callTeamName}>{m.homeTeam}</span>
+        <span style={styles.callScore}>{m.actual.homeScore}–{m.actual.awayScore}</span>
+        <span style={styles.callTeamName}>{m.awayTeam}</span>
+        <span className={`fi fi-${m.awayFlag}`} style={styles.callFlag} aria-hidden="true" />
+      </div>
+      <div style={styles.callMine}>Ditt tips: {m.prediction.homeScore}–{m.prediction.awayScore}</div>
+    </div>
+  );
+}
+
 export default function Profile() {
   const { user, loading, refresh, logout } = useAuth();
   const { isDark, toggle } = useTheme();
@@ -309,6 +360,8 @@ export default function Profile() {
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
   const [stats, setStats] = useState(null);
+  const [progress, setProgress] = useState(null); // { points[], ranks[], total }
+  const [calls, setCalls] = useState(null);        // { best, worst }
 
   // Lock state is fixed for the session, so capture it once on mount.
   // The tournament-started flag gates stats; the name lock lingers a few days.
@@ -347,6 +400,46 @@ export default function Profile() {
     return () => { active = false; };
   }, [user]);
 
+  // Personal points progression: my cumulative-points series from the history endpoint,
+  // plus my rank at each checkpoint (computed across the whole field). Best-effort.
+  useEffect(() => {
+    if (!user) return undefined;
+    let active = true;
+    api.getLeaderboardHistory()
+      .then((h) => {
+        if (!active) return;
+        const series = h.series || [];
+        const mine = series.find((s) => s.userId === user.userId);
+        if (!mine || mine.points.length === 0) { setProgress(null); return; }
+        // Rank at checkpoint i = 1 + how many participants have strictly more points there.
+        const ranks = mine.points.map((_, i) =>
+          1 + series.filter((s) => (s.points[i] || 0) > (mine.points[i] || 0)).length);
+        setProgress({ points: mine.points, ranks, total: series.length });
+      })
+      .catch(() => { /* best-effort */ });
+    return () => { active = false; };
+  }, [user]);
+
+  // Best / worst calls: from my own per-match predictions (self ⇒ full reveal + points).
+  useEffect(() => {
+    if (!user) return undefined;
+    let active = true;
+    api.getUserPredictions(user.userId)
+      .then((d) => {
+        if (!active) return;
+        const scored = (d.matches || []).filter((m) => m.prediction && m.points != null && m.actual);
+        if (scored.length === 0) { setCalls(null); return; }
+        const exact = (m) =>
+          m.prediction.homeScore === m.actual.homeScore && m.prediction.awayScore === m.actual.awayScore ? 1 : 0;
+        const best = scored.reduce((a, b) =>
+          (b.points > a.points || (b.points === a.points && exact(b) > exact(a))) ? b : a);
+        const worst = scored.reduce((a, b) => (b.points < a.points ? b : a));
+        setCalls({ best, worst: worst.id === best.id ? null : worst });
+      })
+      .catch(() => { /* best-effort */ });
+    return () => { active = false; };
+  }, [user]);
+
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
 
@@ -375,6 +468,11 @@ export default function Profile() {
 
   const groupDone = (stats?.groupCount ?? 0) >= TOTAL_MATCHES;
   const playoffDone = (stats?.playoffCount ?? 0) >= TOTAL_PLAYOFF;
+
+  // Derived figures for the progression card (Swedish decimal comma).
+  const mp = progress?.points;
+  const avgPerMatch = mp?.length ? (mp[mp.length - 1] / mp.length).toFixed(1).replace('.', ',') : null;
+  const exactCount = stats?.achievements?.exact ?? null;
 
   // A "–" for missing/non-positive values; signed categories only count moves in their
   // direction — Raketen (signed) shows climbs as +N, Ankaret (down) shows drops as -N.
@@ -483,6 +581,26 @@ export default function Profile() {
           <p style={styles.breakdown}>
             Grupp {stats.groupPoints} · Slutspel {stats.playoffPoints}
           </p>
+        </div>
+      )}
+
+      {locked && (
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Min utveckling</div>
+          <ProfileProgress points={progress?.points} ranks={progress?.ranks} total={progress?.total} />
+          {avgPerMatch != null && (
+            <p style={styles.breakdown}>
+              Snitt {avgPerMatch} p/match{exactCount != null ? ` · ${exactCount} exakta resultat` : ''}
+            </p>
+          )}
+        </div>
+      )}
+
+      {locked && calls?.best && (
+        <div style={styles.card}>
+          <div style={styles.cardTitle}>Bästa & sämsta tips</div>
+          <CallRow label="Bästa tips" m={calls.best} last={!calls.worst} />
+          {calls.worst && <CallRow label="Sämsta tips" m={calls.worst} last />}
         </div>
       )}
 

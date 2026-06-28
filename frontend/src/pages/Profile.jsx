@@ -5,6 +5,8 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { api } from '../api.js';
 import { KICKOFF_TS, NAME_LOCKOUT_TS, TOTAL_MATCHES, TOTAL_PLAYOFF } from '../lib/constants.js';
 import { ACHIEVEMENTS } from '../lib/achievements.js';
+import { useIsMobile } from '../lib/useIsMobile.js';
+import ProfileProgress from '../components/ProfileProgress.jsx';
 
 const styles = {
   page: {
@@ -151,31 +153,6 @@ const styles = {
     color: 'var(--text-muted)',
     border: '1px solid var(--border)',
   },
-  standRow: {
-    display: 'flex',
-    gap: '12px',
-  },
-  standBox: {
-    flex: 1,
-    background: 'var(--surface-2)',
-    borderRadius: 'var(--radius)',
-    padding: '14px',
-    textAlign: 'center',
-  },
-  standNum: {
-    fontSize: '26px',
-    fontWeight: 800,
-    color: 'var(--green)',
-    lineHeight: 1.1,
-    fontVariantNumeric: 'tabular-nums',
-  },
-  standLabel: {
-    fontSize: '11px',
-    color: 'var(--text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginTop: '4px',
-  },
   breakdown: {
     color: 'var(--text-muted)',
     fontSize: '13px',
@@ -309,6 +286,8 @@ export default function Profile() {
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
   const [stats, setStats] = useState(null);
+  const [progress, setProgress] = useState(null); // { points[], leaderPoints[], avgPoints[], ranks[], total, isLeader }
+  const isMobile = useIsMobile();
 
   // Lock state is fixed for the session, so capture it once on mount.
   // The tournament-started flag gates stats; the name lock lingers a few days.
@@ -347,6 +326,43 @@ export default function Profile() {
     return () => { active = false; };
   }, [user]);
 
+  // Personal points progression vs. the field: my cumulative-points series, the current
+  // leader's series, and the field average at each checkpoint, plus my rank. Best-effort.
+  useEffect(() => {
+    if (!user) return undefined;
+    let active = true;
+    api.getLeaderboardHistory()
+      .then((h) => {
+        if (!active) return;
+        const series = h.series || [];
+        const mine = series.find((s) => s.userId === user.userId);
+        if (!mine || mine.points.length === 0) { setProgress(null); return; }
+        const n = mine.points.length;
+        // The leader is the series with the most points at the final checkpoint
+        // (getLeaderboardHistory already sorts highest-final-total first).
+        const leader = series[0];
+        const isLeader = leader.userId === user.userId;
+        // Field average + my rank at each checkpoint.
+        const avgPoints = [];
+        const ranks = [];
+        for (let i = 0; i < n; i++) {
+          const sum = series.reduce((acc, s) => acc + (s.points[i] || 0), 0);
+          avgPoints.push(series.length ? sum / series.length : 0);
+          ranks.push(1 + series.filter((s) => (s.points[i] || 0) > (mine.points[i] || 0)).length);
+        }
+        setProgress({
+          points: mine.points,
+          leaderPoints: leader.points,
+          avgPoints,
+          ranks,
+          total: series.length,
+          isLeader,
+        });
+      })
+      .catch(() => { /* best-effort */ });
+    return () => { active = false; };
+  }, [user]);
+
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
 
@@ -376,6 +392,20 @@ export default function Profile() {
   const groupDone = (stats?.groupCount ?? 0) >= TOTAL_MATCHES;
   const playoffDone = (stats?.playoffCount ?? 0) >= TOTAL_PLAYOFF;
 
+  // Derived figures for the progression card (Swedish decimal comma).
+  const mp = progress?.points;
+  const avgPerMatch = mp?.length ? (mp[mp.length - 1] / mp.length).toFixed(1).replace('.', ',') : null;
+  const exactCount = stats?.achievements?.exact ?? null;
+
+  // Desktop flows the cards into two balanced columns (CSS multi-column, so cards of
+  // different heights pack tightly instead of leaving grid-row gaps); mobile stays single
+  // column. `breakInside: avoid` keeps each card whole within a column.
+  const pageStyle = { ...styles.page, maxWidth: isMobile ? '480px' : '880px' };
+  const cardStyle = isMobile
+    ? styles.card
+    : { ...styles.card, breakInside: 'avoid', WebkitColumnBreakInside: 'avoid' };
+  const gridStyle = isMobile ? undefined : { columnCount: 2, columnGap: '16px' };
+
   // A "–" for missing/non-positive values; signed categories only count moves in their
   // direction — Raketen (signed) shows climbs as +N, Ankaret (down) shows drops as -N.
   const fmtAch = (v, a) =>
@@ -385,11 +415,12 @@ export default function Profile() {
       : `${v}`;
 
   return (
-    <div style={styles.page}>
+    <div style={pageStyle}>
       <h1 style={styles.title}>Min profil</h1>
       <p style={styles.sub}>Ditt visningsnamn syns för alla i resultattabellen.</p>
 
-      <div style={styles.card}>
+      <div style={gridStyle}>
+      <div style={cardStyle}>
         <div style={styles.cardTitle}>Visningsnamn</div>
         {nameLocked ? (
           <>
@@ -421,7 +452,7 @@ export default function Profile() {
         )}
       </div>
 
-      <div style={styles.card}>
+      <div style={cardStyle}>
         <div style={styles.cardTitle}>Tema</div>
         <div style={styles.themeRow}>
           <span style={styles.themeLabel}>
@@ -441,7 +472,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <div style={styles.card}>
+      <div style={cardStyle}>
         <div style={styles.cardTitle}>Konto</div>
         <div style={styles.infoRow}>
           <span style={styles.infoLabel}>E-post</span>
@@ -462,32 +493,32 @@ export default function Profile() {
         </div>
       </div>
 
-      {locked && stats && (
-        <div style={styles.card}>
-          <div style={styles.cardTitle}>Min ställning</div>
-          <div style={styles.standRow}>
-            <div style={styles.standBox}>
-              <div style={styles.standNum}>
-                {stats.position ? `${stats.position}` : '–'}
-                <span style={{ fontSize: '15px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                  {stats.position ? ` / ${stats.total}` : ''}
-                </span>
-              </div>
-              <div style={styles.standLabel}>Placering</div>
-            </div>
-            <div style={styles.standBox}>
-              <div style={styles.standNum}>{stats.points}</div>
-              <div style={styles.standLabel}>Poäng</div>
-            </div>
-          </div>
-          <p style={styles.breakdown}>
-            Grupp {stats.groupPoints} · Slutspel {stats.playoffPoints}
-          </p>
+      {locked && (
+        <div style={cardStyle}>
+          <div style={styles.cardTitle}>Min utveckling</div>
+          <ProfileProgress
+            points={progress?.points}
+            leaderPoints={progress?.leaderPoints}
+            avgPoints={progress?.avgPoints}
+            ranks={progress?.ranks}
+            total={progress?.total}
+            isLeader={progress?.isLeader}
+          />
+          {stats && (
+            <p style={styles.breakdown}>
+              Grupp {stats.groupPoints} · Slutspel {stats.playoffPoints}
+            </p>
+          )}
+          {avgPerMatch != null && (
+            <p style={{ ...styles.breakdown, marginTop: '4px' }}>
+              Snitt {avgPerMatch} p/match{exactCount != null ? ` · ${exactCount} exakta resultat` : ''}
+            </p>
+          )}
         </div>
       )}
 
       {locked && stats?.achievements && (
-        <div style={styles.card}>
+        <div style={cardStyle}>
           <div style={styles.cardTitle}>Utmärkelser</div>
           {ACHIEVEMENTS.map((a, i) => {
             const mine = stats.achievements[a.field];
@@ -517,6 +548,7 @@ export default function Profile() {
           })}
         </div>
       )}
+      </div>
 
       <button type="button" style={styles.logoutBtn} onClick={handleLogout}>
         Logga ut

@@ -12,6 +12,7 @@ import Leaderboard from './pages/Leaderboard.jsx';
 import LeaderboardHistory from './pages/LeaderboardHistory.jsx';
 import PredictionBreakdown from './pages/PredictionBreakdown.jsx';
 import UserPredictions from './pages/UserPredictions.jsx';
+import Compare from './pages/Compare.jsx';
 import Regler from './pages/Regler.jsx';
 import SetupProfile from './pages/SetupProfile.jsx';
 import Profile from './pages/Profile.jsx';
@@ -38,6 +39,8 @@ export default function App() {
             <Route path="/historik" element={<AuthGuard><LeaderboardHistory /></AuthGuard>} />
             <Route path="/vad-tippar-andra" element={<AuthGuard><PredictionBreakdown /></AuthGuard>} />
             <Route path="/predictions/:userId" element={<AuthGuard><UserPredictions /></AuthGuard>} />
+            <Route path="/jamfor" element={<AuthGuard><Compare /></AuthGuard>} />
+            <Route path="/jamfor/:userId" element={<AuthGuard><Compare /></AuthGuard>} />
             <Route path="/regler" element={<Regler />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

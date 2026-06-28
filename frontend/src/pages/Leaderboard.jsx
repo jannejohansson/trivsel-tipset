@@ -342,35 +342,39 @@ const styles = {
     fontStyle: 'italic',
   },
   // ── Playoff spotlight cell ───────────────────────────────────
-  poWinner: {
+  poTeamRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '7px',
+    gap: '6px',
+    margin: '3px 0',
+  },
+  poTeam: {
+    flex: 1,
     minWidth: 0,
-  },
-  poWinnerName: {
-    fontSize: '14px',
-    fontWeight: 800,
-    color: 'var(--green-text)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    minWidth: 0,
-  },
-  poBeat: {
-    fontSize: '10px',
-    color: 'var(--text-muted)',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  poPick: {
-    fontSize: '10px',
+    fontSize: '13px',
     fontWeight: 700,
+    color: 'var(--text)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  poPickRight: { color: 'var(--green-text)' },
-  poPickWrong: { color: 'var(--text-muted)' },
+  poTeamWin: { color: 'var(--green-text)' },
+  poTeamOut: { color: 'var(--text-muted)', textDecoration: 'line-through' },
+  poAdv: {
+    fontSize: '9px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+    color: 'var(--green-text)',
+    background: 'var(--green-dim)',
+    borderRadius: '999px',
+    padding: '1px 6px',
+    flexShrink: 0,
+  },
+  poMark: { fontSize: '11px', fontWeight: 800, flexShrink: 0 },
+  poMarkRight: { color: 'var(--green-text)' },
+  poMarkWrong: { color: 'var(--danger)' },
+  poMarkPending: { color: 'var(--text-muted)' },
 };
 
 function formatKickoff(utc) {
@@ -429,41 +433,59 @@ function SpotlightStrip({ shared, mine }) {
   );
 }
 
-// One decided knockout tie in the playoff-mode spotlight: the team that advanced, who
-// it beat, this user's pick correctness and the points earned. `mine` is this user's
-// per-fixture data { predictedHome, predictedAway, points }.
+// One team's line within a playoff spotlight cell. Green when the user correctly predicted
+// it to advance (predicted AND it actually went through); struck-through when predicted but
+// eliminated. A "vidare" tag marks the team that actually advanced. The per-team marker:
+// ✓ correct, ✗ predicted-but-out, 🎯 predicted (tie not decided yet).
+function PoTeam({ side, predicted, advanced, completed }) {
+  const correct = completed && predicted && advanced;
+  const wrong = completed && predicted && !advanced;
+  return (
+    <div style={styles.poTeamRow}>
+      <span className={`fi fi-${side.flag}`} style={styles.cellFlag} aria-hidden="true" />
+      <span style={{ ...styles.poTeam, ...(correct ? styles.poTeamWin : wrong ? styles.poTeamOut : {}) }}>{side.team}</span>
+      {completed && advanced && <span style={styles.poAdv}>vidare</span>}
+      {predicted && (
+        <span style={{ ...styles.poMark, ...(correct ? styles.poMarkRight : wrong ? styles.poMarkWrong : styles.poMarkPending) }}>
+          {completed ? (correct ? '✓' : '✗') : '🎯'}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// One knockout tie in the playoff-mode spotlight. Shows both teams; either, both or neither
+// may have been predicted to advance. Teams the user correctly tipped to go through are
+// green; the points earned for the tie are shown once it's decided.
 function PlayoffSpotlightCell({ fixture, mine }) {
-  const { home, away, actualWinner } = fixture;
-  const loser = actualWinner === home.team ? away : actualWinner === away.team ? home : null;
-  const winnerFlag = actualWinner === home.team ? home.flag : actualWinner === away.team ? away.flag : null;
+  const { home, away, actualWinner, status } = fixture;
+  const completed = status === 'completed';
   const points = mine?.points || 0;
-  const picked = mine?.predictedHome ? home.team : mine?.predictedAway ? away.team : null;
-  const right = !!picked && picked === actualWinner;
   return (
     <div style={styles.cell}>
       <div style={styles.cellLabel}>{ROUND_LABELS[fixture.round] || fixture.round} · {formatKickoff(fixture.kickoffUtc)}</div>
-      <div style={styles.poWinner}>
-        {winnerFlag && <span className={`fi fi-${winnerFlag}`} style={styles.cellFlag} aria-hidden="true" />}
-        <span style={styles.poWinnerName}>{actualWinner}</span>
-        <span style={styles.cellLabel}>vidare</span>
-      </div>
-      {loser && <div style={styles.poBeat}>slog {loser.team}</div>}
+      <PoTeam side={home} predicted={!!mine?.predictedHome} advanced={actualWinner === home.team} completed={completed} />
+      <PoTeam side={away} predicted={!!mine?.predictedAway} advanced={actualWinner === away.team} completed={completed} />
       <div style={styles.cellMeta}>
-        <span style={{ ...styles.poPick, ...(right ? styles.poPickRight : styles.poPickWrong) }}>
-          {picked ? (right ? '✓ Du tippade rätt' : `✗ Du: ${picked}`) : 'Ingen gissning'}
-        </span>
-        <span style={{ ...styles.pointsPill, ...(points > 0 ? {} : styles.pointsPillZero) }}>+{points} p</span>
+        {completed
+          ? <span style={{ ...styles.pointsPill, ...(points > 0 ? {} : styles.pointsPillZero) }}>+{points} p</span>
+          : <span style={styles.caption}>{status === 'inProgress' ? '● Pågår' : 'Inväntar resultat'}</span>}
       </div>
     </div>
   );
 }
 
-// Playoff-mode per-row strip: the last few decided knockout ties (newest first).
+// Playoff-mode per-row strip: the current knockout phase — recent decided ties, then
+// in-progress, then the next upcoming ones. `shared` is { recent, inProgress, next }.
 function PlayoffSpotlightStrip({ shared, mine }) {
-  if (!shared || shared.length === 0) return null;
+  if (!shared) return null;
+  const { recent = [], inProgress = [], next = [] } = shared;
+  if (recent.length === 0 && inProgress.length === 0 && next.length === 0) return null;
   return (
     <div style={styles.strip}>
-      {shared.map((f) => <PlayoffSpotlightCell key={f.id} fixture={f} mine={mine?.[f.id]} />)}
+      {recent.map((f) => <PlayoffSpotlightCell key={f.id} fixture={f} mine={mine?.[f.id]} />)}
+      {inProgress.map((f) => <PlayoffSpotlightCell key={f.id} fixture={f} mine={mine?.[f.id]} />)}
+      {next.map((f) => <PlayoffSpotlightCell key={f.id} fixture={f} mine={mine?.[f.id]} />)}
     </div>
   );
 }
@@ -511,13 +533,15 @@ export default function Leaderboard() {
   const playoffMode = !!data?.playoffMode;
   const hasChampions = playoffMode && sortedUsers.some((u) => u.champion?.flag);
 
-  // Row expand content (same set for everyone). In playoff mode the strip shows recently
-  // decided knockout ties; before any are decided (e.g. scoring on but pre-lock) we fall
-  // back to the recent group matches, which are still the latest relevant tips.
+  // Row expand content (same set for everyone). Once the playoff bracket has data (it's
+  // started), the strip shows the current knockout phase — recent results, in-progress and
+  // upcoming ties with each user's pick — and the group fallback is dropped. Before the
+  // bracket exists (e.g. scoring on but pre-lock) we still fall back to recent group tips.
+  const countSp = (s) => (s ? (s.recent?.length || 0) + (s.inProgress?.length || 0) + (s.next?.length || 0) : 0);
   const sp = data?.spotlight;
   const poSpotlight = data?.playoffSpotlight;
-  const hasGroupSpotlight = !!sp && ((sp.recent?.length || 0) + (sp.inProgress?.length || 0) + (sp.next?.length || 0)) > 0;
-  const usePlayoffStrip = playoffMode && !!poSpotlight && poSpotlight.length > 0;
+  const hasGroupSpotlight = countSp(sp) > 0;
+  const usePlayoffStrip = playoffMode && countSp(poSpotlight) > 0;
   const hasSpotlight = usePlayoffStrip || hasGroupSpotlight;
 
   const allExpanded = sortedUsers.length > 0 && sortedUsers.every((u) => expanded.has(u.userId));
@@ -563,7 +587,7 @@ export default function Leaderboard() {
           <div style={styles.toolbar}>
             <button type="button" style={styles.expandAllBtn} onClick={toggleAll}>
               {usePlayoffStrip
-                ? (allExpanded ? 'Dölj senaste slutspelsresultat' : 'Visa senaste slutspelsresultat')
+                ? (allExpanded ? 'Dölj slutspelstips' : 'Visa slutspelstips')
                 : (allExpanded ? 'Dölj senaste & kommande tips' : 'Visa senaste & kommande tips')}
             </button>
           </div>

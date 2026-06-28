@@ -133,15 +133,24 @@ app.http('getLeaderboard', {
     // Locked (lockout time only) gates exposure of each user's still-editable picks —
     // their predicted champion and which side they had advancing.
     const playoffLocked = isPlayoffLocked();
-    // Shared per-row spotlight for playoff mode: the last few decided knockout ties
-    // (newest first), each with the team that advanced. Per-user picks/points added below.
-    // (Knockout ties can't be decided before the lockout, so this is empty until then.)
-    const playoffCompleted = playoffMode
-      ? actualFixtures(actualBracket, results.knockoutWinners)
-          .filter((f) => f.status === 'completed')
-          .sort((a, b) => new Date(b.kickoffUtc) - new Date(a.kickoffUtc))
-          .slice(0, 5)
-      : [];
+    // Shared per-row spotlight for playoff mode — the CURRENT knockout phase: the few most
+    // recent decided ties, anything in progress, and the next upcoming ties. Per-user picks
+    // (+ points for decided ties) are added below. Empty before the lockout (no fixtures).
+    // Only once the bracket has locked (playoff truly started); pre-lock the row-expand
+    // still falls back to recent group tips.
+    const playoffFx = playoffLocked ? actualFixtures(actualBracket, results.knockoutWinners) : [];
+    const poRecent = playoffFx
+      .filter((f) => f.status === 'completed')
+      .sort((a, b) => new Date(b.kickoffUtc) - new Date(a.kickoffUtc))
+      .slice(0, 3);
+    const poInProgress = playoffFx.filter((f) => f.status === 'inProgress');
+    const poUpcoming = playoffFx.filter((f) => f.status === 'upcoming').slice(0, 3);
+    const poFixtures = [...poRecent, ...poInProgress, ...poUpcoming];
+    const poFixture = (f) => ({
+      id: f.id, round: f.round, kickoffUtc: f.kickoffUtc,
+      home: f.home, away: f.away, status: f.status,
+      actualWinner: f.actualWinner, advancePoints: f.advancePoints,
+    });
     const prevPlayoffOn = prevResults.playoffScoring;
     const weekPlayoffOn = weekResults.playoffScoring;
     // Only surface movement once there was a standing to move from (≥1 result before today).
@@ -183,19 +192,20 @@ app.http('getLeaderboard', {
         if (preds[m.id]) spotlight[m.id] = { ...preds[m.id] };
       }
 
-      // Playoff-mode spotlight: for each recently decided tie, which side this user had
-      // advancing and the points it earned (the team reaching the next round).
+      // Playoff-mode spotlight: for each current-phase tie, which side this user had
+      // advancing and (for decided ties) the points it earned. Picks are only exposed once
+      // the bracket has locked, so this stays null in the pre-lock display window.
       let playoffSpotlight = null;
-      if (playoffLocked && playoffCompleted.length) {
+      if (playoffLocked && poFixtures.length) {
         const reached = reachedSets(predictedBracket);
         playoffSpotlight = {};
-        for (const f of playoffCompleted) {
+        for (const f of poFixtures) {
           const adv = reached[f.advanceRound];
-          const correct = !!(f.actualWinner && adv.has(f.actualWinner));
+          const correct = f.status === 'completed' && !!(f.actualWinner && adv.has(f.actualWinner));
           playoffSpotlight[f.id] = {
             predictedHome: adv.has(f.home.team),
             predictedAway: adv.has(f.away.team),
-            points: correct ? f.advancePoints : 0,
+            points: f.status === 'completed' ? (correct ? f.advancePoints : 0) : null,
           };
         }
       }
@@ -295,11 +305,13 @@ app.http('getLeaderboard', {
           inProgress: inProgress.map(fixtureMeta),
           next: next.map(fixtureMeta),
         },
-        // Shared metadata for the playoff-mode per-row spotlight (newest decided ties first).
-        playoffSpotlight: playoffCompleted.map((f) => ({
-          id: f.id, round: f.round, kickoffUtc: f.kickoffUtc, venue: f.venue,
-          home: f.home, away: f.away, actualWinner: f.actualWinner,
-        })),
+        // Shared metadata for the playoff-mode per-row spotlight: the current knockout
+        // phase split into recent (decided) / in-progress / next (upcoming) ties.
+        playoffSpotlight: {
+          recent: poRecent.map(poFixture),
+          inProgress: poInProgress.map(poFixture),
+          next: poUpcoming.map(poFixture),
+        },
       },
     };
   },

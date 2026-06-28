@@ -153,31 +153,6 @@ const styles = {
     color: 'var(--text-muted)',
     border: '1px solid var(--border)',
   },
-  standRow: {
-    display: 'flex',
-    gap: '12px',
-  },
-  standBox: {
-    flex: 1,
-    background: 'var(--surface-2)',
-    borderRadius: 'var(--radius)',
-    padding: '14px',
-    textAlign: 'center',
-  },
-  standNum: {
-    fontSize: '26px',
-    fontWeight: 800,
-    color: 'var(--green)',
-    lineHeight: 1.1,
-    fontVariantNumeric: 'tabular-nums',
-  },
-  standLabel: {
-    fontSize: '11px',
-    color: 'var(--text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginTop: '4px',
-  },
   breakdown: {
     color: 'var(--text-muted)',
     fontSize: '13px',
@@ -515,30 +490,6 @@ export default function Profile() {
           </div>
         </div>
       </div>
-
-      {locked && stats && (
-        <div style={cardStyle}>
-          <div style={styles.cardTitle}>Min ställning</div>
-          <div style={styles.standRow}>
-            <div style={styles.standBox}>
-              <div style={styles.standNum}>
-                {stats.position ? `${stats.position}` : '–'}
-                <span style={{ fontSize: '15px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                  {stats.position ? ` / ${stats.total}` : ''}
-                </span>
-              </div>
-              <div style={styles.standLabel}>Placering</div>
-            </div>
-            <div style={styles.standBox}>
-              <div style={styles.standNum}>{stats.points}</div>
-              <div style={styles.standLabel}>Poäng</div>
-            </div>
-          </div>
-          <p style={styles.breakdown}>
-            Grupp {stats.groupPoints} · Slutspel {stats.playoffPoints}
-          </p>
-        </div>
-      )}
 
       {locked && (
         <div style={cardStyle}>

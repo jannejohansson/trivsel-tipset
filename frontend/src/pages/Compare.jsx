@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
@@ -17,10 +17,13 @@ const styles = {
   title: { fontSize: '28px', fontWeight: 800, letterSpacing: '-0.01em', margin: 0 },
   sub: { color: 'rgba(255,255,255,0.85)', fontSize: '14px', marginTop: '8px' },
   page: { maxWidth: '1100px', margin: '0 auto', padding: '24px 20px 60px' },
-  pickerRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', flexWrap: 'wrap' },
-  pickerLabel: { fontSize: '14px', color: 'var(--text-muted)', fontWeight: 600 },
+  // ── Player pickers ───────────────────────────────────────────
+  pickerRow: { display: 'flex', alignItems: 'flex-end', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' },
+  pickerField: { display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: '160px' },
+  pickerLabel: { fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' },
+  pickerVs: { fontSize: '13px', fontWeight: 800, color: 'var(--text-muted)', padding: '0 2px 10px' },
   select: {
-    flex: 1, minWidth: '180px', padding: '10px 12px', fontSize: '15px',
+    width: '100%', padding: '10px 12px', fontSize: '15px',
     background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: 'var(--radius)', color: 'var(--text)', fontFamily: 'inherit',
   },
@@ -54,8 +57,24 @@ const styles = {
     textAlign: 'center', fontSize: '15px', fontWeight: 700, color: 'var(--text)',
     background: 'var(--surface-2)', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: '20px',
   },
-  sectionTitle: { fontSize: '15px', fontWeight: 800, color: 'var(--text)', margin: '0 0 12px' },
-  // ── Collapsible group sections (laid out two-up on desktop) ──
+  sectionHeadRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: '12px', margin: '0 0 12px', flexWrap: 'wrap',
+  },
+  sectionTitle: { fontSize: '15px', fontWeight: 800, color: 'var(--text)', margin: 0 },
+  expandAllBtn: {
+    background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '999px',
+    padding: '6px 14px', color: 'var(--text)', fontSize: '13px', fontWeight: 600,
+    fontFamily: 'inherit', cursor: 'pointer',
+  },
+  playoffNote: {
+    background: 'rgba(184,134,11,0.10)', border: '1px solid rgba(184,134,11,0.35)',
+    color: 'var(--text)', borderRadius: 'var(--radius)', padding: '12px 16px', fontSize: '14px', marginBottom: '20px',
+  },
+  empty: { textAlign: 'center', color: 'var(--text-muted)', padding: '32px 20px' },
+  error: { color: 'var(--danger)', padding: '16px', background: 'rgba(220,38,38,0.08)', borderRadius: 'var(--radius)', textAlign: 'center' },
+  back: { display: 'inline-block', marginTop: '14px', color: '#ffffff', fontSize: '13px', textDecoration: 'none', opacity: 0.9 },
+  // ── Collapsible group sections (two-up on desktop) ──────────
   section: {
     border: '1px solid var(--border)', borderRadius: 'var(--radius)',
     background: 'var(--surface)', boxShadow: 'var(--shadow-card)', overflow: 'hidden',
@@ -73,32 +92,25 @@ const styles = {
   },
   chevron: { marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '13px', flexShrink: 0 },
   sectionBody: { padding: '12px 12px 2px' },
-  playoffNote: {
-    background: 'rgba(184,134,11,0.10)', border: '1px solid rgba(184,134,11,0.35)',
-    color: 'var(--text)', borderRadius: 'var(--radius)', padding: '12px 16px', fontSize: '14px', marginBottom: '20px',
-  },
-  empty: { textAlign: 'center', color: 'var(--text-muted)', padding: '32px 20px' },
-  error: { color: 'var(--danger)', padding: '16px', background: 'rgba(220,38,38,0.08)', borderRadius: 'var(--radius)', textAlign: 'center' },
-  back: { display: 'inline-block', marginTop: '14px', color: '#ffffff', fontSize: '13px', textDecoration: 'none', opacity: 0.9 },
 };
 
 // Count knockout ties where both have made a (different) winner pick.
-function bracketDivergence(minePlayoff, theirPlayoff) {
-  if (!minePlayoff || !theirPlayoff) return null;
-  const theirsById = new Map(theirPlayoff.matches.map((m) => [m.id, m.pick]));
+function bracketDivergence(aPlayoff, bPlayoff) {
+  if (!aPlayoff || !bPlayoff) return null;
+  const bById = new Map(bPlayoff.matches.map((m) => [m.id, m.pick]));
   let differ = 0;
   let shared = 0;
-  for (const m of minePlayoff.matches) {
-    const tp = theirsById.get(m.id);
-    if (m.pick && tp) { shared += 1; if (m.pick !== tp) differ += 1; }
+  for (const m of aPlayoff.matches) {
+    const bp = bById.get(m.id);
+    if (m.pick && bp) { shared += 1; if (m.pick !== bp) differ += 1; }
   }
   return { differ, shared };
 }
 
-function PlayerColumn({ row, isMe }) {
+function PlayerColumn({ row, highlight }) {
   return (
-    <div style={{ ...styles.vsCol, ...(isMe ? styles.vsColMe : {}) }}>
-      <div style={styles.vsName}>{row.displayName}{isMe ? ' (du)' : ''}</div>
+    <div style={{ ...styles.vsCol, ...(highlight ? styles.vsColMe : {}) }}>
+      <div style={styles.vsName}>{row.displayName}</div>
       <div style={styles.vsRank}>#{row.rank} av {row.total}</div>
       <div style={styles.vsPoints}>{row.points}</div>
       <div style={styles.vsSplit}>Grupp {row.groupPoints} · Slutspel {row.playoffPoints}</div>
@@ -116,23 +128,22 @@ function PlayerColumn({ row, isMe }) {
   );
 }
 
-// One collapsible group of compared matches. The header shows the group letter and the
-// head-to-head score within that group (your wins–theirs). Default open.
-function GroupSection({ group, rows }) {
-  const [open, setOpen] = useState(true);
+// One collapsible group of compared matches. Controlled open state so a parent
+// "expand/collapse all" can drive every section at once.
+function GroupSection({ group, open, onToggle }) {
   return (
     <div style={styles.section}>
-      <button type="button" style={styles.sectionHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+      <button type="button" style={styles.sectionHead} onClick={onToggle} aria-expanded={open}>
         <span style={styles.sectionName}>Grupp {group.letter}</span>
-        <span style={styles.sectionScore} title="Dina vinster – motståndarens vinster i gruppen">
-          {group.me}–{group.them}
+        <span style={styles.sectionScore} title="Spelare 1:s vinster – spelare 2:s vinster i gruppen">
+          {group.a}–{group.b}
         </span>
         <span style={styles.chevron} aria-hidden="true">{open ? '▴' : '▾'}</span>
       </button>
       {open && (
         <div style={styles.sectionBody}>
-          {rows.map((r) => (
-            <CompareMatchRow key={r.id} home={r.home} away={r.away} actual={r.actual} mine={r.mine} theirs={r.theirs} />
+          {group.rows.map((r) => (
+            <CompareMatchRow key={r.id} home={r.home} away={r.away} actual={r.actual} mine={r.a} theirs={r.b} />
           ))}
         </div>
       )}
@@ -141,15 +152,20 @@ function GroupSection({ group, rows }) {
 }
 
 export default function Compare() {
-  const { userId: rivalId } = useParams();
-  const navigate = useNavigate();
+  const { userId: paramId } = useParams();
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
   const [board, setBoard] = useState(null);   // leaderboard users + count
-  const [mine, setMine] = useState(null);     // getUserPredictions(me)
-  const [theirs, setTheirs] = useState(null); // getUserPredictions(rival)
+  const [dataA, setDataA] = useState(null);   // getUserPredictions(aId)
+  const [dataB, setDataB] = useState(null);   // getUserPredictions(bId)
   const [error, setError] = useState(null);
+  // Selected players. null ⇒ fall back to the default (A = logged-in user, B = URL param).
+  const [aSel, setASel] = useState(null);
+  const [bSel, setBSel] = useState(null);
+  // Group open-state: null ⇒ use the default (open, unless playoff has started). A concrete
+  // Set means the user has toggled groups (or used expand/collapse all).
+  const [openGroups, setOpenGroups] = useState(null);
 
   // Leaderboard once: drives the picker list + authoritative totals/rank/champion.
   useEffect(() => {
@@ -158,91 +174,122 @@ export default function Compare() {
       .catch(() => setError('Kunde inte ladda ställningen.'));
   }, []);
 
-  // Per-match detail for both players whenever a (valid) rival is selected. State is only
-  // set in the async callbacks (never synchronously in the effect body); staleness is
-  // handled by the `ready` check below, which ties the loaded data to the current rival.
-  useEffect(() => {
-    if (!user || !rivalId || rivalId === user.userId) return undefined;
-    let active = true;
-    Promise.all([api.getUserPredictions(user.userId), api.getUserPredictions(rivalId)])
-      .then(([m, t]) => { if (active) { setMine(m); setTheirs(t); setError(null); } })
-      .catch(() => { if (active) setError('Kunde inte ladda tipsen.'); });
-    return () => { active = false; };
-  }, [user, rivalId]);
-
   if (!user) return null;
 
-  // The loaded predictions belong to the currently selected pair (guards against showing
-  // a previous rival's data while a new fetch is in flight).
-  const ready = !!(mine && theirs && mine.user?.userId === user.userId && theirs.user?.userId === rivalId);
-  const loading = !!rivalId && rivalId !== user.userId && !ready && !error;
+  const aId = aSel ?? user.userId;
+  const bId = bSel ?? paramId ?? '';
+
+  return <CompareInner
+    user={user}
+    isMobile={isMobile}
+    board={board}
+    aId={aId}
+    bId={bId}
+    setASel={setASel}
+    setBSel={setBSel}
+    dataA={dataA}
+    dataB={dataB}
+    setDataA={setDataA}
+    setDataB={setDataB}
+    error={error}
+    setError={setError}
+    openGroups={openGroups}
+    setOpenGroups={setOpenGroups}
+  />;
+}
+
+// Inner component so the data-fetch effect can depend on the resolved aId/bId without
+// violating rules-of-hooks (the early `if (!user) return` lives in the wrapper).
+function CompareInner({
+  user, isMobile, board, aId, bId, setASel, setBSel,
+  dataA, dataB, setDataA, setDataB, error, setError, openGroups, setOpenGroups,
+}) {
+  const valid = !!(aId && bId && aId !== bId);
+
+  // Fetch both players' predictions whenever the (valid) pair changes. State is only set in
+  // async callbacks; the `ready` check below ties loaded data to the current pair.
+  useEffect(() => {
+    if (!valid) return undefined;
+    let active = true;
+    Promise.all([api.getUserPredictions(aId), api.getUserPredictions(bId)])
+      .then(([a, b]) => { if (active) { setDataA(a); setDataB(b); setError(null); } })
+      .catch(() => { if (active) setError('Kunde inte ladda tipsen.'); });
+    return () => { active = false; };
+  }, [valid, aId, bId, setDataA, setDataB, setError]);
+
+  const ready = !!(valid && dataA && dataB && dataA.user?.userId === aId && dataB.user?.userId === bId);
+  const loading = valid && !ready && !error;
 
   const users = board?.users || [];
   const total = board?.count ?? users.length;
-  const others = users.filter((u) => u.userId !== user.userId);
+  const sortedUsers = [...users].sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'sv'));
   const rowOf = (id) => {
     const u = users.find((x) => x.userId === id);
     return u ? { ...u, total } : null;
   };
-  const meRow = rowOf(user.userId);
-  const rivalRow = rivalId ? rowOf(rivalId) : null;
+  const aRow = rowOf(aId);
+  const bRow = rowOf(bId);
 
-  // Join the two match lists by id; keep only decided matches both sides can see.
-  let rows = [];
-  let tally = { me: 0, them: 0, tie: 0 };
+  // Join both match lists by id; keep only decided matches, grouped by group letter with a
+  // per-group head-to-head tally (a wins – b wins).
+  const tally = { a: 0, b: 0, tie: 0 };
+  const groupMap = new Map();
   if (ready) {
-    const theirById = new Map((theirs.matches || []).map((m) => [m.id, m]));
-    rows = (mine.matches || [])
+    const bById = new Map((dataB.matches || []).map((m) => [m.id, m]));
+    (dataA.matches || [])
       .filter((m) => m.actual)
-      .sort((a, b) => a.matchNumber - b.matchNumber)
-      .map((m) => {
-        const t = theirById.get(m.id) || {};
-        const myPts = m.points || 0;
-        const theirPts = t.points || 0;
-        if (myPts > theirPts) tally.me += 1;
-        else if (theirPts > myPts) tally.them += 1;
-        else tally.tie += 1;
-        return {
+      .sort((x, y) => x.matchNumber - y.matchNumber)
+      .forEach((m) => {
+        const t = bById.get(m.id) || {};
+        const aPts = m.points || 0;
+        const bPts = t.points || 0;
+        if (aPts > bPts) tally.a += 1; else if (bPts > aPts) tally.b += 1; else tally.tie += 1;
+        if (!groupMap.has(m.group)) groupMap.set(m.group, { letter: m.group, a: 0, b: 0, tie: 0, rows: [] });
+        const g = groupMap.get(m.group);
+        if (aPts > bPts) g.a += 1; else if (bPts > aPts) g.b += 1; else g.tie += 1;
+        g.rows.push({
           id: m.id,
-          group: m.group,
           home: { team: m.homeTeam, flag: m.homeFlag },
           away: { team: m.awayTeam, flag: m.awayFlag },
           actual: m.actual,
-          mine: { prediction: m.prediction || null, points: myPts },
-          theirs: { prediction: t.prediction || null, points: theirPts },
-        };
+          a: { prediction: m.prediction || null, points: aPts },
+          b: { prediction: t.prediction || null, points: bPts },
+        });
       });
-  }
-
-  // Group the compared matches by group letter, with a per-group head-to-head tally.
-  const groupMap = new Map();
-  for (const r of rows) {
-    if (!groupMap.has(r.group)) groupMap.set(r.group, { letter: r.group, me: 0, them: 0, tie: 0, rows: [] });
-    const g = groupMap.get(r.group);
-    g.rows.push(r);
-    if (r.mine.points > r.theirs.points) g.me += 1;
-    else if (r.theirs.points > r.mine.points) g.them += 1;
-    else g.tie += 1;
   }
   const groups = [...groupMap.values()].sort((a, b) => a.letter.localeCompare(b.letter, 'sv'));
   const groupGridStyle = {
-    display: 'grid',
-    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-    gap: '16px',
-    alignItems: 'start',
+    display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', alignItems: 'start',
   };
 
-  const div = bracketDivergence(mine?.playoff, theirs?.playoff);
-  const summaryText = tally.me === tally.them
-    ? `Oavgjort ${tally.me}–${tally.them} på avgjorda matcher${tally.tie ? ` (${tally.tie} lika)` : ''}`
-    : `${tally.me > tally.them ? 'Du leder' : `${rivalRow?.displayName} leder`} ${Math.max(tally.me, tally.them)}–${Math.min(tally.me, tally.them)} på avgjorda matcher${tally.tie ? ` (${tally.tie} lika)` : ''}`;
+  // Once the playoff has started, groups collapse by default (the group stage is old news).
+  const playoffStarted = !!(dataA?.playoffMode || dataB?.playoffMode);
+  const defaultOpen = !playoffStarted;
+  const isOpen = (letter) => (openGroups ? openGroups.has(letter) : defaultOpen);
+  const allOpen = groups.length > 0 && groups.every((g) => isOpen(g.letter));
+  const baseSet = () => new Set(openGroups || (defaultOpen ? groups.map((g) => g.letter) : []));
+  const toggleGroup = (letter) => setOpenGroups(() => {
+    const next = baseSet();
+    if (next.has(letter)) next.delete(letter); else next.add(letter);
+    return next;
+  });
+  const toggleAll = () => setOpenGroups(allOpen ? new Set() : new Set(groups.map((g) => g.letter)));
+
+  const div = bracketDivergence(dataA?.playoff, dataB?.playoff);
+  const aName = aRow?.displayName || 'Spelare 1';
+  const bName = bRow?.displayName || 'Spelare 2';
+  const summaryText = tally.a === tally.b
+    ? `Oavgjort ${tally.a}–${tally.b} på avgjorda matcher${tally.tie ? ` (${tally.tie} lika)` : ''}`
+    : `${tally.a > tally.b ? aName : bName} leder ${Math.max(tally.a, tally.b)}–${Math.min(tally.a, tally.b)} på avgjorda matcher${tally.tie ? ` (${tally.tie} lika)` : ''}`;
+
+  const renderOption = (u) => <option key={u.userId} value={u.userId}>{u.displayName}</option>;
 
   return (
     <>
       <section style={styles.hero}>
         <div style={styles.eyebrow}>Trivseltipset · FIFA World Cup 2026</div>
         <h1 style={styles.title}>Jämför tips</h1>
-        <p style={styles.sub}>Ställ dina tips mot en annan deltagares, match för match.</p>
+        <p style={styles.sub}>Ställ två deltagares tips mot varandra, match för match.</p>
         <Link to="/leaderboard" style={styles.back}>← Tillbaka till ställningen</Link>
       </section>
 
@@ -250,42 +297,44 @@ export default function Compare() {
         {error && <p style={styles.error}>{error}</p>}
 
         <div style={styles.pickerRow}>
-          <span style={styles.pickerLabel}>Jämför mot:</span>
-          <select
-            style={styles.select}
-            value={rivalId || ''}
-            onChange={(e) => navigate(e.target.value ? `/jamfor/${e.target.value}` : '/jamfor')}
-          >
-            <option value="">Välj deltagare…</option>
-            {others.map((u) => (
-              <option key={u.userId} value={u.userId}>{u.displayName}</option>
-            ))}
-          </select>
+          <label style={styles.pickerField}>
+            <span style={styles.pickerLabel}>Spelare 1</span>
+            <select style={styles.select} value={aId} onChange={(e) => setASel(e.target.value)}>
+              {sortedUsers.map(renderOption)}
+            </select>
+          </label>
+          <span style={styles.pickerVs}>vs</span>
+          <label style={styles.pickerField}>
+            <span style={styles.pickerLabel}>Spelare 2</span>
+            <select style={styles.select} value={bId} onChange={(e) => setBSel(e.target.value)}>
+              <option value="">Välj deltagare…</option>
+              {sortedUsers.map(renderOption)}
+            </select>
+          </label>
         </div>
 
-        {!rivalId && (
-          <p style={styles.empty}>Välj en deltagare ovan för att jämföra era tips.</p>
-        )}
+        {!bId && <p style={styles.empty}>Välj en andra deltagare för att jämföra.</p>}
+        {bId && aId === bId && <p style={styles.empty}>Välj två olika deltagare.</p>}
 
-        {rivalId && meRow && rivalRow && (
+        {valid && aRow && bRow && (
           <>
             <div style={styles.vsCard}>
-              <PlayerColumn row={meRow} isMe />
+              <PlayerColumn row={aRow} highlight={aId === user.userId} />
               <div style={styles.vsMid}>VS</div>
-              <PlayerColumn row={rivalRow} isMe={false} />
+              <PlayerColumn row={bRow} highlight={bId === user.userId} />
             </div>
 
             {loading && <p style={styles.empty}>Laddar tips…</p>}
 
             {ready && (
               <>
-                {rows.length > 0 && <div style={styles.summary}>{summaryText}</div>}
+                {groups.length > 0 && <div style={styles.summary}>{summaryText}</div>}
 
                 {div != null && div.shared > 0 && (
                   <div style={styles.summary}>
                     Slutspelsträd: {div.differ === 0
                       ? 'identiska val hittills 🤝'
-                      : `ni skiljer er på ${div.differ} av ${div.shared} val`}
+                      : `de skiljer sig på ${div.differ} av ${div.shared} val`}
                   </div>
                 )}
                 {div == null && (
@@ -294,13 +343,20 @@ export default function Compare() {
                   </div>
                 )}
 
-                <h2 style={styles.sectionTitle}>Gruppspel – avgjorda matcher</h2>
+                <div style={styles.sectionHeadRow}>
+                  <h2 style={styles.sectionTitle}>Gruppspel – avgjorda matcher</h2>
+                  {groups.length > 0 && (
+                    <button type="button" style={styles.expandAllBtn} onClick={toggleAll}>
+                      {allOpen ? 'Fäll ihop alla' : 'Expandera alla'}
+                    </button>
+                  )}
+                </div>
                 {groups.length === 0 ? (
                   <p style={styles.empty}>Inga avgjorda matcher att jämföra än.</p>
                 ) : (
                   <div style={groupGridStyle}>
                     {groups.map((g) => (
-                      <GroupSection key={g.letter} group={g} rows={g.rows} />
+                      <GroupSection key={g.letter} group={g} open={isOpen(g.letter)} onToggle={() => toggleGroup(g.letter)} />
                     ))}
                   </div>
                 )}

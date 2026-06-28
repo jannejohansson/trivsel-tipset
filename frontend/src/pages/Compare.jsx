@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useIsMobile } from '../lib/useIsMobile.js';
 import CompareMatchRow from '../components/CompareMatchRow.jsx';
 
 const styles = {
@@ -15,7 +16,7 @@ const styles = {
   },
   title: { fontSize: '28px', fontWeight: 800, letterSpacing: '-0.01em', margin: 0 },
   sub: { color: 'rgba(255,255,255,0.85)', fontSize: '14px', marginTop: '8px' },
-  page: { maxWidth: '760px', margin: '0 auto', padding: '24px 20px 60px' },
+  page: { maxWidth: '1100px', margin: '0 auto', padding: '24px 20px 60px' },
   pickerRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', flexWrap: 'wrap' },
   pickerLabel: { fontSize: '14px', color: 'var(--text-muted)', fontWeight: 600 },
   select: {
@@ -54,6 +55,24 @@ const styles = {
     background: 'var(--surface-2)', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: '20px',
   },
   sectionTitle: { fontSize: '15px', fontWeight: 800, color: 'var(--text)', margin: '0 0 12px' },
+  // ── Collapsible group sections (laid out two-up on desktop) ──
+  section: {
+    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+    background: 'var(--surface)', boxShadow: 'var(--shadow-card)', overflow: 'hidden',
+  },
+  sectionHead: {
+    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+    background: 'var(--surface-2)', border: 'none', padding: '12px 14px',
+    cursor: 'pointer', textAlign: 'left', color: 'inherit', font: 'inherit',
+  },
+  sectionName: { fontSize: '14px', fontWeight: 800, color: 'var(--text)' },
+  sectionScore: {
+    fontSize: '12px', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+    padding: '1px 8px', borderRadius: '999px', background: 'var(--surface)',
+    border: '1px solid var(--border)', color: 'var(--text-muted)',
+  },
+  chevron: { marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '13px', flexShrink: 0 },
+  sectionBody: { padding: '12px 12px 2px' },
   playoffNote: {
     background: 'rgba(184,134,11,0.10)', border: '1px solid rgba(184,134,11,0.35)',
     color: 'var(--text)', borderRadius: 'var(--radius)', padding: '12px 16px', fontSize: '14px', marginBottom: '20px',
@@ -97,10 +116,35 @@ function PlayerColumn({ row, isMe }) {
   );
 }
 
+// One collapsible group of compared matches. The header shows the group letter and the
+// head-to-head score within that group (your wins–theirs). Default open.
+function GroupSection({ group, rows }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div style={styles.section}>
+      <button type="button" style={styles.sectionHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span style={styles.sectionName}>Grupp {group.letter}</span>
+        <span style={styles.sectionScore} title="Dina vinster – motståndarens vinster i gruppen">
+          {group.me}–{group.them}
+        </span>
+        <span style={styles.chevron} aria-hidden="true">{open ? '▴' : '▾'}</span>
+      </button>
+      {open && (
+        <div style={styles.sectionBody}>
+          {rows.map((r) => (
+            <CompareMatchRow key={r.id} home={r.home} away={r.away} actual={r.actual} mine={r.mine} theirs={r.theirs} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Compare() {
   const { userId: rivalId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   const [board, setBoard] = useState(null);   // leaderboard users + count
   const [mine, setMine] = useState(null);     // getUserPredictions(me)
@@ -160,7 +204,7 @@ export default function Compare() {
         else tally.tie += 1;
         return {
           id: m.id,
-          label: `Grupp ${m.group}`,
+          group: m.group,
           home: { team: m.homeTeam, flag: m.homeFlag },
           away: { team: m.awayTeam, flag: m.awayFlag },
           actual: m.actual,
@@ -169,6 +213,24 @@ export default function Compare() {
         };
       });
   }
+
+  // Group the compared matches by group letter, with a per-group head-to-head tally.
+  const groupMap = new Map();
+  for (const r of rows) {
+    if (!groupMap.has(r.group)) groupMap.set(r.group, { letter: r.group, me: 0, them: 0, tie: 0, rows: [] });
+    const g = groupMap.get(r.group);
+    g.rows.push(r);
+    if (r.mine.points > r.theirs.points) g.me += 1;
+    else if (r.theirs.points > r.mine.points) g.them += 1;
+    else g.tie += 1;
+  }
+  const groups = [...groupMap.values()].sort((a, b) => a.letter.localeCompare(b.letter, 'sv'));
+  const groupGridStyle = {
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+    gap: '16px',
+    alignItems: 'start',
+  };
 
   const div = bracketDivergence(mine?.playoff, theirs?.playoff);
   const summaryText = tally.me === tally.them
@@ -233,20 +295,14 @@ export default function Compare() {
                 )}
 
                 <h2 style={styles.sectionTitle}>Gruppspel – avgjorda matcher</h2>
-                {rows.length === 0 ? (
+                {groups.length === 0 ? (
                   <p style={styles.empty}>Inga avgjorda matcher att jämföra än.</p>
                 ) : (
-                  rows.map((r) => (
-                    <CompareMatchRow
-                      key={r.id}
-                      label={r.label}
-                      home={r.home}
-                      away={r.away}
-                      actual={r.actual}
-                      mine={r.mine}
-                      theirs={r.theirs}
-                    />
-                  ))
+                  <div style={groupGridStyle}>
+                    {groups.map((g) => (
+                      <GroupSection key={g.letter} group={g} rows={g.rows} />
+                    ))}
+                  </div>
                 )}
               </>
             )}

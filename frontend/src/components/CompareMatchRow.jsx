@@ -69,7 +69,7 @@ export default function CompareMatchRow({ label, home, away, actual, mine, their
   return (
     <div style={styles.card}>
       <div style={styles.head}>
-        <span style={styles.badge}>{label}</span>
+        {label && <span style={styles.badge}>{label}</span>}
         <span style={styles.teams}>
           <span className={`fi fi-${home.flag}`} style={styles.flag} aria-hidden="true" />
           <span style={styles.teamName}>{home.team}</span>

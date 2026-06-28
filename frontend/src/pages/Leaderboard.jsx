@@ -123,13 +123,6 @@ const styles = {
     whiteSpace: 'nowrap',
     cursor: 'help',
   },
-  compareLink: {
-    flexShrink: 0,
-    fontSize: '13px',
-    lineHeight: 1,
-    textDecoration: 'none',
-    cursor: 'pointer',
-  },
   championFlag: {
     flexShrink: 0,
     width: '20px',
@@ -607,17 +600,6 @@ export default function Leaderboard() {
                         >
                           {u.displayName}
                         </Link>
-                        {!isMe && (
-                          <Link
-                            to={`/jamfor/${u.userId}`}
-                            style={styles.compareLink}
-                            onClick={(e) => e.stopPropagation()}
-                            title={`Jämför med ${u.displayName}`}
-                            aria-label={`Jämför med ${u.displayName}`}
-                          >
-                            ⚔️
-                          </Link>
-                        )}
                         {playoffMode && u.champion?.flag && (
                           <span
                             className={`fi fi-${u.champion.flag}`}

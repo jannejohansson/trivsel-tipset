@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useIsMobile } from '../lib/useIsMobile.js';
 import useAutoRefresh from '../hooks/useAutoRefresh.js';
@@ -24,6 +25,12 @@ const styles = {
     borderRadius: 'var(--radius)', textAlign: 'center',
   },
   legend: { fontSize: '12px', color: 'var(--text-muted)', marginBottom: '18px', textAlign: 'center' },
+  compareCta: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+    background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+    boxShadow: 'var(--shadow-card)', padding: '12px 16px', marginBottom: '20px',
+    color: 'var(--text)', textDecoration: 'none', fontWeight: 700, fontSize: '14px',
+  },
   dayHeader: {
     display: 'flex', alignItems: 'center', gap: '12px', margin: '22px 2px 12px',
   },
@@ -483,6 +490,10 @@ export default function PredictionBreakdown() {
       </section>
 
       <div style={styles.page}>
+        <Link to="/jamfor" style={styles.compareCta}>
+          ⚔️ Jämför dina tips med en annan deltagare →
+        </Link>
+
         {error && <p style={styles.error}>{error}</p>}
 
         {/* ── Playoff view: picks still hidden (scoring on, before lockout) ── */}

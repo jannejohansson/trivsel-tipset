@@ -28,32 +28,38 @@ const styles = {
     background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: 'var(--radius)', color: 'var(--text)', fontFamily: 'inherit',
   },
-  vsCard: {
-    display: 'flex', alignItems: 'stretch', gap: '0',
+  // ── Unified comparison panel (players + points + achievements) ──
+  panel: {
     background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-card)',
-    overflow: 'hidden', marginBottom: '20px',
+    padding: '18px 16px 10px', marginBottom: '24px',
   },
-  vsCol: { flex: 1, minWidth: 0, padding: '16px 14px', textAlign: 'center' },
-  vsColMe: { background: 'var(--green-dim)' },
-  vsName: {
-    fontSize: '16px', fontWeight: 800, color: 'var(--text)',
+  // Every row shares this 3-column template so values line up under each player.
+  prow: { display: 'grid', gridTemplateColumns: '1fr 1.3fr 1fr', alignItems: 'center', columnGap: '8px' },
+  pHeadName: {
+    textAlign: 'center', fontSize: '16px', fontWeight: 800, color: 'var(--text)',
     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
-  vsRank: { fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' },
-  vsPoints: { fontSize: '30px', fontWeight: 800, color: 'var(--green)', lineHeight: 1.1, marginTop: '8px', fontVariantNumeric: 'tabular-nums' },
-  vsSplit: { fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' },
-  vsMid: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '0 8px', fontSize: '13px', fontWeight: 800, color: 'var(--text-muted)',
-    borderLeft: '1px solid var(--border)', borderRight: '1px solid var(--border)',
-  },
-  champRow: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-    marginTop: '8px', fontSize: '13px', fontWeight: 700, color: 'var(--text)',
+  pMid: { textAlign: 'center', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase' },
+  pPoints: { textAlign: 'center', fontSize: '34px', fontWeight: 800, lineHeight: 1.05, fontVariantNumeric: 'tabular-nums', marginTop: '2px' },
+  pPointsLead: { color: 'var(--green)' },
+  pPointsDim: { color: 'var(--text-muted)' },
+  pRank: { textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' },
+  pChampCell: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    fontSize: '13px', fontWeight: 700, color: 'var(--text)', minWidth: 0,
   },
   champFlag: { width: '20px', height: '15px', borderRadius: '2px', flexShrink: 0, boxShadow: '0 1px 2px rgba(13,27,42,0.15)' },
   champMuted: { color: 'var(--text-muted)', fontWeight: 500, fontStyle: 'italic' },
+  pDivider: { height: '1px', background: 'var(--border)', margin: '14px 0 4px' },
+  statRow: { padding: '7px 0' },
+  statVal: { textAlign: 'center', fontSize: '15px', fontWeight: 800, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' },
+  statValLead: { color: 'var(--green)' },
+  statLabel: {
+    fontSize: '13px', fontWeight: 600, color: 'var(--text)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+  },
+  statEmoji: { fontSize: '15px', lineHeight: 1, flexShrink: 0 },
   summary: {
     textAlign: 'center', fontSize: '15px', fontWeight: 700, color: 'var(--text)',
     background: 'var(--surface-2)', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: '20px',
@@ -93,29 +99,6 @@ const styles = {
   },
   chevron: { marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '13px', flexShrink: 0 },
   sectionBody: { padding: '12px 12px 2px' },
-  // ── Achievements comparison ─────────────────────────────────
-  achCard: {
-    background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
-    boxShadow: 'var(--shadow-card)', padding: '4px 14px', marginBottom: '20px',
-  },
-  achRow: {
-    display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0',
-    borderBottom: '1px solid var(--border)',
-  },
-  achRowLast: { borderBottom: 'none' },
-  achName: {
-    flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px',
-    fontSize: '14px', fontWeight: 600, color: 'var(--text)',
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-  },
-  achEmoji: { fontSize: '16px', flexShrink: 0, lineHeight: 1 },
-  achCol: {
-    width: '84px', flexShrink: 0, textAlign: 'center', fontSize: '15px', fontWeight: 800,
-    fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)',
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-  },
-  achColLead: { color: 'var(--green)' },
-  achColHead: { fontSize: '12px', fontWeight: 700, color: 'var(--text)' },
 };
 
 // Achievement value formatting (mirrors the Profile page): signed/down categories only
@@ -125,46 +108,6 @@ function fmtAch(v, a) {
   if (a.signed) return v > 0 ? `+${v}` : '–';
   if (a.down) return v > 0 ? `-${v}` : '–';
   return `${v}`;
-}
-
-// Side-by-side season-achievement comparison. Each category's leader (the higher raw
-// value, which is how the badge is awarded server-side) is highlighted.
-function AchievementCompare({ aRow, bRow }) {
-  const aAch = aRow.achievements;
-  const bAch = bRow.achievements;
-  if (!aAch || !bAch) return null;
-  return (
-    <>
-      <h2 style={styles.sectionTitle}>Utmärkelser</h2>
-      <div style={styles.achCard}>
-        <div style={styles.achRow}>
-          <span style={styles.achName} />
-          <span style={{ ...styles.achCol, ...styles.achColHead }}>{aRow.displayName}</span>
-          <span style={{ ...styles.achCol, ...styles.achColHead }}>{bRow.displayName}</span>
-        </div>
-        {ACHIEVEMENTS.map((a, i) => {
-          const av = aAch[a.field];
-          const bv = bAch[a.field];
-          const an = av ?? -Infinity;
-          const bn = bv ?? -Infinity;
-          return (
-            <div
-              key={a.key}
-              style={{ ...styles.achRow, ...(i === ACHIEVEMENTS.length - 1 ? styles.achRowLast : {}) }}
-              title={a.desc}
-            >
-              <span style={styles.achName}>
-                <span style={styles.achEmoji} aria-hidden="true">{a.emoji}</span>
-                {a.label}
-              </span>
-              <span style={{ ...styles.achCol, ...(an > bn ? styles.achColLead : {}) }}>{fmtAch(av, a)}</span>
-              <span style={{ ...styles.achCol, ...(bn > an ? styles.achColLead : {}) }}>{fmtAch(bv, a)}</span>
-            </div>
-          );
-        })}
-      </div>
-    </>
-  );
 }
 
 // Count knockout ties where both have made a (different) winner pick.
@@ -180,23 +123,82 @@ function bracketDivergence(aPlayoff, bPlayoff) {
   return { differ, shared };
 }
 
-function PlayerColumn({ row, highlight }) {
+// Higher raw value leads (null treated as lowest). Returns [aLeads, bLeads].
+function leadPair(a, b) {
+  const an = a ?? -Infinity;
+  const bn = b ?? -Infinity;
+  return [an > bn, bn > an];
+}
+
+// Unified comparison panel: the two players (name, total points, rank, predicted
+// champion) on top, then a shared 3-column table comparing the points split and every
+// season achievement, with each row's leader highlighted.
+function CompareTable({ aRow, bRow, meId }) {
+  const aAch = aRow.achievements || {};
+  const bAch = bRow.achievements || {};
+  const [aTotLead, bTotLead] = leadPair(aRow.points, bRow.points);
+  const nameOf = (row) => `${row.displayName}${row.userId === meId ? ' (du)' : ''}`;
+  const champCell = (row) => (
+    <div style={styles.pChampCell}>
+      {row.champion?.team ? (
+        <>
+          {row.champion.flag && <span className={`fi fi-${row.champion.flag}`} style={styles.champFlag} aria-hidden="true" />}
+          {row.champion.team}
+        </>
+      ) : (
+        <span style={styles.champMuted}>dold</span>
+      )}
+    </div>
+  );
+
+  const statRows = [
+    { key: 'group', label: 'Gruppspel', a: aRow.groupPoints || 0, b: bRow.groupPoints || 0 },
+    { key: 'playoff', label: 'Slutspel', a: aRow.playoffPoints || 0, b: bRow.playoffPoints || 0 },
+    ...ACHIEVEMENTS.map((ac) => ({
+      key: ac.key, emoji: ac.emoji, label: ac.label, desc: ac.desc, ach: ac,
+      a: aAch[ac.field], b: bAch[ac.field],
+    })),
+  ];
+
   return (
-    <div style={{ ...styles.vsCol, ...(highlight ? styles.vsColMe : {}) }}>
-      <div style={styles.vsName}>{row.displayName}</div>
-      <div style={styles.vsRank}>#{row.rank} av {row.total}</div>
-      <div style={styles.vsPoints}>{row.points}</div>
-      <div style={styles.vsSplit}>Grupp {row.groupPoints} · Slutspel {row.playoffPoints}</div>
-      <div style={styles.champRow}>
-        {row.champion?.team ? (
-          <>
-            {row.champion.flag && <span className={`fi fi-${row.champion.flag}`} style={styles.champFlag} aria-hidden="true" />}
-            {row.champion.team}
-          </>
-        ) : (
-          <span style={styles.champMuted}>Mästare dold</span>
-        )}
+    <div style={styles.panel}>
+      <div style={styles.prow}>
+        <div style={styles.pHeadName}>{nameOf(aRow)}</div>
+        <div style={styles.pMid}>vs</div>
+        <div style={styles.pHeadName}>{nameOf(bRow)}</div>
       </div>
+      <div style={styles.prow}>
+        <div style={{ ...styles.pPoints, ...(aTotLead ? styles.pPointsLead : styles.pPointsDim) }}>{aRow.points}</div>
+        <div style={styles.pMid}>poäng</div>
+        <div style={{ ...styles.pPoints, ...(bTotLead ? styles.pPointsLead : styles.pPointsDim) }}>{bRow.points}</div>
+      </div>
+      <div style={styles.prow}>
+        <div style={styles.pRank}>#{aRow.rank} av {aRow.total}</div>
+        <div />
+        <div style={styles.pRank}>#{bRow.rank} av {bRow.total}</div>
+      </div>
+      <div style={styles.prow}>
+        {champCell(aRow)}
+        <div style={styles.pMid}>Mästare</div>
+        {champCell(bRow)}
+      </div>
+
+      <div style={styles.pDivider} />
+
+      {statRows.map((r) => {
+        const [aLead, bLead] = leadPair(r.a, r.b);
+        const fmt = r.ach ? (v) => fmtAch(v, r.ach) : (v) => `${v}`;
+        return (
+          <div key={r.key} style={{ ...styles.prow, ...styles.statRow }} title={r.desc || undefined}>
+            <div style={{ ...styles.statVal, ...(aLead ? styles.statValLead : {}) }}>{fmt(r.a)}</div>
+            <div style={styles.statLabel}>
+              {r.emoji && <span style={styles.statEmoji} aria-hidden="true">{r.emoji}</span>}
+              {r.label}
+            </div>
+            <div style={{ ...styles.statVal, ...(bLead ? styles.statValLead : {}) }}>{fmt(r.b)}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -391,13 +393,7 @@ function CompareInner({
 
         {valid && aRow && bRow && (
           <>
-            <div style={styles.vsCard}>
-              <PlayerColumn row={aRow} highlight={aId === user.userId} />
-              <div style={styles.vsMid}>VS</div>
-              <PlayerColumn row={bRow} highlight={bId === user.userId} />
-            </div>
-
-            <AchievementCompare aRow={aRow} bRow={bRow} />
+            <CompareTable aRow={aRow} bRow={bRow} meId={user.userId} />
 
             {loading && <p style={styles.empty}>Laddar tips…</p>}
 

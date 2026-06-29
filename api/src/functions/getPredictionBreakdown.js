@@ -14,6 +14,12 @@ const { collectUsers, collectByUser } = require('../shared/leaderboardData');
 // Sort display names in Swedish locale order (used for predictor name lists).
 const svSort = (a, b) => a.localeCompare(b, 'sv');
 
+// Tiers in advance order. A team's "points at risk" in a given fixture is the sum of
+// these from the fixture's advance round up to the furthest round a user predicted the
+// team to reach — i.e. everything that backer still has to win, and would forfeit if the
+// team lost here. (Tiers already banked, up to the current round, are not at risk.)
+const ROUND_ORDER = ['R32', 'R16', 'QF', 'SF', 'F', 'CHAMP'];
+
 // A built bracket's champion as { team, flag } from the final's slots, or null.
 function championOf(bracket) {
   if (!bracket.champion) return null;
@@ -82,21 +88,40 @@ async function playoffBreakdown(results, revealed) {
     return { playoff: true, playoffMode: true, picksHidden: true, totalUsers: total, champPoints: TIER_POINTS.CHAMP, fixtures: [], champions: [], r32ByUser };
   }
 
-  const fixtures = base.map((f) => {
-    const homeUsers = [];
-    const awayUsers = [];
+  // For one team in a fixture: the backers who tipped it to advance from here, plus those
+  // backers grouped by how many points they'd forfeit if it lost (stake = tiers from the
+  // advance round up to each backer's furthest predicted round). Highest stake first.
+  const sideStakes = (team, advanceRound) => {
+    const advIdx = ROUND_ORDER.indexOf(advanceRound);
+    const byStake = new Map(); // stake -> [name]
+    const users = [];
     for (const p of perUser) {
-      const reached = p.reached[f.advanceRound];
-      if (reached.has(f.home.team)) homeUsers.push(p.name);
-      if (reached.has(f.away.team)) awayUsers.push(p.name);
+      let furthest = -1;
+      for (let i = advIdx; i < ROUND_ORDER.length; i++) {
+        if (p.reached[ROUND_ORDER[i]].has(team)) furthest = i;
+      }
+      if (furthest < advIdx) continue; // didn't tip this team to advance from here
+      let stake = 0;
+      for (let i = advIdx; i <= furthest; i++) stake += TIER_POINTS[ROUND_ORDER[i]];
+      users.push(p.name);
+      if (!byStake.has(stake)) byStake.set(stake, []);
+      byStake.get(stake).push(p.name);
     }
-    homeUsers.sort(svSort);
-    awayUsers.sort(svSort);
+    users.sort(svSort);
+    const stakeGroups = [...byStake.entries()]
+      .map(([stake, names]) => ({ stake, users: names.sort(svSort) }))
+      .sort((a, b) => b.stake - a.stake);
+    return { users, stakeGroups };
+  };
+
+  const fixtures = base.map((f) => {
+    const home = sideStakes(f.home.team, f.advanceRound);
+    const away = sideStakes(f.away.team, f.advanceRound);
     return {
       id: f.id, round: f.round, kickoffUtc: f.kickoffUtc, venue: f.venue,
       status: f.status, actualWinner: f.actualWinner, advancePoints: f.advancePoints, total,
-      home: { ...f.home, count: homeUsers.length, pct: pct(homeUsers.length), users: homeUsers },
-      away: { ...f.away, count: awayUsers.length, pct: pct(awayUsers.length), users: awayUsers },
+      home: { ...f.home, count: home.users.length, pct: pct(home.users.length), users: home.users, stakeGroups: home.stakeGroups },
+      away: { ...f.away, count: away.users.length, pct: pct(away.users.length), users: away.users, stakeGroups: away.stakeGroups },
     };
   });
 

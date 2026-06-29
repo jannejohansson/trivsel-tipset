@@ -130,6 +130,10 @@ const styles = {
   },
   advNameLost: { opacity: 0.55 },
   noPredsInline: { fontSize: '11px', fontStyle: 'italic', color: 'var(--text-muted)' },
+  // Backers grouped by points at risk (one row per stake tier, highest first).
+  stakeGroups: { display: 'flex', flexDirection: 'column', gap: '6px', paddingLeft: '56px' },
+  stakeRow: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '5px' },
+  stakeLabel: { fontSize: '11px', fontWeight: 800, color: 'var(--danger)', whiteSpace: 'nowrap', marginRight: '2px' },
   // ── R32 per-user list ────────────────────────────────────────
   r32Row: { padding: '10px 0', borderTop: '1px solid var(--border)' },
   r32RowFirst: { borderTop: 'none' },
@@ -413,6 +417,10 @@ function FixtureCard({ fixture, isMobile }) {
           const isWinner = status === 'completed' && actualWinner === side.team;
           const isLoser = status === 'completed' && actualWinner && actualWinner !== side.team;
           const fillStyle = isWinner ? styles.fillExact : isLoser ? styles.fillMuted : {};
+          // Stake grouping is the live "what's at risk if knocked out" view. Once the tie is
+          // decided, the winner has banked it (plain chips); the loser actually forfeited it.
+          const showStakes = side.users.length > 0 && !(status === 'completed' && isWinner);
+          const stakeVerb = status === 'completed' && isLoser ? 'Förlorade' : 'Förlorar';
           return (
             <div key={side.team} style={styles.barBlock}>
               <div style={styles.barRow}>
@@ -423,11 +431,22 @@ function FixtureCard({ fixture, isMobile }) {
                 <div style={styles.track}><div style={{ ...styles.fill, ...fillStyle, width: `${barPct}%` }} /></div>
                 <div style={styles.stat}><span style={styles.pct}>{side.pct}%</span><span style={styles.cnt}>{side.count} st</span></div>
               </div>
-              <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
-                {side.users.length === 0
-                  ? <span style={styles.noPredsInline}>Ingen tippade {side.team} vidare</span>
-                  : side.users.map((n, i) => <span key={i} style={{ ...styles.nameChip, ...(isWinner ? styles.nameChipExact : {}) }}>{n}</span>)}
-              </div>
+              {showStakes ? (
+                <div style={{ ...styles.stakeGroups, ...(isMobile ? styles.namesMobile : {}) }}>
+                  {side.stakeGroups.map((g) => (
+                    <div key={g.stake} style={styles.stakeRow}>
+                      <span style={styles.stakeLabel}>{stakeVerb} {g.stake} p:</span>
+                      {g.users.map((n, i) => <span key={i} style={styles.nameChip}>{n}</span>)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ ...styles.names, ...(isMobile ? styles.namesMobile : {}) }}>
+                  {side.users.length === 0
+                    ? <span style={styles.noPredsInline}>Ingen tippade {side.team} vidare</span>
+                    : side.users.map((n, i) => <span key={i} style={{ ...styles.nameChip, ...(isWinner ? styles.nameChipExact : {}) }}>{n}</span>)}
+                </div>
+              )}
             </div>
           );
         })}
@@ -519,7 +538,8 @@ export default function PredictionBreakdown() {
             ) : (
               <>
                 <p style={styles.legend}>
-                  Slutspelstipsen är låsta och visas för alla. Varje stapel visar hur många som tippat laget vidare.
+                  Slutspelstipsen är låsta och visas för alla. Varje stapel visar hur många som tippat laget vidare,
+                  och under laget hur många poäng deltagarna riskerar om det åker ut här – ju längre de tippat laget, desto mer står på spel.
                 </p>
                 {groupFixturesByDay(fixtures).map((day) => (
                   <div key={day.key}>

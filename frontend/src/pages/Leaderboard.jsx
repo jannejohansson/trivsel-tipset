@@ -677,6 +677,8 @@ export default function Leaderboard() {
                       {!isMobile && (
                         <span style={styles.date}>
                           Grupp {u.groupPoints || 0} · Slutspel {u.playoffPoints || 0}
+                          {/* Best-case playoff total; present only once playoff scoring is on. */}
+                          {u.playoffCeiling != null && ` · Möjliga slutspel ${u.playoffCeiling}`}
                         </span>
                       )}
                     </div>

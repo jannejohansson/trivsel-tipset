@@ -8,6 +8,7 @@ const { MATCHES } = require('../shared/matchData');
 const { resolveSpotlight } = require('../shared/spotlight');
 const { buildBracket } = require('../shared/bracket');
 const { scoreGroupTotal, scorePlayoff, scoreGroup, reachedSets } = require('../shared/scoring');
+const { playoffBounds } = require('../shared/potential');
 const { isPlayoffDisplay, isPlayoffLocked } = require('../shared/phase');
 const { actualFixtures } = require('../shared/playoffView');
 
@@ -181,6 +182,14 @@ app.http('getLeaderboard', {
         + (weekPlayoffOn ? scorePlayoff(predictedBracket, weekBracket).total : 0);
       const ach = groupAchievements(preds, completedGroup, results.groupResults);
 
+      // Highest playoff total still reachable if every remaining knockout result goes their
+      // way (the bracket DP picks the best-case winners). Only meaningful while playoff
+      // scoring is on — left null during the group stage so the UI can hide it.
+      let playoffCeiling = null;
+      if (playoffOn) {
+        playoffCeiling = playoffBounds(predictedBracket, actualBracket, results.knockoutWinners).max;
+      }
+
       // Per-user spotlight predictions, keyed by matchId — only for matches whose tips are
       // already public (completed or in progress). Completed matches also carry the points
       // earned. The `next` matches' predictions are never serialized.
@@ -221,6 +230,7 @@ app.http('getLeaderboard', {
         groupPoints,
         playoffPoints,
         points: groupPoints + playoffPoints,
+        playoffCeiling,
         _prevPoints: prevPoints,
         _weekPoints: weekPoints,
         _ach: ach,

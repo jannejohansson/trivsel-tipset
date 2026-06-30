@@ -151,9 +151,14 @@ function CompareTable({ aRow, bRow, meId }) {
     </div>
   );
 
+  // Best-case playoff total ("Möjliga slutspel") — present only once playoff scoring is on.
+  const hasBounds = aRow.playoffCeiling != null && bRow.playoffCeiling != null;
   const statRows = [
     { key: 'group', label: 'Gruppspel', a: aRow.groupPoints || 0, b: bRow.groupPoints || 0 },
     { key: 'playoff', label: 'Slutspel', a: aRow.playoffPoints || 0, b: bRow.playoffPoints || 0 },
+    ...(hasBounds ? [
+      { key: 'po_ceil', label: 'Möjliga slutspel', desc: 'Högsta möjliga slutspelspoäng om alla återstående matcher går deras väg', a: aRow.playoffCeiling, b: bRow.playoffCeiling },
+    ] : []),
     ...ACHIEVEMENTS.map((ac) => ({
       key: ac.key, emoji: ac.emoji, label: ac.label, desc: ac.desc, ach: ac,
       a: aAch[ac.field], b: bAch[ac.field],
